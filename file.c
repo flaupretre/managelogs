@@ -36,17 +36,20 @@ static apr_pool_t *pool;
 
 /*----------------------------------------------*/
 
-static OFILE *new_ofile(void);
+static OFILE *new_ofile(const char *path);
 static void destroy_ofile(OFILE *fp);
 
 /*----------------------------------------------*/
 
-static OFILE *new_ofile()
+static OFILE *new_ofile(const char *path)
 {
 OFILE *fp;
 
 fp=allocate(NULL,sizeof(OFILE));
-memset(fp,0,sizeof(OFILE));
+fp->path=duplicate(path);
+fp->fd=NULL;
+fp->size=0;
+
 return fp;
 }
 
@@ -54,6 +57,7 @@ return fp;
 
 static void destroy_ofile(OFILE *fp)
 {
+(void)allocate(fp->path,0);
 (void)allocate(fp,0);
 }
 
@@ -61,12 +65,12 @@ static void destroy_ofile(OFILE *fp)
 
 void file_init()
 {
-apr_pool_create(&pool, NULL);
+(void)apr_pool_create(&pool, NULL);
 }
 
 /*----------------------------------------------*/
 
-int file_exists(const char *path)
+BOOL file_exists(const char *path)
 {
 apr_finfo_t finfo;
 
@@ -75,18 +79,32 @@ return (apr_stat(&finfo,path,0,pool)==APR_SUCCESS);
 
 /*----------------------------------------------*/
 
-int file_rename(const char *oldpath,const char *newpath)
+BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal)
 {
-return (apr_file_rename(oldpath,newpath,pool)==APR_SUCCESS);
+BOOL status;
+
+DEBUG2("Renaming file : %s to %s",oldpath,newpath);
+
+status=(BOOL)(apr_file_rename(oldpath,newpath,pool)==APR_SUCCESS);
+if ((!status) && fatal)
+	FATAL_ERROR_2("Cannot rename file %s to %s",oldpath,newpath);
+
+return status;
 }
 
 /*----------------------------------------------*/
 
-int file_delete(const char *path)
+BOOL file_delete(const char *path, BOOL fatal)
 {
+BOOL status;
+
 DEBUG1("Deleting file : %s",path);
 
-return (apr_file_remove(path,pool)==APR_SUCCESS);
+status=(apr_file_remove(path,pool)==APR_SUCCESS);
+if ((!status) && fatal)
+	FATAL_ERROR_1("Cannot delete file (%s)",path);
+
+return status;
 }
 
 /*----------------------------------------------*/
@@ -95,10 +113,9 @@ OFILE *file_create(const char *path, apr_int32_t mode)
 {
 OFILE *fp;
 
-DEBUG2("Creating/Truncating file : %s (%x)",path,mode);
+DEBUG2("Creating/Truncating file : %s (mode %x)",path,(unsigned int)mode);
 
-fp=new_ofile();
-fp->path=duplicate(path);
+fp=new_ofile(path);
 apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_TRUNCATE,mode,pool);
 if (!(fp->fd))
 	{
@@ -116,11 +133,10 @@ OFILE *file_open_for_append(const char *path, apr_int32_t mode)
 OFILE *fp;
 apr_finfo_t finfo;
 
-DEBUG2("Opening/Appending file : %s (%x)",path,mode);
+DEBUG2("Opening/Appending file : %s (mode %x)",path,mode);
 
-fp=new_ofile();
-fp->path=duplicate(path);
-apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND,mode,pool);
+fp=new_ofile(path);
+(void)apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND,mode,pool);
 if (!(fp->fd))
 	{
 	destroy_ofile(fp);
@@ -133,7 +149,7 @@ if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fp->fd)!=APR_SUCCESS)
 	FATAL_ERROR_1("Cannot get file size (%s)\n",path);
 	}
 
-fp->size=finfo.size;
+fp->size=(apr_size_t)finfo.size;
 
 return fp;
 }
@@ -144,7 +160,9 @@ void file_write(OFILE *fp, const char *buf, apr_size_t size)
 {
 apr_size_t nwrite;
 
-if (!size) return;
+if (size==0) return;
+
+DEBUG2("Writing %d bytes to %s",(int)size,fp->path);
 
 nwrite=size;
 (void)apr_file_write(fp->fd, buf, &nwrite);
@@ -170,11 +188,13 @@ file_write_string(fp,"\n");
 
 /*----------------------------------------------*/
 
-OFILE *file_close(OFILE *fp)
+/*@null@*/ OFILE *file_close(OFILE *fp)
 {
+DEBUG1("Closing file %s",fp->path);
+
 if (fp)
 	{
-	apr_file_close(fp->fd);
+	(void)apr_file_close(fp->fd);
 	destroy_ofile(fp);
 	}
 

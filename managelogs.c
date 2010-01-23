@@ -55,6 +55,7 @@ static apr_getopt_option_t long_options[]=
 	{"size",'s',1 },
 	{"mode",'m',1 },
 	{"user",'u',1 },
+	{"keep",'k',1 },
 	{"version",'V',0 },
 	{"",'\0', 0 }
 	};
@@ -71,7 +72,7 @@ static void usage(int rc)
 FILE *fd;
 char *clist;
 
-fd=(rc ? stderr : stdout);
+fd=((rc>0) ? stderr : stdout);
 clist=compress_handler_list();
 
 fprintf(fd,"\
@@ -86,18 +87,23 @@ Options :\n\
 \n\
  -d|--debug          Display debug messages to stdout\n\
  \n\
- -c|--compress <comp>[:<level>]  Activate compression\n\
+ -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
+                     corresponding suffix to the log file names.\n\
                         <comp> is one of : %s\n\
                         <level> is one of {0123456789bf} (f=fast, b=best)\n\
-                        Default level depends on compression engine\n\
+                        Default level depends on the compression engine\n\
 \n\
- -s|--size <size>    Set the maximal size log files can take on disk\n\
+ -s|--size <size>    Set the maximum size at which rotation occurs\n\
                         <size> is a numeric value optionnally followed\n\
                         by 'K' (Kilo), 'M' (Mega), or 'G' (Giga)\n\
                         Default: no limit\n\
 \n\
- -m|--mode <mode>    File mode for log files (Default = %x)\n\
-                        <mode> is a numeric argument (octal)\n\
+ -k|--keep <n>       Keep only <n> log files (the current log file and <n-1>\n\
+                     backups)\n\
+\n\
+ -m|--mode <mode>    File mode to use for newly-created log files\n\
+                        <mode> is a numeric Unix-style file	permission\n\
+                        (see chmod(2)). Default mode: %x\n\
 \n\
  -u|--user <id>      Program runs with this user ID\n\
                         <id> = <uid>[:<gid>]\n\
@@ -106,7 +112,7 @@ Options :\n\
  -V|--version        Print version and exit\n\
 \n",clist,LOGFILE_MODE);
 
-allocate(clist,0);
+(void)allocate(clist,0);
 
 if (rc >= 0) exit(rc);
 }
@@ -124,74 +130,85 @@ apr_terminate();
 
 int main (int argc, char * argv[])
 {
-apr_off_t maxsize,limit;
+apr_off_t maxsize;
 apr_file_t *f_stdin;
 apr_size_t ntoread,nread;
 char buf[BUFSIZE],*path;
 apr_status_t status;
 int optch;
-const char *optarg;
+const char *opt_arg;
 apr_fileperms_t mode;
+int keep_count;
 
 cmd=argv[0];
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
-atexit(shutdown_proc);
+(void)atexit(shutdown_proc);
 apr_pool_create(&pool, NULL);
 
 /*-- Get options and arg */
 
-maxsize=limit=0;
+maxsize=0;
 mode=LOGFILE_MODE;
+keep_count=0;
 
 (void)apr_getopt_init(&opt_s,pool,argc,(char const * const *)argv);
-while (1)
+while (YES)
 	{
-	status=apr_getopt_long(opt_s,long_options,&optch,&optarg);
+	status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
 	if (status==APR_EOF) break;
 	if (status != APR_SUCCESS) usage(1);
 	switch ((char)optch)
 		{
 		case 'h':
 			usage(0);
+			break;
 
 		case 'd':
-			debug_on();
+			set_debug(YES);
 			break;
 
 		case 'c':
-			if (!init_compress_handler_from_arg(optarg))
+			if (!init_compress_handler_from_arg(opt_arg))
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid compression spec : %s",optarg);
+				FATAL_ERROR_1("Invalid compression spec : %s",opt_arg);
 				}
 			break;
 
 		case 's':
-			maxsize=convert_size_string(optarg);
-			if (maxsize == 0)
+			maxsize=convert_size_string(opt_arg);
+			if (maxsize <= 0)
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid size : %s",optarg);
+				FATAL_ERROR_1("Invalid size : %s",opt_arg);
 				}
-			limit=maxsize/2;
+			break;
+
+		case 'k':
+			keep_count=-1;
+			keep_count=atoi(opt_arg);
+			if (keep_count < 0)
+				{
+				usage(-1);
+				FATAL_ERROR_1("Invalid keep value : %s",opt_arg);
+				}
 			break;
 
 		case 'V':
 			printf(MANAGELOGS_VERSION "\n");
 			exit(0);
-			break;
 
 		case 'm':
-			if (sscanf(optarg,"%x",&mode)!=1)
+			if (sscanf(opt_arg,"%x",&mode)!=1)
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid mode : %s",optarg);
+				FATAL_ERROR_1("Invalid mode : %s",opt_arg);
 				}
 			break;
 
 		case 'u':
-			change_id(optarg);
+			change_id(opt_arg);
 			break;
 		}
 	}
@@ -201,12 +218,12 @@ if ((!path)||(!(*path))||(argv[opt_s->ind+1])) usage(1);
 
 /* Init logfile */
 
-logfile_init(path,maxsize,mode);
+logfile_init(path,maxsize,mode,keep_count);
 
-/* Read by blocks of at most <limit> bytes */
+/* Read by blocks of at most <maxsize> bytes */
 
 ntoread=sizeof(buf);
-if (limit && (limit < ntoread)) ntoread=limit;
+if (maxsize && (maxsize < ntoread)) ntoread=maxsize;
 DEBUG1("Reading by chunks of %d bytes",ntoread);
 
 /* Open stdin for reading */

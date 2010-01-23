@@ -34,12 +34,12 @@ Copyright F. Laupretre (francois@tekwire.net)
 typedef struct
 	{
 	char *name;
-	char *suffix;
-	void (*init)(const char *clevel);
-	void (*start)(OFILE *fp);
-	void (*end)();
-	void (*predict_size)(apr_size_t *size);
-	void (*compress_and_write)(const char *buf, apr_size_t size);
+	/*@null@*/ char *suffix;
+	/*@null@*/ void (*init)(/*@null@*/ const char *clevel);
+	/*@null@*/ void (*start)(OFILE *fp);
+	/*@null@*/ void (*end)();
+	/*@null@*/ void (*predict_size)(apr_size_t *size);
+	/*@null@*/ void (*compress_and_write)(const char *buf, apr_size_t size);
 	} COMPRESS_HANDLER;
 
 /*----------------------------------------------*/
@@ -49,7 +49,7 @@ extern COMPRESS_HANDLER *compress_handler;
 /*----------------------------------------------*/
 
 extern char *compress_handler_list(void);
-extern int init_compress_handler_from_arg(const char *arg);
+extern BOOL init_compress_handler_from_arg(const char *arg);
 
 /*----------------------------------------------*/
 #endif	/* __COMPRESS_H */

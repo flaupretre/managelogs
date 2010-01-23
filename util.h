@@ -25,11 +25,16 @@ Copyright F. Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 
 #define FATAL_ERROR(_msg)		{ \
-								fatal_error_1(_msg,NULL); \
+								fatal_error_2(_msg,NULL,NULL); \
 								}
 
 #define FATAL_ERROR_1(_msg,_arg) { \
-								fatal_error_1(_msg,_arg); \
+								fatal_error_2(_msg,(const char *)_arg,NULL); \
+								}
+
+#define FATAL_ERROR_2(_msg,_arg1,_arg2) { \
+								fatal_error_2(_msg,(const char *)_arg1 \
+									,(const char *)_arg2); \
 								}
 
 #define DEBUG(_fmt)		{\
@@ -44,17 +49,19 @@ Copyright F. Laupretre (francois@tekwire.net)
 						if (debug_toggle) printf("> " _fmt "\n",_a1,_a2); \
 						}
 
-/*----------------------------------------------*/
-
-extern int debug_toggle;
+typedef enum { NO, YES } BOOL;
 
 /*----------------------------------------------*/
 
-extern void *allocate(void *p, unsigned int size);
+extern BOOL debug_toggle;
+
+/*----------------------------------------------*/
+
+extern void *allocate(/*@null@*/ const void *p, size_t size);
 extern void *duplicate(const char *string);
-extern void fatal_error_1(const char *msg, const char *arg);
+extern void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
 extern apr_off_t convert_size_string(const char *str);
-extern void debug_on(void);
+extern void set_debug(BOOL toggle);
 extern void change_id(const char *string);
 
 /*----------------------------------------------*/

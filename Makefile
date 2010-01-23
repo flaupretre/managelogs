@@ -8,7 +8,9 @@ APACHE = /logi/http/apache
 
 CC = gcc
 
-CFLAGS = -g -Wall -pthread
+CFLAGS = -g -Wall -pthread $(PEDANTIC)
+
+#PEDANTIC = -pedantic
 
 #------
 
@@ -38,7 +40,7 @@ OBJS = managelogs.o \
 	gzip_handler.o \
 	bzip2_handler.o
 
-INCLUDES = -I $(APACHE)/include/apr-0 $(GZIP_OPT) $(BZ2_OPT)
+INCLUDES = -I$(APACHE)/include/apr-0 $(GZIP_OPT) $(BZ2_OPT)
 
 LIBS = -L $(APACHE)/lib -lapr-0 $(GZIP_LIBS) $(BZ2_LIBS)
 
@@ -46,7 +48,7 @@ INSTALL_DIR = $(APACHE)/bin
 
 #--------------------------------------------------------------------
 
-.PHONY: all clean install
+.PHONY: all clean install splint
 
 all: $(TARGETS)
 
@@ -61,5 +63,11 @@ managelogs: $(OBJS)
 	
 .c.o:
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $(INCLUDES) $<
+
+splint:
+	splint $(CPPFLAGS) $(INCLUDES) +posixlib -DPATH_MAX=1024 \
+		-skipposixheaders -booltype BOOL -boolfalse NO -booltrue YES \
+		*.c
+
 
 #--------------------------------------------------------------------

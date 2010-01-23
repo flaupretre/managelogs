@@ -38,7 +38,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-static OFILE *outfp=(OFILE *)0;
+/*@null@*/ static OFILE *outfp=(OFILE *)0;
 
 /*----------------------------------------------*/
 
@@ -50,7 +50,7 @@ static void plain_compress_and_write(const char *buf, apr_size_t size);
 
 static COMPRESS_HANDLER plain_handler=
 	{
-	NULL,						/* name */
+	"plain",					/* name */
 	NULL,						/* suffix */
 	NULL,						/* init */
 	plain_start,				/* start */
@@ -114,7 +114,7 @@ return result;
 
 /*----------------------------------------------*/
 
-int init_compress_handler_from_arg(const char *arg)
+BOOL init_compress_handler_from_arg(const char *arg)
 {
 COMPRESS_HANDLER **chpp;
 char buf[16],*level;
@@ -133,9 +133,9 @@ for (chpp=compress_handlers;*chpp;chpp++)
 		break;
 		}
 	}
-if (!(*chpp)) return 0;
+if (!(*chpp)) return NO;
 
-return 1;
+return YES;
 }
 
 /*----------------------------------------------*/

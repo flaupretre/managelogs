@@ -51,11 +51,13 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #define BUFSIZE 65536
 
-/* Default permissions for log files that are created */
+/* Default permissions for files that are created */
 /* Warning : APR flags are not the same as Unix perms. APR flags are set on
 4 bits instead of 3, so we read the value as an hex value */
 
 #define LOGFILE_MODE	0x644
+
+#define PIDFILE_MODE	0x0644
 
 /*----------------------------------------------*/
 #endif	/* __CONFIG_H */

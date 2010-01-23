@@ -51,7 +51,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 				}
 
 #define WRITE_OUTPUT_BUFFER()	{ \
-				if (bzs.avail_out != BUFSIZE) \
+				if ((bzs.avail_out != BUFSIZE) && (outfp!=NULL)) \
 					file_write(outfp,compbuf,BUFSIZE-bzs.avail_out); \
 				}
 
@@ -61,7 +61,7 @@ static bz_stream bzs;
 static char compbuf[BUFSIZE];
 static unsigned int compress_ratio=DEFAULT_COMPRESS_RATIO;
 static int compress_level;
-static OFILE *outfp=(OFILE *)0;
+/*@null@*/ static OFILE *outfp=(OFILE *)0;
 
 /*----------------------------------------------*/
 
@@ -132,7 +132,7 @@ static void bzip2_end()
 {
 int status;
 
-while(1)
+while(YES)
 	{
 	RESET_OUTPUT_BUFFER();
 	status=BZ2_bzCompress(&bzs,BZ_FINISH);
@@ -142,14 +142,14 @@ while(1)
 	if (status==BZ_STREAM_END) break;
 	}
 
-if ((!bzs.total_in_hi32) && (!bzs.total_out_hi32)
-	&& (bzs.total_in_lo32 > 100000) && bzs.total_out_lo32)
+if ((bzs.total_in_hi32==0) && (bzs.total_out_hi32==0)
+	&& (bzs.total_in_lo32 > 100000) && (bzs.total_out_lo32!=0))
 	{
 	compress_ratio=bzs.total_in_lo32/bzs.total_out_lo32;
 	if (compress_ratio==0) compress_ratio=1; /* Should never happen, but... */
 	}
 
-BZ2_bzCompressEnd(&bzs);
+(void)BZ2_bzCompressEnd(&bzs);
 outfp=NULL;
 }
 
@@ -165,8 +165,8 @@ static void bzip2_predict_size(apr_size_t *sizep)
 static void bzip2_compress_and_write(const char *buf, apr_size_t size)
 {
 bzs.next_in=(char *)buf;
-bzs.avail_in=size;
-while (bzs.avail_in)
+bzs.avail_in=(unsigned int)size;
+while (bzs.avail_in != 0)
 	{
 	RESET_OUTPUT_BUFFER();
 	if (BZ2_bzCompress(&bzs,BZ_RUN)!=BZ_RUN_OK)

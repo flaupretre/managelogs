@@ -21,11 +21,13 @@ Copyright F. Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_file_io.h>
 
+#include "util.h"
+
 /*----------------------------------------------*/
 
 typedef struct
 	{
-	apr_file_t *fd;
+	/*@null@*/ apr_file_t *fd;
 	const char *path;
 	apr_size_t size;
 	} OFILE;
@@ -33,9 +35,9 @@ typedef struct
 /*----------------------------------------------*/
 
 void file_init(void);
-int file_exists(const char *path);
-int file_rename(const char *oldpath,const char *newpath);
-int file_delete(const char *path);
+BOOL file_exists(const char *path);
+BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal);
+BOOL file_delete(const char *path, BOOL fatal);
 OFILE *file_create(const char *path, apr_int32_t mode);
 OFILE *file_open_for_append(const char *path, apr_int32_t mode);
 void file_write(OFILE *fp, const char *buf, apr_size_t size);

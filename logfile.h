@@ -20,16 +20,20 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
-/*----------------------------------------------*/
-
-typedef enum { CANNOT_ROTATE, CAN_ROTATE } rotate_flag;
+#include "util.h"
 
 /*----------------------------------------------*/
 
-extern void logfile_init(const char *path,apr_off_t maxsize_arg,apr_fileperms_t mode);
+#define	CANNOT_ROTATE	NO
+#define CAN_ROTATE		YES
+
+/*----------------------------------------------*/
+
+extern void logfile_init(const char *path,apr_off_t maxsize_arg
+	,apr_fileperms_t mode, int keep_count);
 extern void logfile_shutdown(void);
 extern void logfile_write(const char *buf, apr_size_t size
-	,rotate_flag can_rotate);
+	,BOOL can_rotate);
 
 /*----------------------------------------------*/
 

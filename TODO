@@ -1,10 +1,11 @@
 
 * create directories when needed
 
-* Integrate cronlog features
+* Integrate cronolog features
 
 * Integrate strftime features
 
 * Keep file names in a status file along with the directories we had to create
 
-* SIGPIPE support (TBD)
+* Support writing to a named pipe (fifo) with a dedicated option (does not
+  create file, no rotation,...).

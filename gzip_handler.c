@@ -62,7 +62,7 @@ static OFILE *outfp=(OFILE *)0;
 /*----------------------------------------------*/
 
 static int gzip_get_comp_level(const char *clevel);
-static void gzip_init(const char *clevel);
+static void gzip_init(/*@null@*/ const char *clevel);
 static void gzip_start(OFILE *fp);
 static void gzip_end(void);
 static void gzip_predict_size(apr_size_t *size);
@@ -127,7 +127,7 @@ static void gzip_end()
 {
 int status;
 
-while(1)
+while(YES)
 	{
 	RESET_OUTPUT_BUFFER();
 	status=deflate(&zs,Z_FINISH);
@@ -137,13 +137,13 @@ while(1)
 	if (status==Z_STREAM_END) break;
 	}
 
-if ((zs.total_in > 100000) && zs.total_out)
+if ((zs.total_in > 100000) && (zs.total_out!=0))
 	{
 	compress_ratio=zs.total_in/zs.total_out;
 	if (compress_ratio==0) compress_ratio=1; /* Should never happen, but... */
 	}
 
-deflateEnd(&zs);
+(void)deflateEnd(&zs);
 outfp=NULL;
 }
 
@@ -158,9 +158,9 @@ static void gzip_predict_size(apr_size_t *sizep)
 
 static void gzip_compress_and_write(const char *buf, apr_size_t size)
 {
-zs.next_in=(char *)buf;
-zs.avail_in=size;
-while (zs.avail_in)
+zs.next_in=(unsigned char *)buf;
+zs.avail_in=(uInt)size;
+while (zs.avail_in != 0)
 	{
 	RESET_OUTPUT_BUFFER();
 	if (deflate(&zs,Z_NO_FLUSH)!=Z_OK) FATAL_ERROR("Cannot compress data");

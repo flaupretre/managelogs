@@ -46,44 +46,49 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-int debug_toggle=0;
+BOOL debug_toggle=NO;
 
 /*----------------------------------------------*/
 
-void fatal_error_1(const char *msg, const char *arg)
+void fatal_error_2(const char *msg, const char *arg1, const char *arg2)
 {
 fprintf(stderr,"*** Fatal Error : ");
-fprintf(stderr,msg,arg);
+fprintf(stderr,msg,arg1,arg2);
 fprintf(stderr,"\n");
 exit(1);
 }
 
 /*----------------------------------------------*/
 
-void *allocate(void *p, size_t size)
+void *allocate(const void *p, size_t size)
 {
-if (p)
+void *p2;
+
+p2=(void *)p; /* Avoids compile warnings for const/non-const declarations */
+
+if (p2)
 	{
 	if (size)
 		{
-		p=realloc(p,size);
-		if (!p) FATAL_ERROR("realloc error");
+		p2=realloc(p2,size);
+		if (!p2) FATAL_ERROR("realloc error");
 		}
 	else
 		{
-		free(p);
-		p=NULL;
+		free(p2);
+		p2=NULL;
 		}
 	}
 else
 	{
 	if (size)
 		{
-		p=malloc(size);
-		if (!p) FATAL_ERROR("malloc error");
+		p2=malloc(size);
+		if (!p2) FATAL_ERROR("malloc error");
 		}
 	}
-return p;
+
+return p2;
 }	
 
 /*----------------------------------------------*/
@@ -119,9 +124,9 @@ return result;
 
 /*----------------------------------------------*/
 
-extern void debug_on(void)
+void set_debug(BOOL toggle)
 {
-debug_toggle=1;
+debug_toggle=toggle;
 }
 
 /*----------------------------------------------*/
@@ -131,7 +136,7 @@ void change_id(const char *string)
 char buf[64],*group;
 uid_t uid;
 gid_t gid;
-int gid_set;
+BOOL gid_set;
 struct passwd *pp;
 struct group *gp;
 
@@ -139,7 +144,7 @@ if (strlen(string) >= sizeof(buf))
 	FATAL_ERROR_1("ID string too long (%s)",string);
 strcpy(buf,string);
 
-gid_set=0;
+gid_set=NO;
 if ((group=strchr(buf,':'))!=NULL) *(group++)='\0';
 
 if (isdigit(*buf))
@@ -152,7 +157,7 @@ else
 		FATAL_ERROR_1("Cannot convert username to uid (%s)",buf);
 	uid=pp->pw_uid;
 	gid=pp->pw_gid;
-	gid_set=1;
+	gid_set=YES;
 	}
 
 if (group)
@@ -168,7 +173,7 @@ if (group)
 			FATAL_ERROR_1("Cannot convert group name to gid (%s)",group);
 		gid=gp->gr_gid;
 		}
-	gid_set=1;
+	gid_set=YES;
 	}
 
 if (gid_set)
