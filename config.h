@@ -18,6 +18,9 @@ Copyright F. Laupretre (francois@tekwire.net)
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <apr.h>
 
 #if APR_HAVE_UNISTD_H
@@ -38,11 +41,21 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+#define MANAGELOGS_VERSION	"1.0b1"
+
+/*----------------------------------------------*/
+
 #ifndef MAX_PATH
 #define MAX_PATH		1024
 #endif
 
 #define BUFSIZE 65536
+
+/* Default permissions for log files that are created */
+/* Warning : APR flags are not the same as Unix perms. APR flags are set on
+4 bits instead of 3, so we read the value as an hex value */
+
+#define LOGFILE_MODE	0x644
 
 /*----------------------------------------------*/
 #endif	/* __CONFIG_H */

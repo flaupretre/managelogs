@@ -20,9 +20,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
-/*----------------------------------------------*/
-
-extern void logfile_write_bin_raw(const char *buf, apr_size_t size);
+#include "file.h"
 
 /*----------------------------------------------*/
 
@@ -38,7 +36,7 @@ typedef struct
 	char *name;
 	char *suffix;
 	void (*init)(const char *clevel);
-	void (*start)(void);
+	void (*start)(OFILE *fp);
 	void (*end)();
 	void (*predict_size)(apr_size_t *size);
 	void (*compress_and_write)(const char *buf, apr_size_t size);
@@ -54,4 +52,4 @@ extern char *compress_handler_list(void);
 extern int init_compress_handler_from_arg(const char *arg);
 
 /*----------------------------------------------*/
-#endif
+#endif	/* __COMPRESS_H */

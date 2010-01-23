@@ -32,6 +32,7 @@ TARGETS = managelogs
 
 OBJS = managelogs.o \
 	logfile.o \
+	file.o \
 	util.o \
 	compress.o \
 	gzip_handler.o \

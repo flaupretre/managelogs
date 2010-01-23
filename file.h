@@ -15,47 +15,34 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __UTIL_H
-#define __UTIL_H
+#ifndef __FILE_H
+#define __FILE_H
 
 #include <apr.h>
-
-#include "config.h"
-
-/*----------------------------------------------*/
-
-#define FATAL_ERROR(_msg)		{ \
-								fatal_error_1(_msg,NULL); \
-								}
-
-#define FATAL_ERROR_1(_msg,_arg) { \
-								fatal_error_1(_msg,_arg); \
-								}
-
-#define DEBUG(_fmt)		{\
-						if (debug_toggle) printf("> " _fmt "\n"); \
-						}
-
-#define DEBUG1(_fmt,_a1)		{\
-						if (debug_toggle) printf("> " _fmt "\n",_a1); \
-						}
-
-#define DEBUG2(_fmt,_a1,_a2)		{\
-						if (debug_toggle) printf("> " _fmt "\n",_a1,_a2); \
-						}
+#include <apr_file_io.h>
 
 /*----------------------------------------------*/
 
-extern int debug_toggle;
+typedef struct
+	{
+	apr_file_t *fd;
+	const char *path;
+	apr_size_t size;
+	} OFILE;
 
 /*----------------------------------------------*/
 
-extern void *allocate(void *p, unsigned int size);
-extern void *duplicate(const char *string);
-extern void fatal_error_1(const char *msg, const char *arg);
-extern apr_off_t convert_size_string(const char *str);
-extern void debug_on(void);
-extern void change_id(const char *string);
+void file_init(void);
+int file_exists(const char *path);
+int file_rename(const char *oldpath,const char *newpath);
+int file_delete(const char *path);
+OFILE *file_create(const char *path, apr_int32_t mode);
+OFILE *file_open_for_append(const char *path, apr_int32_t mode);
+void file_write(OFILE *fp, const char *buf, apr_size_t size);
+void file_write_string(OFILE *fp, const char *buf);
+void file_write_string_nl(OFILE *fp, const char *buf);
+OFILE *file_close(OFILE *fp);
 
 /*----------------------------------------------*/
-#endif	/* __UTIL_H */
+#endif	/* __FILE_H */
+

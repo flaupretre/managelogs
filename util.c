@@ -15,7 +15,18 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include <unistd.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/types.h>
+
 #include <apr.h>
+
+#if APR_HAVE_STRING_H
+#include <string.h>
+#endif
 
 #if APR_HAVE_STDLIB_H
 #include <stdlib.h>
@@ -77,6 +88,18 @@ return p;
 
 /*----------------------------------------------*/
 
+void *duplicate(const char *string)
+{
+void *p;
+size_t size;
+
+p=allocate(NULL,size=(strlen(string)+1));
+memcpy(p,string,size);
+return p;
+}
+
+/*----------------------------------------------*/
+
 apr_off_t convert_size_string(const char *str)
 {
 char c;
@@ -99,6 +122,62 @@ return result;
 extern void debug_on(void)
 {
 debug_toggle=1;
+}
+
+/*----------------------------------------------*/
+
+void change_id(const char *string)
+{
+char buf[64],*group;
+uid_t uid;
+gid_t gid;
+int gid_set;
+struct passwd *pp;
+struct group *gp;
+
+if (strlen(string) >= sizeof(buf))
+	FATAL_ERROR_1("ID string too long (%s)",string);
+strcpy(buf,string);
+
+gid_set=0;
+if ((group=strchr(buf,':'))!=NULL) *(group++)='\0';
+
+if (isdigit(*buf))
+	{
+	if (sscanf(buf,"%d",&uid)!=1) FATAL_ERROR_1("Invalid uid (%s)",buf);
+	}
+else
+	{
+	if ((pp=getpwnam(buf))==NULL)
+		FATAL_ERROR_1("Cannot convert username to uid (%s)",buf);
+	uid=pp->pw_uid;
+	gid=pp->pw_gid;
+	gid_set=1;
+	}
+
+if (group)
+	{
+	if (isdigit(*group))
+		{
+		if (sscanf(group,"%d",&gid)!=1)
+			FATAL_ERROR_1("Invalid gid (%s)",group);
+		}
+	else
+		{
+		if ((gp=getgrnam(group))==NULL)
+			FATAL_ERROR_1("Cannot convert group name to gid (%s)",group);
+		gid=gp->gr_gid;
+		}
+	gid_set=1;
+	}
+
+if (gid_set)
+	{
+	if (setgid(gid))
+		FATAL_ERROR_1("Cannot change effective group ID to %d",(char *)gid);
+	}
+
+if (setuid(uid)) FATAL_ERROR_1("Cannot change effective user ID to %d",(char *)uid);
 }
 
 /*----------------------------------------------*/

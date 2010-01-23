@@ -7,3 +7,4 @@
 
 * Keep file names in a status file along with the directories we had to create
 
+* SIGPIPE support (TBD)

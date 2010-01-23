@@ -30,6 +30,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 #endif
 
 #include "compress.h"
+#include "file.h"
 #include "util.h"
 
 #include "gzip_handler.h"
@@ -37,6 +38,12 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+static OFILE *outfp=(OFILE *)0;
+
+/*----------------------------------------------*/
+
+static void plain_start(OFILE *fp);
+static void plain_end(void);
 static void plain_compress_and_write(const char *buf, apr_size_t size);
 
 /*----------------------------------------------*/
@@ -46,8 +53,8 @@ static COMPRESS_HANDLER plain_handler=
 	NULL,						/* name */
 	NULL,						/* suffix */
 	NULL,						/* init */
-	NULL,						/* start */
-	NULL,						/* end */
+	plain_start,				/* start */
+	plain_end,					/* end */
 	NULL,						/* predict_size */
 	plain_compress_and_write	/* compress_and_write */
 	};
@@ -65,9 +72,23 @@ COMPRESS_HANDLER *compress_handler=&plain_handler;	/* Global */
 
 /*----------------------------------------------*/
 
+static void plain_start(OFILE *fp)
+{
+outfp=fp;
+}
+
+/*----------------------------------------------*/
+
+static void plain_end()
+{
+outfp=NULL;
+}
+
+/*----------------------------------------------*/
+
 static void plain_compress_and_write(const char *buf, apr_size_t size)
 {
-logfile_write_bin_raw(buf,size);
+file_write(outfp,buf,size);
 }
 
 /*----------------------------------------------*/

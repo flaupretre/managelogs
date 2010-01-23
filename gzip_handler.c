@@ -32,6 +32,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include "compress.h"
 #include "gzip_handler.h"
+#include "file.h"
 #include "util.h"
 
 /*----------------------------------------------*/
@@ -41,15 +42,14 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define DEFAULT_COMPRESS_RATIO	10
 
 #define RESET_OUTPUT_BUFFER()	{ \
-								zs.next_out=(Bytef *)compbuf; \
-								zs.avail_out=BUFSIZE; \
-								}
+				zs.next_out=(Bytef *)compbuf; \
+				zs.avail_out=BUFSIZE; \
+				}
 
 #define WRITE_OUTPUT_BUFFER()	{ \
-								if (zs.avail_out != BUFSIZE) \
-									logfile_write_bin_raw(compbuf \
-										,BUFSIZE-zs.avail_out); \
-								}
+				if (zs.avail_out != BUFSIZE) \
+					file_write(outfp,compbuf,BUFSIZE-zs.avail_out); \
+				}
 
 /*----------------------------------------------*/
 
@@ -57,12 +57,13 @@ static z_stream zs;
 static char compbuf[BUFSIZE];
 static uLong compress_ratio=DEFAULT_COMPRESS_RATIO;
 static int compress_level;
+static OFILE *outfp=(OFILE *)0;
 
 /*----------------------------------------------*/
 
 static int gzip_get_comp_level(const char *clevel);
 static void gzip_init(const char *clevel);
-static void gzip_start(void);
+static void gzip_start(OFILE *fp);
 static void gzip_end(void);
 static void gzip_predict_size(apr_size_t *size);
 static void gzip_compress_and_write(const char *buf, apr_size_t size);
@@ -90,7 +91,6 @@ if (!clevel) return Z_DEFAULT_COMPRESSION;
 
 switch (c=(*clevel))
 	{
-	case 'd': return Z_DEFAULT_COMPRESSION;
 	case 'f': return Z_BEST_SPEED;
 	case 'b': return Z_BEST_COMPRESSION;
 	default:
@@ -109,8 +109,10 @@ compress_level=gzip_get_comp_level(clevel);
 
 /*----------------------------------------------*/
 
-static void gzip_start()
+static void gzip_start(OFILE *fp)
 {
+outfp=fp;
+
 zs.zalloc=(alloc_func)Z_NULL;
 zs.zfree=(free_func)Z_NULL;
 
@@ -142,6 +144,7 @@ if ((zs.total_in > 100000) && zs.total_out)
 	}
 
 deflateEnd(&zs);
+outfp=NULL;
 }
 
 /*----------------------------------------------*/

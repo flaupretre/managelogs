@@ -20,23 +20,16 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
-#include "compress.h"
-
 /*----------------------------------------------*/
 
 typedef enum { CANNOT_ROTATE, CAN_ROTATE } rotate_flag;
 
 /*----------------------------------------------*/
 
-extern void logfile_flush(void);
-extern void logfile_init(const char *path,apr_off_t maxsize_arg);
+extern void logfile_init(const char *path,apr_off_t maxsize_arg,apr_fileperms_t mode);
 extern void logfile_shutdown(void);
-extern void logfile_rotate(void);
-extern apr_off_t logfile_size(void);
-extern void logfile_write_bin_raw(const char *buf, apr_size_t size);
-extern void logfile_write_bin(const char *buf, apr_size_t size
+extern void logfile_write(const char *buf, apr_size_t size
 	,rotate_flag can_rotate);
-extern void logfile_write(const char *str);
 
 /*----------------------------------------------*/
 

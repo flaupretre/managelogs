@@ -36,6 +36,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include "compress.h"
 #include "bzip2_handler.h"
+#include "file.h"
 #include "util.h"
 
 /*----------------------------------------------*/
@@ -45,15 +46,14 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define DEFAULT_COMPRESS_RATIO	20
 
 #define RESET_OUTPUT_BUFFER()	{ \
-								bzs.next_out=compbuf; \
-								bzs.avail_out=BUFSIZE; \
-								}
+				bzs.next_out=compbuf; \
+				bzs.avail_out=BUFSIZE; \
+				}
 
 #define WRITE_OUTPUT_BUFFER()	{ \
-								if (bzs.avail_out != BUFSIZE) \
-									logfile_write_bin_raw(compbuf \
-										,BUFSIZE-bzs.avail_out); \
-								}
+				if (bzs.avail_out != BUFSIZE) \
+					file_write(outfp,compbuf,BUFSIZE-bzs.avail_out); \
+				}
 
 /*----------------------------------------------*/
 
@@ -61,12 +61,13 @@ static bz_stream bzs;
 static char compbuf[BUFSIZE];
 static unsigned int compress_ratio=DEFAULT_COMPRESS_RATIO;
 static int compress_level;
+static OFILE *outfp=(OFILE *)0;
 
 /*----------------------------------------------*/
 
 static int bzip2_get_comp_level(const char *clevel);
 static void bzip2_init(const char *clevel);
-static void bzip2_start(void);
+static void bzip2_start(OFILE *fp);
 static void bzip2_end(void);
 static void bzip2_predict_size(apr_size_t *size);
 static void bzip2_compress_and_write(const char *buf, apr_size_t size);
@@ -113,8 +114,10 @@ compress_level=bzip2_get_comp_level(clevel);
 
 /*----------------------------------------------*/
 
-static void bzip2_start()
+static void bzip2_start(OFILE *fp)
 {
+outfp=fp;
+
 bzs.bzalloc=NULL;
 bzs.bzfree=NULL;
 
@@ -147,6 +150,7 @@ if ((!bzs.total_in_hi32) && (!bzs.total_out_hi32)
 	}
 
 BZ2_bzCompressEnd(&bzs);
+outfp=NULL;
 }
 
 /*----------------------------------------------*/

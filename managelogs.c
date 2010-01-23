@@ -34,17 +34,12 @@ Copyright F. Laupretre (francois@tekwire.net)
 #endif
 
 #include <apr_file_io.h>
-#include <apr_file_info.h>
-#include <apr_signal.h>
 #include <apr_getopt.h>
 
 #include "logfile.h"
 #include "compress.h"
 #include "util.h"
-
-/*----------------------------------------------*/
-
-#define MANAGELOGS_VERSION	"1.0b1"
+#include "config.h"
 
 /*----------------------------------------------*/
 
@@ -55,10 +50,12 @@ static apr_getopt_t *opt_s;
 static apr_getopt_option_t long_options[]=
 	{
 	{"help",'h',0 },
-	{"compress",'c',1 },
-	{"level",'l',1 },
-	{"size",'s',1 },
 	{"debug",'d',0 },
+	{"compress",'c',1 },
+	{"size",'s',1 },
+	{"mode",'m',1 },
+	{"user",'u',1 },
+	{"version",'V',0 },
 	{"",'\0', 0 }
 	};
 
@@ -66,8 +63,6 @@ static apr_getopt_option_t long_options[]=
 
 static void usage(int rc);
 static void shutdown_proc(void);
-static void sighup_handler(int signum);
-static void sigusr1_handler(int signum);
 
 /*----------------------------------------------*/
 
@@ -87,19 +82,29 @@ fprintf(fd,"\
 \n\
 Options :\n\
 \n\
- -h|--help            Display this message\n\
+ -h|--help           Display this message\n\
 \n\
- -d|--debug           Display debug messages to stdout\n\
+ -d|--debug          Display debug messages to stdout\n\
  \n\
- -c|--compress <comp[:level]>  Activate compression\n\
+ -c|--compress <comp>[:<level>]  Activate compression\n\
                         <comp> is one of : %s\n\
-						<level> is one of {0123456789bf} (f=fast, b=best)\n\
+                        <level> is one of {0123456789bf} (f=fast, b=best)\n\
                         Default level depends on compression engine\n\
 \n\
  -s|--size <size>    Set the maximal size log files can take on disk\n\
                         <size> is a numeric value optionnally followed\n\
-                        by one of 'k' (kilo), 'm' (mega), or 'g' (giga)\n\
-                        Default: 0 => no limit\n\n",clist);
+                        by 'K' (Kilo), 'M' (Mega), or 'G' (Giga)\n\
+                        Default: no limit\n\
+\n\
+ -m|--mode <mode>    File mode for log files (Default = %x)\n\
+                        <mode> is a numeric argument (octal)\n\
+\n\
+ -u|--user <id>      Program runs with this user ID\n\
+                        <id> = <uid>[:<gid>]\n\
+                        <uid> and <gid> are user/group names or numeric ids\n\
+\n\
+ -V|--version        Print version and exit\n\
+\n",clist,LOGFILE_MODE);
 
 allocate(clist,0);
 
@@ -117,32 +122,6 @@ apr_terminate();
 
 /*----------------------------------------------*/
 
-static void sighup_handler(int signum)
-{
-static int running=0;
-
-if (running) return;
-
-running=1;
-logfile_rotate();
-running=0;
-}
-
-/*----------------------------------------------*/
-
-static void sigusr1_handler(int signum)
-{
-static int running=0;
-
-if (running) return;
-
-running=1;
-logfile_flush();
-running=0;
-}
-
-/*----------------------------------------------*/
-
 int main (int argc, char * argv[])
 {
 apr_off_t maxsize,limit;
@@ -152,6 +131,7 @@ char buf[BUFSIZE],*path;
 apr_status_t status;
 int optch;
 const char *optarg;
+apr_fileperms_t mode;
 
 cmd=argv[0];
 
@@ -162,6 +142,7 @@ apr_pool_create(&pool, NULL);
 /*-- Get options and arg */
 
 maxsize=limit=0;
+mode=LOGFILE_MODE;
 
 (void)apr_getopt_init(&opt_s,pool,argc,(char const * const *)argv);
 while (1)
@@ -181,8 +162,8 @@ while (1)
 		case 'c':
 			if (!init_compress_handler_from_arg(optarg))
 				{
-				usage(1);
-				FATAL_ERROR_1("Invalid compression arg : %s",optarg);
+				usage(-1);
+				FATAL_ERROR_1("Invalid compression spec : %s",optarg);
 				}
 			break;
 
@@ -195,6 +176,23 @@ while (1)
 				}
 			limit=maxsize/2;
 			break;
+
+		case 'V':
+			printf(MANAGELOGS_VERSION "\n");
+			exit(0);
+			break;
+
+		case 'm':
+			if (sscanf(optarg,"%x",&mode)!=1)
+				{
+				usage(-1);
+				FATAL_ERROR_1("Invalid mode : %s",optarg);
+				}
+			break;
+
+		case 'u':
+			change_id(optarg);
+			break;
 		}
 	}
 
@@ -203,12 +201,7 @@ if ((!path)||(!(*path))||(argv[opt_s->ind+1])) usage(1);
 
 /* Init logfile */
 
-logfile_init(path,maxsize);
-
-/* Register signal handlers */
-
-(void)apr_signal(SIGHUP,sighup_handler);
-(void)apr_signal(SIGUSR1,sigusr1_handler);
+logfile_init(path,maxsize,mode);
 
 /* Read by blocks of at most <limit> bytes */
 
@@ -229,7 +222,7 @@ for (;;)
 	if ((status=apr_file_read(f_stdin, buf, &nread)) != APR_SUCCESS)
 		exit((status==APR_EOF) ? 0 :3);
 
-	logfile_write_bin(buf,nread,CAN_ROTATE);
+	logfile_write(buf,nread,CAN_ROTATE);
 	}
 
 /* return prevents compiler warnings */
