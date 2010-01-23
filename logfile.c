@@ -1,32 +1,51 @@
+/*=============================================================================
 
-#include "logfile.h"
+Copyright F. Laupretre (francois@tekwire.net)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+=============================================================================*/
 
 #include <apr.h>
+
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#if APR_HAVE_STRING_H
+#include <string.h>
+#endif
+
+#if APR_HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 #include <apr_file_io.h>
 #include <apr_file_info.h>
 
-#include <zlib.h>
+#include "logfile.h"
+#include "plain.h"
+#include "gz.h"
+#include "error.h"
 
 /*----------------------------------------------*/
 
-#define RESET_OUTPUT_BUFFER()	{ \
-								zs.next_out=compbuf; \
-								zs.avail_out=BUFSIZE; \
-								}
-
-#define WRITE_OUTPUT_BUFFER(_can_rotate)	{ \
-								if (zs.avail_out != BUFSIZE) \
-									logfile_write_bin_raw(compbuf \
-										,BUFSIZE-zs.avail_out,_can_rotate); \
-								}
-
-#define FATAL_ERROR(_msg)		{ \
-								fatal_error_1(_msg,NULL); \
-								}
-
-#define FATAL_ERROR_1(_msg,_arg) { \
-								fatal_error_1(_msg,_arg); \
-								}
+#ifndef MAX_PATH
+#define MAX_PATH		1024
+#endif
 
 #define NO_INTR_START()			{ \
 								intr_flag++; \
@@ -50,6 +69,8 @@
 
 #define BUFSIZE 65536
 
+#define COMPRESS(_action,_args)	compress_plugin->_action _args;
+
 /*----------------------------------------------*/
 
 static apr_file_t *logfd = NULL;
@@ -57,17 +78,12 @@ static char logpath[MAX_PATH],oldpath[MAX_PATH],pidpath[MAX_PATH];
 static apr_off_t logsize;
 static apr_pool_t *pool;
 static int compress_toggle,compress_level;
-static z_stream zs;
 static int logfile_is_open=0;
-static char compbuf[BUFSIZE];
 static apr_off_t maxsize,limit;
 static int intr_flag=0;
 static int rotate_requested=0;
 static int flush_requested=0;
-
-/*----------------------------------------------*/
-
-extern void fatal_error_1(char *msg, char *arg);
+static COMPRESS_DEFS *compress_plugin=&plain_compress_defs;
 
 /*----------------------------------------------*/
 
@@ -75,11 +91,10 @@ static void create_pid_file(void);
 static void destroy_pid_file(void);
 static void logfile_open(void);
 static void logfile_close(void);
-static void logfile_write_bin_raw(char *buf, apr_size_t size
-	,rotate_flag can_rotate);
 static void logfile_do_flush(void);
 static void logfile_do_flush(void);
 static void logfile_do_rotate(void);
+static int limit_exceeded(apr_size_t size);
 
 /*----------------------------------------------*/
 
@@ -87,7 +102,7 @@ static void create_pid_file()
 {
 static apr_file_t *fd;
 char buf[32];
-int nb;
+apr_size_t nb;
 
 sprintf(pidpath,"%s.pid",logpath);
 fd=NULL;
@@ -95,7 +110,7 @@ apr_file_open(&fd,pidpath,APR_WRITE|APR_CREATE|APR_TRUNCATE,APR_OS_DEFAULT,pool)
 if (!fd) FATAL_ERROR_1("Cannot open pid file (%s)",pidpath);
 
 sprintf(buf,"%lu\n",(unsigned long)getpid());
-nb=strlen(buf);
+nb=(apr_size_t)strlen(buf);
 apr_file_write(fd, buf, &nb);
 apr_file_close(fd);
 }
@@ -131,25 +146,21 @@ flush_requested=0;
 	
 /*----------------------------------------------*/
 
-void logfile_init(char *path,int compress_toggle_value,int compress_level_value
-	,apr_off_t maxsize_value)
+void logfile_init(char *path,int compress_toggle_arg,int compress_level_arg
+	,apr_off_t maxsize_arg)
 {
 NO_INTR_START();
 
 apr_pool_create(&pool, NULL);
 
-compress_toggle=compress_toggle_value;
-compress_level=compress_level_value;
-maxsize=maxsize_value;
+compress_toggle=compress_toggle_arg;
+compress_level=compress_level_arg;
+maxsize=maxsize_arg;
 limit=maxsize/2;
 
 strcpy(logpath,path);
 sprintf(oldpath,"%s.old",path);
-if (compress_toggle)
-	{
-	strcat(logpath,".gz");
-	strcat(oldpath,".gz");
-	}
+COMPRESS(compute_paths,(logpath,oldpath));
 
 create_pid_file();
 
@@ -181,14 +192,7 @@ if (logfile_is_open) return;
 
 NO_INTR_START();
 
-if (compress_toggle)
-	{
-	zs.zalloc=(alloc_func)Z_NULL;
-	zs.zfree=(free_func)Z_NULL;
-	if (deflateInit2(&zs,compress_level,Z_DEFLATED,31,8
-		,Z_DEFAULT_STRATEGY)!=Z_OK)
-			FATAL_ERROR_1("Cannot open log file (%s)",logpath);
-	}
+COMPRESS(start,(compress_level));
 
 apr_file_open(&logfd,logpath,APR_WRITE|APR_CREATE|APR_APPEND
 	,APR_OS_DEFAULT,pool);
@@ -211,14 +215,7 @@ if (!logfile_is_open) return;
 
 NO_INTR_START();
 
-if (compress_toggle)
-	{
-	RESET_OUTPUT_BUFFER();
-	if (deflate(&zs,Z_FINISH)!=Z_STREAM_END)
-		FATAL_ERROR("Cannot flush compressed data\n");
-	WRITE_OUTPUT_BUFFER(CANNOT_ROTATE);
-	deflateEnd(&zs);
-	}
+COMPRESS(end,());
 
 apr_file_close(logfd);
 
@@ -279,16 +276,13 @@ return logsize;
 
 /*----------------------------------------------*/
 
-static void logfile_write_bin_raw(char *buf, apr_size_t size
-	, rotate_flag can_rotate)
+void logfile_write_bin_raw(char *buf, apr_size_t size)
 {
 apr_size_t nwrite;
 
 if (!size) return;
 
 NO_INTR_START();
-
-if (can_rotate && limit && ((logsize+size) > limit)) logfile_do_rotate();
 
 nwrite=size;
 apr_file_write(logfd, buf, &nwrite);
@@ -301,22 +295,24 @@ NO_INTR_END();
 
 /*----------------------------------------------*/
 
+static int limit_exceeded(apr_size_t size)
+{
+if (!limit) return 0;
+
+COMPRESS(predict_compressed_size,(&size));
+
+return ((logsize+size) > limit);
+}
+
+/*----------------------------------------------*/
+
 void logfile_write_bin(char *buf, apr_size_t size, rotate_flag can_rotate)
 {
 if (!size) return;
 
-if (compress_toggle)
-	{
-	zs.next_in=buf;
-	zs.avail_in=size;
-	while (zs.avail_in)
-		{
-		RESET_OUTPUT_BUFFER();
-		if (deflate(&zs,Z_NO_FLUSH)!=Z_OK) FATAL_ERROR("Cannot compress data");
-		WRITE_OUTPUT_BUFFER(can_rotate);
-		}
-	}
-else logfile_write_bin_raw(buf,size,can_rotate);
+if (can_rotate && limit_exceeded(size)) logfile_do_rotate();
+
+COMPRESS(compress_and_write,(buf,size));
 }
 
 /*----------------------------------------------*/
@@ -325,9 +321,9 @@ void logfile_write(char *str)
 {
 apr_size_t len;
 
-NO_INTR_START();
-
 len=(apr_size_t)strlen(str);
+
+NO_INTR_START();
 
 logfile_write_bin(str,len,CAN_ROTATE);
 logfile_write_bin("\n",1,CANNOT_ROTATE);

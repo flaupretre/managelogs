@@ -14,7 +14,7 @@ CFLAGS = -g -Wall -pthread
 
 TARGETS = managelogs
 
-OBJS = managelogs.o logfile.o
+OBJS = managelogs.o logfile.o error.o gz.o plain.o
 
 INCLUDES = -I $(APACHE)/include/apr-0
 
@@ -31,7 +31,7 @@ all: $(TARGETS)
 clean:
 	/bin/rm -f $(TARGETS) $(OBJS)
 
-install:
+install: $(TARGETS)
 	cp $(TARGETS) $(INSTALL_DIR)
 
 managelogs: $(OBJS)

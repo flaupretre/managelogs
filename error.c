@@ -15,27 +15,27 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __LOGFILE_H
-#define __LOGFILE_H
-
 #include <apr.h>
 
-/*----------------------------------------------*/
-
-typedef enum { CANNOT_ROTATE, CAN_ROTATE } rotate_flag;
-
-/*----------------------------------------------*/
-
-extern void logfile_flush(void);
-extern void logfile_init(char *path,int compress,int compress_level
-	,apr_off_t maxsize);
-extern void logfile_shutdown(void);
-extern void logfile_rotate(void);
-extern apr_off_t logfile_size(void);
-extern void logfile_write_bin_raw(char *buf, apr_size_t size);
-extern void logfile_write_bin(char *buf, apr_size_t size, rotate_flag can_rotate);
-extern void logfile_write(char *str);
-
-/*----------------------------------------------*/
-
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
+
+#if APR_HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
+#include "error.h"
+
+/*----------------------------------------------*/
+
+void fatal_error_1(char *msg, char *arg)
+{
+fprintf(stderr,"*** Fatal Error : ");
+fprintf(stderr,msg,arg);
+fprintf(stderr,"\n");
+exit(1);
+}
+
+/*----------------------------------------------*/
+

@@ -1,39 +1,70 @@
-/*
-===============================================================================
+/*=============================================================================
+
+Copyright F. Laupretre (francois@tekwire.net)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+=============================================================================*/
+
+/*=============================================================================
 
 Gestion des logs Apache.
 
-Auteur : F. Laupretre (OCT-2008)
-
-Ce programme derive de rotatelogs.
+Ce programme est une alternative a rotatelogs.
 
 Il gere la rotation des logs et la purge des anciens fichiers sur la base
-d'une taille maximale.
+d'une taille maximale occupee sur le disque.
 
-Usage :	s'utilise dans une directive de log de type CustomLog, ErrorLog, etc
-sous la forme :
-	"|/<path absolu>/manage_logs <path log> <size>"
-ou <path log> est le path absolu du fichier log a creer
-et <size> est la taille maxi, eventuellement suffixee par 'm' ou 'k'.
+Usage :	s'utilise dans une directive de log de type CustomLog, ErrorLog, etc.
 
-Le fichier <path log> grossira donc jusqu'a (<size>/2), puis sera renomme
-en <path log>.old, l'ancien <path log>.old sera supprime, et un nouveau
-<path log> sera cree. Donc, on est sur que la taille totale des fichiers
-<path log> et <path log>.old ne depasse jamais <size>.
+Le fichier <path_log> grossira jusqu'a (<maxsize>/2), puis sera renomme
+en <path_log>.old, l'ancien <path_log>.old sera supprime, et un nouveau
+fichier <path_log> vide sera cree.
+On est donc sur que la taille totale des fichiers <path_log> et <path_log>.old
+ne depasse jamais <maxsize>.
 
-===============================================================================
-*/
+=============================================================================*/
 
-#include "global.h"
-#include "managelogs.h"
-#include "logfile.h"
+#include <apr.h>
+
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#if APR_HAVE_STRING_H
+#include <string.h>
+#endif
+
+#if APR_HAVE_STRINGS_H
+#include <strings.h>
+#endif
 
 #include <apr_file_io.h>
 #include <apr_file_info.h>
 #include <apr_signal.h>
 #include <apr_getopt.h>
 
+#include <zlib.h>
+
+#include "logfile.h"
+#include "error.h"
+
 /*----------------------------------------------*/
+
+#define MANAGELOGS_VERSION	"1.0b1"
 
 #define BUFSIZE		 65536
 
@@ -50,7 +81,7 @@ static apr_getopt_t *opt_s;
 static apr_getopt_option_t long_options[]=
 	{
 	{"help",'h',0 },
-	{"compress",'c',0 },
+	{"compress",'c',1 },
 	{"level",'l',1 },
 	{"size",'s',1 },
 	{"",'\0', 0 }
@@ -64,16 +95,6 @@ static void usage(int rc);
 static void shutdown_proc(void);
 static void sighup_handler(int signum);
 static void sigusr1_handler(int signum);
-
-/*----------------------------------------------*/
-
-void fatal_error_1(char *msg, char *arg)
-{
-fprintf(stderr,"*** Fatal Error : ");
-fprintf(stderr,msg,arg);
-fprintf(stderr,"\n");
-exit(1);
-}
 
 /*----------------------------------------------*/
 
@@ -100,9 +121,9 @@ static int get_compress_level(char c)
 {
 switch (c)
 	{
-	case 'd': return 6;
-	case 'f': return 1;
-	case 'b': return 9;
+	case 'd': return Z_DEFAULT_COMPRESSION;
+	case 'f': return Z_BEST_SPEED;
+	case 'b': return Z_BEST_COMPRESSION;
 	default:
 		if ((c<'1')||(c>'9')) usage(1);
 		return (int)(c-'0');
@@ -113,18 +134,22 @@ switch (c)
 
 static void usage(int rc)
 {
-fprintf(stderr,"\nUsage: %s [-h] [-c] [-l <level>] [-s <size>]\n\
+fprintf(rc ? stderr : stdout,"\
+managelogs %s\n\
+\nUsage: %s [options...] <path>\n\
 \n\
 Options :\n\
 \n\
- -h : display this message\n\
- -c : Activate compression\n\
- -l : set compression level\n\
-       Argument : one of {0123456789bdf} (d='default', f='fast', b='best')\n\
-       Default = 6\n\
- -s : Set max size.\n\
-       Argument : number optionnally suffixed with one of {kmg}\n\
-       Default: 0 => no size limit\n\n",cmd);
+ -h|--help           Display this message\n\
+ -c|--compress <compression> Activate compression\n\
+ -l|--level <level>  Set compression level\n\
+                        <level> is one of {0123456789bdf}\n\
+                        (d=default, f=fast, b=best)\n\
+ -s|--size <size>    Set the maximal size log files can take on disk\n\
+                        <size> is a numeric value optionnally followed\n\
+                        by one of 'k' (kilo), 'm' (mega), or 'g' (giga)\n\
+                        Default: 0 => no limit\n\
+\n",MANAGELOGS_VERSION,cmd);
 
 exit(rc);
 }
@@ -186,14 +211,14 @@ apr_pool_create(&pool, NULL);
 
 maxsize=limit=0;
 compress=0;
-compress_level=6;
+compress_level=Z_DEFAULT_COMPRESSION;
 
 (void)apr_getopt_init(&opt_s,pool,argc,(char const * const *)argv);
 while (1)
 	{
 	status=apr_getopt_long(opt_s,long_options,&optch,&optarg);
 	if (status==APR_EOF) break;
-	if (status != APR_SUCCESS) exit(1);
+	if (status != APR_SUCCESS) usage(1);
 	switch ((char)optch)
 		{
 		case 'h':
@@ -215,7 +240,7 @@ while (1)
 	}
 
 path=argv[opt_s->ind];
-if ((!path)||(!(*path))) usage(1);
+if ((!path)||(!(*path))||(argv[opt_s->ind+1]))usage(1);
 
 /* Init logfile */
 
@@ -234,10 +259,7 @@ if (limit && (limit < ntoread)) ntoread=limit;
 /* Open stdin for reading */
 
 if (apr_file_open_stdin(&f_stdin,pool) != APR_SUCCESS)
-	{
-	fprintf(stderr, "Unable to open stdin\n");
-	exit(1);
-	}
+	FATAL_ERROR("Cannot open stdin\n");
 
 /* Loop forever */
 
