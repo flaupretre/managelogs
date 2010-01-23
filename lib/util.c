@@ -23,6 +23,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <sys/types.h>
 
 #include <apr.h>
+#include <apr_file_io.h>
 
 #if APR_HAVE_STRING_H
 #include <string.h>
@@ -40,11 +41,22 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+PRIVATE_POOL
+
+/*----------------------------------------------*/
+
 void fatal_error_2(const char *msg, const char *arg1, const char *arg2)
 {
-fprintf(stderr,"*** Fatal Error : ");
-fprintf(stderr,msg,arg1,arg2);
-fprintf(stderr,"\n");
+apr_file_t *fd;
+
+(void)apr_file_open_stderr(&fd,_POOL);
+
+(void)apr_file_printf(fd,"*** Fatal Error : ");
+(void)apr_file_printf(fd,msg,arg1,arg2);
+(void)apr_file_printf(fd,"\n");
+
+(void)apr_file_close(fd);
+
 exit(1);
 }
 
@@ -86,12 +98,19 @@ return p2;
 
 void *duplicate(const char *string)
 {
-void *p;
-size_t size;
+return duplicate_mem(string,(apr_size_t)(strlen(string)+1));
+}
 
-if (!string) return NULL;
-p=allocate(NULL,size=(strlen(string)+1));
-memcpy(p,string,size);
+/*----------------------------------------------*/
+
+void *duplicate_mem(const void *source,apr_size_t size)
+{
+void *p;
+
+if ((!source)||(!size)) return NULL;
+
+p=allocate(NULL,size);
+memcpy(p,source,size);
 return p;
 }
 

@@ -82,6 +82,7 @@ extern void logmanager_flush(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);
 extern char *logmanager_compression_list(void);
 extern char *logmanager_version(void);
+extern void logmanager_display_stats(LOGMANAGER *mp);
 
 /*----------------------------------------------*/
 #endif	/* __LOGMANAGER_H */

@@ -15,52 +15,18 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __MANAGELOGS_H
+#define __MANAGELOGS_H
 
-#include <sys/types.h>
-#include <sys/stat.h>
 
-#include <apr.h>
+#define MANAGELOGS_VERSION	"1.0rc1"
 
-#if APR_HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if APR_HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#if APR_HAVE_STRING_H
-#include <string.h>
-#endif
-
-#if APR_HAVE_STRINGS_H
-#include <strings.h>
-#endif
+#define LOGFILE_MODE	0x644
 
 /*----------------------------------------------*/
 
-#ifndef _WIN32
-#define SYMLINK_SUPPORT
-#endif
-
-#define BUFSIZE 65536
-
-/* Size limits. We refuse sizes lower than these ones.
- Special case: the value '1' means 'lower limit' */
-
-#define GLOBAL_LOWER_LIMIT	(2*1024)
-
-#define FILE_LOWER_LIMIT	(1024)
-
-/* Default permissions */
-/* Warning : APR flags are not the same as Unix perms. APR flags are set on
-4 bits instead of 3, so we read the value as an hex value */
-
-#define PIDFILE_MODE	0x0644
-
-#define STATUSFILE_MODE	0x0644
+extern TIMESTAMP timestamp;
+extern int stats_toggle;
 
 /*----------------------------------------------*/
-#endif	/* __CONFIG_H */
+#endif	/* __MANAGELOGS_H */

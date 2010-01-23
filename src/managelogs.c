@@ -39,7 +39,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include "intr.h"
 #include "options.h"
-#include "lib/include/util.h"
+#include "util.h"
 
 /*----------------------------------------------*/
 
@@ -52,6 +52,8 @@ PRIVATE_POOL
 LOGMANAGER *mp=(LOGMANAGER *)0;
 
 char *cmd;
+TIMESTAMP timestamp=NOW;
+int stats_toggle=0;
 
 /*----------------------------------------------*/
 
@@ -63,7 +65,11 @@ static void shutdown_proc()
 {
 signal_shutdown();
 
-if (mp) logmanager_destroy(mp,NOW);
+if (mp)
+	{
+	if (stats_toggle) logmanager_display_stats(mp);
+	logmanager_destroy(mp,timestamp);
+	}
 
 apr_terminate();
 }
@@ -74,7 +80,7 @@ int main (int argc, char * argv[])
 {
 apr_file_t *f_stdin;
 apr_size_t nread,chunk_size;
-char buf[BUFSIZE];
+char buf[CHUNK_MAX];
 apr_status_t status;
 LOGMANAGER_OPTIONS_V1 *op;
 
@@ -90,9 +96,9 @@ op=get_options(argc,argv);
 
 /* Create and open log manager */
 
-mp=new_logmanager_v1(op,NOW);
+mp=new_logmanager_v1(op,timestamp);
 
-logmanager_open(mp,NOW);
+logmanager_open(mp,timestamp);
 
 signal_init();
 
@@ -122,7 +128,7 @@ for (;;)
 	if (status != APR_SUCCESS) exit(3);
 
 	NOINTR_START();
-	logmanager_write(mp,buf,nread,0,NOW);
+	logmanager_write(mp,buf,nread,0,timestamp);
 	NOINTR_END();
 	CHECK_EXEC_PENDING_ACTION();
 	}

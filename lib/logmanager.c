@@ -16,6 +16,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 =============================================================================*/
 
 #include <apr.h>
+#include <apr_signal.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
@@ -33,7 +34,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <strings.h>
 #endif
 
-#include <apr_signal.h>
 
 #include "include/logmanager.h"
 #include "include/config.h"
@@ -114,6 +114,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	(_mp)->last_time=_t; \
 	}
 
+#define STAT_COUNT_ITEM(_item)	mp->stats._item ## _count
+
+#define INCR_STAT_COUNT(_item)	{ STAT_COUNT_ITEM(_item)++; }
+
 /*----------------------------------------------*/
 
 static void _create_pid_file(LOGMANAGER *mp);
@@ -170,6 +174,7 @@ CHECK_MP();
 if (!IS_OPEN(mp)) return;
 
 DEBUG1(mp,1,"Flushing %s",mp->active.file->path);
+INCR_STAT_COUNT(flush);
 
 C_HANDLER(flush);
 }
@@ -222,24 +227,30 @@ _get_status_from_file(mp);
 /* Ensures that file limit is lower than global limit. If global limit is set
 * and file limit is not, file limit is set to global limit / 2 */
 
+mp->keep_count=opts->keep_count;
 mp->file_maxsize=opts->file_maxsize;
 mp->global_maxsize=opts->global_maxsize;
 
-if (mp->file_maxsize && (mp->file_maxsize < 51200))
-	FATAL_ERROR1("File limit cannot be less than 50 Kbytes (is %d)"
-		,mp->file_maxsize);
+if (mp->file_maxsize == 1) mp->file_maxsize=FILE_LOWER_LIMIT;
+if (mp->file_maxsize && (mp->file_maxsize < FILE_LOWER_LIMIT))
+	FATAL_ERROR2("File limit cannot be less than %d (is %d)"
+		,FILE_LOWER_LIMIT,mp->file_maxsize);
 
 if (mp->global_maxsize)
 	{
-	if (mp->global_maxsize < 102400)
-		FATAL_ERROR1("Global limit cannot be less than 100 Kbytes (is %d)"
-			,mp->global_maxsize);
+	if (mp->global_maxsize == 1) mp->global_maxsize=GLOBAL_LOWER_LIMIT;
+	if (mp->global_maxsize < GLOBAL_LOWER_LIMIT)
+		FATAL_ERROR2("Global limit cannot be less than %d (is %d)"
+			,GLOBAL_LOWER_LIMIT,mp->global_maxsize);
 	if (! mp->file_maxsize) mp->file_maxsize=mp->global_maxsize/2;
 	if (mp->global_maxsize < mp->file_maxsize)
 		FATAL_ERROR("Global limit cannot be less than file limit");
 	}
 
-mp->keep_count=opts->keep_count;
+/* Write back actual limits to the options struct */
+
+opts->file_maxsize=mp->file_maxsize;
+opts->global_maxsize=mp->global_maxsize;
 
 /*-- File creation mode */
 
@@ -384,6 +395,7 @@ if (!lp) return;
 if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 	|| ((num!=0) && (mp->flags & LMGR_BACKUP_LINKS)))
 	{
+	INCR_STAT_COUNT(link);
 	lname=_link_name(mp,num);
 	if (mp->flags & LMGR_HARD_LINKS)
 		{
@@ -416,6 +428,7 @@ static void _refresh_backup_links(LOGMANAGER *mp)
 int i;
 
 DEBUG(mp,1,"Refreshing backup links");
+INCR_STAT_COUNT(refresh_backup_links);
 
 if (mp->backup.count)
 	{
@@ -436,6 +449,7 @@ if (mp->backup.count)
 static void _refresh_active_link(LOGMANAGER *mp)
 {
 DEBUG(mp,1,"Refreshing active link");
+INCR_STAT_COUNT(refresh_active_link);
 
 _clear_logfile_link(mp,mp->active.file);
 _create_logfile_link(mp,mp->active.file,0);
@@ -488,25 +502,20 @@ _dump_status_to_file(mp,t);
 static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t)
 {
 LOGFILE *lp;
-int len,add;
+int len;
 char *path;
-char buf[32];
+
+INCR_STAT_COUNT(new_active_file);
 
 lp=mp->active.file=NEW_LOGFILE();
 
 len=strlen(mp->root_path)+12;
 if (mp->compress.handler->suffix) len+=(strlen(mp->compress.handler->suffix)+1);
 
-for (path=NULL,add=0;;add++)
+for (path=NULL;;t++)
 	{
 	path=allocate(path,len=(strlen(mp->root_path)+11));
 	(void)snprintf(path,len,"%s._%08lX",mp->root_path,t);
-	if (add)
-		{
-		(void)snprintf(buf,sizeof(buf),".%d",add);
-		path=allocate(path,len += strlen(buf));
-		strcat(path,buf);
-		}
 	if (mp->compress.handler->suffix)
 		{
 		path=allocate(path,len += (strlen(mp->compress.handler->suffix)+1));
@@ -530,6 +539,7 @@ CHECK_MP();
 CHECK_TIME(mp,t);
 
 DEBUG1(mp,1,"Starting rotation (%s)",mp->root_path);
+INCR_STAT_COUNT(rotate);
 
 if (IS_OPEN(mp)) _close_active_file(mp);
 
@@ -573,11 +583,11 @@ static void _remove_oldest_backup(LOGMANAGER *mp)
 {
 if (! mp->backup.count) return; /* Should never happen */
 
-mp->backup.count--;
-
 DEBUG1(mp,1,"Removing oldest backup file (%s)"
-	,mp->backup.files[mp->backup.count]->path);
+	,mp->backup.files[mp->backup.count-1]->path);
+INCR_STAT_COUNT(remove_oldest);
 
+mp->backup.count--;
 mp->backup.size -= mp->backup.files[mp->backup.count]->size;
 
 DELETE_LOGFILE(mp->backup.files[mp->backup.count]);
@@ -602,9 +612,9 @@ void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
 int i;
-BOOL found;
 
-DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",size);
+/*DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",size);*/
+INCR_STAT_COUNT(write);
 
 if ((!buf) || (!size)) return;
 
@@ -636,40 +646,34 @@ if (mp->eol_buffer.buf)
 	if (mp->eol_buffer.buf) /* if not found, append to eol_buffer.buf */
 		{
 		DEBUG1(mp,2,"Appending %lu bytes to eol buffer",size);
-		mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len+size);
+		mp->eol_buffer.buf=allocate(mp->eol_buffer.buf
+			,mp->eol_buffer.len+size);
 		memcpy(&(mp->eol_buffer.buf[mp->eol_buffer.len]),buf,size);
-		buf +=size;
+		mp->eol_buffer.len += size;
+		buf += size;
 		size=0;
 		}
 	}
 
 /* 2. Search last \n. If found, move trailing data to eol_buffer and truncate.
-If not found, put everything in eol_buffer and return. */
+If not found, put everything in eol_buffer and return.
+When entering this section, eol_buffer is always empty. */
 
 if (!size) return;
 
-for (found=NO,i=size-1;i>=0;i--)
+for (i=size-1;;i--)
 	{
-	if (buf[i]=='\n')
+	if ((i<0) || (buf[i]=='\n'))
 		{
-		found=YES;
-		mp->eol_buffer.len=size-i-1;
+		mp->eol_buffer.len=(size-i-1);
 		if (mp->eol_buffer.len)
 			{
 			DEBUG1(mp,2,"Storing %lu bytes in eol buffer",mp->eol_buffer.len);
-			mp->eol_buffer.buf=allocate(NULL,mp->eol_buffer.len);
-			memcpy(mp->eol_buffer.buf,&(buf[i+1]),mp->eol_buffer.len);
 			size=i+1;
+			mp->eol_buffer.buf=duplicate_mem(&(buf[size]),mp->eol_buffer.len);
 			}
 		break;
 		}
-	}
-
-if (!found)
-	{
-	mp->eol_buffer.buf=allocate(NULL,size);
-	memcpy(mp->eol_buffer.buf,buf,size);
-	return;
 	}
 
 /* 2.If something remains, write it */
@@ -686,6 +690,8 @@ apr_off_t csize;
 
 CHECK_MP();
 CHECK_TIME(mp,t);
+
+INCR_STAT_COUNT(write2);
 
 if ((!buf) || (size==0) || (!IS_OPEN(mp))) return;
 
@@ -814,6 +820,7 @@ char buf[32];
 int i;
 
 DEBUG1(mp,1,"Writing status to file (%s)",mp->status_path);
+INCR_STAT_COUNT(dump);
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 
@@ -854,6 +861,7 @@ int i,offset;
 LOGFILE **lpp;
 
 DEBUG(mp,1,"Syncing log files from disk");
+INCR_STAT_COUNT(sync);
 
 if (! IS_OPEN(mp)) SYNC_LOGFILE_FROM_DISK(mp->active.file);
 
@@ -889,9 +897,41 @@ return compress_handler_list();
 
 /*----------------------------------------------*/
 
-extern char *logmanager_version()
+char *logmanager_version()
 {
 return duplicate(LOGMANAGER_VERSION);
+}
+
+/*----------------------------------------------*/
+
+#define DISPLAY_COUNT(_item)	{ \
+	file_write_string(fp,#_item " count : "); \
+	snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_item)); \
+	file_write_string_nl(fp,buf); \
+	}
+
+void logmanager_display_stats(LOGMANAGER *mp)
+{
+OFILE *fp;
+char buf[32];
+
+fp=(mp->debug.fp ? mp->debug.fp : file_open_for_append("stdout",0));
+
+file_write_string_nl(fp,"================== logmanager statistics ==================");
+
+DISPLAY_COUNT(write);
+DISPLAY_COUNT(write2);
+DISPLAY_COUNT(flush);
+DISPLAY_COUNT(link);
+DISPLAY_COUNT(refresh_backup_links);
+DISPLAY_COUNT(refresh_active_link);
+DISPLAY_COUNT(new_active_file);
+DISPLAY_COUNT(rotate);
+DISPLAY_COUNT(remove_oldest);
+DISPLAY_COUNT(dump);
+DISPLAY_COUNT(sync);
+
+file_write_string_nl(fp,"===========================================================");
 }
 
 /*----------------------------------------------*/

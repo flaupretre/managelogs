@@ -1,17 +1,55 @@
                    managelogs installation instructions
                    ------------------------------------
 
+* Prerequisites :
 
-* Edit the Makefile file in the base directory and modify the
-  'modifiable' parameters according to your environment.
+	- managelogs uses the Apache Portable Runtime library, provided with the
+	  Apache web server. So, you need to install Apache
+	  (available from http://httpd.apache.org).
 
-* Run 'make'
+	- you need the zlib library if you want managelogs to support gzip
+	  compression. zlib is available from http://www.zlib.net
 
-* 'make install' will copy :
-		- the managelogs executable to <apache-path>/bin
-		- the logmanager.h include file to <apache-path>/include
-		- the logmanager.a library to <apache-path>/lib
+	- you need the bzip2 library if you want managelogs to support bzip2
+	  compression. bzip2 is available from http://www.bzip.org
 
-A better build system (using autoconf) is planned (see the TODO file).
+These software are provided pre-compiled on most platforms.
+
+As far as I know, there is no requirement on the version of these libraries. The
+versions I used here are :
+
+	- APR 0.9.12 (included in Apache http server 2.0.59)
+	- Zlib library 1.2.3
+	- Bzip2 library 1.0.1
+
+* Compiling
+
+	- Edit the make.vars file in the base directory and modify the
+	  'modifiable parameters' section according to your environment. This will
+	  define where Apache, zlib, and bzip2 are installed, whether you want
+	  zlib and bzip2 support, and compile options.
+
+	- Run 'make'
+
+* Installing
+
+	- Run 'make install'. This will install :
+
+		- the managelogs executable in <apache-path>/bin
+		- the logmanager.h include file in <apache-path>/include
+		- the logmanager library in <apache-path>/lib
+
+* Architectures
+
+The software was succesfully tested on the following environments :
+
+	- Linux RHEL 3, 4, 5 (AS/ES, 32 & 64 bits)
+	- Solaris 9
+	- AIX 5.2
+	- HP-UX 11.00
+	- HP-UX 11.11
+
+If you build and run it on other environments, please let me know, so I can
+add them to this list.
 
 ==============================================================================

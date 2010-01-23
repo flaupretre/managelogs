@@ -1,5 +1,0 @@
-
-#define MANAGELOGS_VERSION	"1.0rc1"
-
-#define LOGFILE_MODE	0x644
-

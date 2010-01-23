@@ -38,6 +38,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/logmanager.h"
 #include "include/file.h"
 #include "include/util.h"
+#include "include/config.h"
 
 /*----------------------------------------------*/
 

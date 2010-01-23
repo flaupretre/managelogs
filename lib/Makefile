@@ -1,46 +1,44 @@
 
 #--- No modifiable parameter in this file
 
-TARGETS = managelogs
-
-OBJS = logmanager.o \
-	file.o \
-	time.o \
-	util.o \
-	compress.o \
-	gzip_handler.o \
-	bzip2_handler.o
-
-INCLUDES = -I$(APACHE)/include/apr-0 -I$(ZLIB)/include -I$(BZ2LIB)/include
-
-COMP_FLAGS = $(GZIP_OPT) $(BZ2_OPT)
-
-LIB = liblogmanager.a
-
-TARGETS = $(LIB)
+include ../make.vars
 
 #--------------------------------------------------------------------
 
-.PHONY: all clean install splint
+TARGETS = $(TARGET_LIB)
+
+TARGET_LIB = liblogmanager.la
+
+LOBJS = logmanager.lo \
+	file.lo \
+	time.lo \
+	util.lo \
+	compress.lo \
+	gzip_handler.lo \
+	bzip2_handler.lo
+
+#--------------------------------------------------------------------
+
+.PHONY: all clean install
+.SUFFIXES: .c .lo
 
 all: $(TARGETS)
 
 clean:
-	/bin/rm -f $(TARGETS) $(OBJS)
+	$(LIBTOOL) --mode=clean /bin/rm -f $(TARGETS) $(LOBJS)
 
-install: $(TARGETS)
-	cp -p $(LIB) $(APACHE)/lib
-	cp -p ../include/logmanager.h $(APACHE)/include
+install: install-lib install-include
 
-$(LIB): $(OBJS)
-	$(AR) cr $(LIB) $(OBJS)
+install-lib: $(TARGET_LIB)
+	$(LIBTOOL) --mode=install cp $(TARGET_LIB) $(APACHE)/lib
+
+install-include:
+	$(LIBTOOL) --mode=install cp ../include/logmanager.h $(APACHE)/include
+
+$(TARGET_LIB): $(LOBJS)
+	$(LINK_LIB) $(LOBJS) -rpath $(APACHE)/lib
 	
-.c.o:
-	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $(COMP_FLAGS) $(INCLUDES) $<
-
-splint:
-	splint $(CPPFLAGS) $(INCLUDES) $(COMP_FLAGS) +posixlib -DPATH_MAX=1024 \
-		-skipposixheaders -booltype BOOL -boolfalse NO -booltrue YES \
-		*.c
+.c.lo:
+	$(LT_COMPILE)
 
 #--------------------------------------------------------------------

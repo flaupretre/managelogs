@@ -18,10 +18,18 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_getopt.h>
 
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#if APR_HAVE_STRING_H
+#include <string.h>
+#endif
+
 #include "options.h"
 #include "managelogs.h"
 #include "id.h"
-#include "lib/include/util.h"
+#include "util.h"
 
 /*----------------------------------------------*/
 
@@ -48,6 +56,8 @@ static apr_getopt_option_t long_options[]=
 	{"backup-links",'L',0 },
 	{"hardlink",'H',0 },
 	{"ignore-eol",'e',0 },
+	{"time",'t',1 },
+	{"stats",'I',0 },
 	{"",'\0', 0 }
 	};
 
@@ -211,11 +221,20 @@ while (YES)
 		case 'e':
 			op->flags |= LMGR_IGNORE_EOL;
 			break;
+
+		case 't':
+			sscanf(opt_arg,"%lX",&timestamp);
+			break;
+
+		case 'I':
+			stats_toggle=1;
+			break;
 		}
 	}
 
 op->root_path=duplicate(argv[opt_s->ind]);
-if ((!(op->root_path)) || (op->root_path[0]=='\0')) usage(1);
+if ((argv[opt_s->ind+1]) || (!(op->root_path)) || (op->root_path[0]=='\0'))
+	usage(1);
 
 return op;
 }
@@ -228,6 +247,9 @@ char c;
 apr_off_t result;
 
 result=(apr_off_t)0;
+
+if (!strcmp(str,"min")) return (apr_off_t)1; /* Special value: lower limit */
+
 while ((c=(*(str++)))!='\0')
 	{
 	if ((c=='k')||(c=='K')) return (result*KILO);

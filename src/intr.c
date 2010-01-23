@@ -18,8 +18,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_signal.h>
 
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 #include "intr.h"
-#include "lib/include/util.h"
+#include "util.h"
+#include "managelogs.h"
 
 /*----------------------------------------------*/
 /* Interrupt system - Delays signals until they can be handled, so that
@@ -199,11 +204,11 @@ void do_action(unsigned int action)
 switch(action)
 	{
 	case FLUSH_ACTION:
-		logmanager_flush(mp,NOW);
+		logmanager_flush(mp,timestamp);
 		break;
 
 	case ROTATE_ACTION:
-		logmanager_rotate(mp,NOW);
+		logmanager_rotate(mp,timestamp);
 		break;
 
 	case TERMINATE_ACTION:

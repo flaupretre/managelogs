@@ -111,6 +111,20 @@ typedef struct
 		OFILE *fp;
 		int level;
 		} debug;
+	struct
+		{
+		int write_count;
+		int write2_count;
+		int flush_count;
+		int link_count;
+		int refresh_backup_links_count;
+		int refresh_active_link_count;
+		int new_active_file_count;
+		int rotate_count;
+		int remove_oldest_count;
+		int dump_count;
+		int sync_count;
+		} stats;
 	} LOGMANAGER;
 
 /*----------------------------------------------*/
@@ -125,6 +139,7 @@ extern void logmanager_flush(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);
 extern char *logmanager_compression_list(void);
 extern char *logmanager_version(void);
+extern void logmanager_display_stats(LOGMANAGER *mp);
 
 /*----------------------------------------------*/
 #endif	/* __LOGMANAGER_H */
