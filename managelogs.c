@@ -15,25 +15,6 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-/*=============================================================================
-
-Gestion des logs Apache.
-
-Ce programme est une alternative a rotatelogs.
-
-Il gere la rotation des logs et la purge des anciens fichiers sur la base
-d'une taille maximale occupee sur le disque.
-
-Usage :	s'utilise dans une directive de log de type CustomLog, ErrorLog, etc.
-
-Le fichier <path_log> grossira jusqu'a (<maxsize>/2), puis sera renomme
-en <path_log>.old, l'ancien <path_log>.old sera supprime, et un nouveau
-fichier <path_log> vide sera cree.
-On est donc sur que la taille totale des fichiers <path_log> et <path_log>.old
-ne depasse jamais <maxsize>.
-
-=============================================================================*/
-
 #include <apr.h>
 
 #if APR_HAVE_UNISTD_H
@@ -57,20 +38,13 @@ ne depasse jamais <maxsize>.
 #include <apr_signal.h>
 #include <apr_getopt.h>
 
-#include <zlib.h>
-
 #include "logfile.h"
-#include "error.h"
+#include "compress.h"
+#include "util.h"
 
 /*----------------------------------------------*/
 
 #define MANAGELOGS_VERSION	"1.0b1"
-
-#define BUFSIZE		 65536
-
-#define KILO	1024
-#define MEGA	(KILO*KILO)
-#define GIGA	(MEGA*KILO)
 
 /*----------------------------------------------*/
 
@@ -84,13 +58,12 @@ static apr_getopt_option_t long_options[]=
 	{"compress",'c',1 },
 	{"level",'l',1 },
 	{"size",'s',1 },
+	{"debug",'d',0 },
 	{"",'\0', 0 }
 	};
 
 /*----------------------------------------------*/
 
-static apr_off_t get_size_arg(const char *str);
-static int get_compress_level(char c);
 static void usage(int rc);
 static void shutdown_proc(void);
 static void sighup_handler(int signum);
@@ -98,60 +71,39 @@ static void sigusr1_handler(int signum);
 
 /*----------------------------------------------*/
 
-static apr_off_t get_size_arg(const char *str)
-{
-char c;
-apr_off_t result;
-
-result=(apr_off_t)0;
-while ((c=(*(str++)))!='\0')
-	{
-	if ((c=='k')||(c=='K')) return (result*KILO);
-	if ((c=='m')||(c=='M')) return (result*MEGA);
-	if ((c=='g')||(c=='G')) return (result*GIGA);
-	if ((c<'0')||(c>'9')) usage(1);
-	result = (result*10)+(apr_off_t)(c-'0');
-	}
-return result;
-}
-
-/*----------------------------------------------*/
-
-static int get_compress_level(char c)
-{
-switch (c)
-	{
-	case 'd': return Z_DEFAULT_COMPRESSION;
-	case 'f': return Z_BEST_SPEED;
-	case 'b': return Z_BEST_COMPRESSION;
-	default:
-		if ((c<'1')||(c>'9')) usage(1);
-		return (int)(c-'0');
-	}
-}
-
-/*----------------------------------------------*/
-
 static void usage(int rc)
 {
-fprintf(rc ? stderr : stdout,"\
+FILE *fd;
+char *clist;
+
+fd=(rc ? stderr : stdout);
+clist=compress_handler_list();
+
+fprintf(fd,"\
 managelogs %s\n\
-\nUsage: %s [options...] <path>\n\
+\nUsage: %s [options...] <path>\n",MANAGELOGS_VERSION,cmd);
+
+fprintf(fd,"\
 \n\
 Options :\n\
 \n\
- -h|--help           Display this message\n\
- -c|--compress <compression> Activate compression\n\
- -l|--level <level>  Set compression level\n\
-                        <level> is one of {0123456789bdf}\n\
-                        (d=default, f=fast, b=best)\n\
+ -h|--help            Display this message\n\
+\n\
+ -d|--debug           Display debug messages to stdout\n\
+ \n\
+ -c|--compress <comp[:level]>  Activate compression\n\
+                        <comp> is one of : %s\n\
+						<level> is one of {0123456789bf} (f=fast, b=best)\n\
+                        Default level depends on compression engine\n\
+\n\
  -s|--size <size>    Set the maximal size log files can take on disk\n\
                         <size> is a numeric value optionnally followed\n\
                         by one of 'k' (kilo), 'm' (mega), or 'g' (giga)\n\
-                        Default: 0 => no limit\n\
-\n",MANAGELOGS_VERSION,cmd);
+                        Default: 0 => no limit\n\n",clist);
 
-exit(rc);
+allocate(clist,0);
+
+if (rc >= 0) exit(rc);
 }
 
 /*----------------------------------------------*/
@@ -198,7 +150,7 @@ apr_file_t *f_stdin;
 apr_size_t ntoread,nread;
 char buf[BUFSIZE],*path;
 apr_status_t status;
-int optch,compress,compress_level;
+int optch;
 const char *optarg;
 
 cmd=argv[0];
@@ -210,8 +162,6 @@ apr_pool_create(&pool, NULL);
 /*-- Get options and arg */
 
 maxsize=limit=0;
-compress=0;
-compress_level=Z_DEFAULT_COMPRESSION;
 
 (void)apr_getopt_init(&opt_s,pool,argc,(char const * const *)argv);
 while (1)
@@ -224,37 +174,47 @@ while (1)
 		case 'h':
 			usage(0);
 
-		case 'c':
-			compress=1;
+		case 'd':
+			debug_on();
 			break;
 
-		case 'l':
-			compress_level=get_compress_level(*optarg);
+		case 'c':
+			if (!init_compress_handler_from_arg(optarg))
+				{
+				usage(1);
+				FATAL_ERROR_1("Invalid compression arg : %s",optarg);
+				}
 			break;
 
 		case 's':
-			maxsize=get_size_arg(optarg);
+			maxsize=convert_size_string(optarg);
+			if (maxsize == 0)
+				{
+				usage(-1);
+				FATAL_ERROR_1("Invalid size : %s",optarg);
+				}
 			limit=maxsize/2;
 			break;
 		}
 	}
 
 path=argv[opt_s->ind];
-if ((!path)||(!(*path))||(argv[opt_s->ind+1]))usage(1);
+if ((!path)||(!(*path))||(argv[opt_s->ind+1])) usage(1);
 
 /* Init logfile */
 
-logfile_init(path,compress,compress_level,maxsize);
+logfile_init(path,maxsize);
 
 /* Register signal handlers */
 
 (void)apr_signal(SIGHUP,sighup_handler);
 (void)apr_signal(SIGUSR1,sigusr1_handler);
 
-/* Read by blocks of at most <maxsize> bytes */
+/* Read by blocks of at most <limit> bytes */
 
 ntoread=sizeof(buf);
 if (limit && (limit < ntoread)) ntoread=limit;
+DEBUG1("Reading by chunks of %d bytes",ntoread);
 
 /* Open stdin for reading */
 
@@ -266,7 +226,8 @@ if (apr_file_open_stdin(&f_stdin,pool) != APR_SUCCESS)
 for (;;)
 	{
 	nread=ntoread;
-	if (apr_file_read(f_stdin, buf, &nread) != APR_SUCCESS) exit(3);
+	if ((status=apr_file_read(f_stdin, buf, &nread)) != APR_SUCCESS)
+		exit((status==APR_EOF) ? 0 :3);
 
 	logfile_write_bin(buf,nread,CAN_ROTATE);
 	}

@@ -15,23 +15,34 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __ERROR_H
-#define __ERROR_H
+#ifndef __CONFIG_H
+#define __CONFIG_H
 
-/*----------------------------------------------*/
+#include <apr.h>
 
-#define FATAL_ERROR(_msg)		{ \
-								fatal_error_1(_msg,NULL); \
-								}
-
-#define FATAL_ERROR_1(_msg,_arg) { \
-								fatal_error_1(_msg,_arg); \
-								}
-
-/*----------------------------------------------*/
-
-extern void fatal_error_1(char *msg, char *arg);
-
-/*----------------------------------------------*/
-
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
 #endif
+
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#if APR_HAVE_STRING_H
+#include <string.h>
+#endif
+
+#if APR_HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+/*----------------------------------------------*/
+
+#ifndef MAX_PATH
+#define MAX_PATH		1024
+#endif
+
+#define BUFSIZE 65536
+
+/*----------------------------------------------*/
+#endif	/* __CONFIG_H */

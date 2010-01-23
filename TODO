@@ -1,0 +1,9 @@
+
+* create directories when needed
+
+* Integrate cronlog features
+
+* Integrate strftime features
+
+* Keep file names in a status file along with the directories we had to create
+

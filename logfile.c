@@ -36,16 +36,13 @@ Copyright F. Laupretre (francois@tekwire.net)
 #include <apr_file_io.h>
 #include <apr_file_info.h>
 
+#include "config.h"
+#include "compress.h"
 #include "logfile.h"
-#include "plain.h"
-#include "gz.h"
 #include "error.h"
+#include "util.h"
 
 /*----------------------------------------------*/
-
-#ifndef MAX_PATH
-#define MAX_PATH		1024
-#endif
 
 #define NO_INTR_START()			{ \
 								intr_flag++; \
@@ -67,23 +64,18 @@ Copyright F. Laupretre (francois@tekwire.net)
 								rotate_requested=flush_requested=0; \
 								}
 
-#define BUFSIZE 65536
-
-#define COMPRESS(_action,_args)	compress_plugin->_action _args;
-
 /*----------------------------------------------*/
 
 static apr_file_t *logfd = NULL;
-static char logpath[MAX_PATH],oldpath[MAX_PATH],pidpath[MAX_PATH];
+static char rootpath[MAX_PATH],logpath[MAX_PATH],oldpath[MAX_PATH]
+	,pidpath[MAX_PATH];
 static apr_off_t logsize;
 static apr_pool_t *pool;
-static int compress_toggle,compress_level;
 static int logfile_is_open=0;
 static apr_off_t maxsize,limit;
 static int intr_flag=0;
 static int rotate_requested=0;
 static int flush_requested=0;
-static COMPRESS_DEFS *compress_plugin=&plain_compress_defs;
 
 /*----------------------------------------------*/
 
@@ -104,7 +96,7 @@ static apr_file_t *fd;
 char buf[32];
 apr_size_t nb;
 
-sprintf(pidpath,"%s.pid",logpath);
+sprintf(pidpath,"%s.pid",rootpath);
 fd=NULL;
 apr_file_open(&fd,pidpath,APR_WRITE|APR_CREATE|APR_TRUNCATE,APR_OS_DEFAULT,pool);
 if (!fd) FATAL_ERROR_1("Cannot open pid file (%s)",pidpath);
@@ -146,21 +138,27 @@ flush_requested=0;
 	
 /*----------------------------------------------*/
 
-void logfile_init(char *path,int compress_toggle_arg,int compress_level_arg
-	,apr_off_t maxsize_arg)
+void logfile_init(const char *path,apr_off_t maxsize_arg)
 {
 NO_INTR_START();
 
 apr_pool_create(&pool, NULL);
 
-compress_toggle=compress_toggle_arg;
-compress_level=compress_level_arg;
 maxsize=maxsize_arg;
 limit=maxsize/2;
 
-strcpy(logpath,path);
-sprintf(oldpath,"%s.old",path);
-COMPRESS(compute_paths,(logpath,oldpath));
+if (strlen(path) >= BUFSIZE-18) FATAL_ERROR("Path too long");
+strcpy(rootpath,path);
+
+strcpy(logpath,rootpath);
+sprintf(oldpath,"%s.old",rootpath);
+if (compress_handler->suffix)
+	{
+	strcat(logpath,".");
+	strcat(logpath,compress_handler->suffix);
+	strcat(oldpath,".");
+	strcat(oldpath,compress_handler->suffix);
+	}
 
 create_pid_file();
 
@@ -192,7 +190,7 @@ if (logfile_is_open) return;
 
 NO_INTR_START();
 
-COMPRESS(start,(compress_level));
+C_HANDLER(start,());
 
 apr_file_open(&logfd,logpath,APR_WRITE|APR_CREATE|APR_APPEND
 	,APR_OS_DEFAULT,pool);
@@ -215,7 +213,7 @@ if (!logfile_is_open) return;
 
 NO_INTR_START();
 
-COMPRESS(end,());
+C_HANDLER(end,());
 
 apr_file_close(logfd);
 
@@ -276,7 +274,7 @@ return logsize;
 
 /*----------------------------------------------*/
 
-void logfile_write_bin_raw(char *buf, apr_size_t size)
+void logfile_write_bin_raw(const char *buf, apr_size_t size)
 {
 apr_size_t nwrite;
 
@@ -299,25 +297,25 @@ static int limit_exceeded(apr_size_t size)
 {
 if (!limit) return 0;
 
-COMPRESS(predict_compressed_size,(&size));
+C_HANDLER(predict_size,(&size));
 
 return ((logsize+size) > limit);
 }
 
 /*----------------------------------------------*/
 
-void logfile_write_bin(char *buf, apr_size_t size, rotate_flag can_rotate)
+void logfile_write_bin(const char *buf, apr_size_t size, rotate_flag can_rotate)
 {
 if (!size) return;
 
 if (can_rotate && limit_exceeded(size)) logfile_do_rotate();
 
-COMPRESS(compress_and_write,(buf,size));
+C_HANDLER(compress_and_write,(buf,size));
 }
 
 /*----------------------------------------------*/
 
-void logfile_write(char *str)
+void logfile_write(const char *str)
 {
 apr_size_t len;
 

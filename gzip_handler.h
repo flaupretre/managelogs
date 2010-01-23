@@ -15,14 +15,19 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __PLAIN_H
-#define __PLAIN_H
+#ifndef __GZIP_HANDLER_H
+#define __GZIP_HANDLER_H
+
+#ifndef DISABLE_GZIP
+/*----------------------------------------------*/
 
 #include "compress.h"
 
 /*----------------------------------------------*/
 
-extern COMPRESS_DEFS plain_compress_defs;
+extern COMPRESS_HANDLER gzip_handler;
 
 /*----------------------------------------------*/
 #endif
+/*----------------------------------------------*/
+#endif /* DISABLE_GZIP */
