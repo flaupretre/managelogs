@@ -9,7 +9,7 @@ BZ2LIB = /logi/http/libs/bz2
 #-- C compiler command and options
 
 CC = gcc
-OPTS = -O2
+#OPTS = -O2
 #PEDANTIC = -pedantic
 CFLAGS = -g -Wall -pthread $(PEDANTIC) $(OPTS)
 

@@ -59,13 +59,21 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define NEW_LOGFILE() (LOGFILE *)allocate(NULL,sizeof(LOGFILE))
 
 #define DELETE_LOGFILE(_lp)	{ \
-	if (_lp && file_exists(_lp->path)) file_delete(_lp->path,NO); \
+	if (_lp) \
+		{ \
+		if (_lp->path) file_delete(_lp->path,NO); \
+		if (_lp->link) file_delete(_lp->link,NO); \
+		} \
 	FREE_LOGFILE(_lp); \
 	}
 
 #define FREE_LOGFILE(_lp)	{ \
-	if ((_lp) && ((_lp)->path)) (void)allocate((_lp)->path,0); \
-	_lp=(LOGFILE *)allocate(_lp,0); \
+	if (_lp) \
+		{ \
+		if ((_lp)->path) (void)allocate((_lp)->path,0); \
+		if ((_lp)->link) (void)allocate((_lp)->link,0); \
+		} \
+	_lp=allocate(_lp,0); \
 	} \
 
 #define SYNC_LOGFILE_FROM_DISK(_lp)	{ \
@@ -77,7 +85,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 	}
 
 #define ACTIVE_SIZE(_mp) \
-	(_mp->active.fp ? _mp->active.fp->size : _mp->active.file->size)
+	(_mp->active.fp ? _mp->active.fp->size : \
+		(_mp->active.file ? _mp->active.file->size : 0))
 
 #define ROTATE_IF_NEEDED(_mp,_add,_t)	{ \
 	if (_mp->file_maxsize && ((ACTIVE_SIZE(_mp)+_add) > _mp->file_maxsize)) \
@@ -114,6 +123,12 @@ static void _remove_oldest_backup(LOGMANAGER *mp);
 static void _get_status_from_file(LOGMANAGER *mp);
 static void _dump_status_to_file(LOGMANAGER *mp);
 static void _sync_logfiles_from_disk(LOGMANAGER *mp);
+static char *_link_name(LOGMANAGER *mp, int num);
+static void _refresh_logfile_link(LOGMANAGER *mp,LOGFILE *lp,int num);
+static void _refresh_backup_links(LOGMANAGER *mp);
+static void _sort_backups(LOGMANAGER *mp);
+static int _compare_logfiles(const void *l1,const void *l2);
+static void _refresh_active_link(LOGMANAGER *mp);
 
 /*----------------------------------------------*/
 
@@ -178,7 +193,6 @@ mp->root_path=duplicate(opts->root_path);
 
 mp->pid_path=allocate(NULL,len=(strlen(mp->root_path)+5));
 (void)snprintf(mp->pid_path,len,"%s.pid",mp->root_path);
-_create_pid_file(mp);
 
 mp->status_path=allocate(NULL,len=(strlen(mp->root_path)+8));
 (void)snprintf(mp->status_path,len,"%s.status",mp->root_path);
@@ -291,11 +305,131 @@ if (mp->backup.count)
 
 /*----------------------------------------------*/
 
+static char *_link_name(LOGMANAGER *mp, int num)
+{
+int len;
+char buf[32],*p;
+
+
+len=strlen(mp->root_path)+1;
+if (num) len += (strlen(buf)+1);
+if (mp->compress.handler->suffix) len+=(strlen(mp->compress.handler->suffix)+1);
+
+p=NULL;
+
+p=allocate(p,len=strlen(mp->root_path)+1);
+strcpy(p,mp->root_path);
+
+if (num)
+	{
+	if (num) snprintf(buf,sizeof(buf),".%d",num);
+	p=allocate(p,len += strlen(buf));
+	strcat(p,buf);
+	}
+
+if (mp->compress.handler->suffix)
+	{
+	p=allocate(p,len += strlen(mp->compress.handler->suffix));
+	strcat(p,".");
+	strcat(p,mp->compress.handler->suffix);
+	}
+
+return p;
+}
+
+/*----------------------------------------------*/
+
+static void _refresh_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num)
+{
+char *lname;
+
+if (!lp) return;
+
+if (lp->link)
+	{
+	file_delete(lp->link,NO);
+	lp->link=allocate(lp->link,0);
+	}
+
+lname=_link_name(mp,num);
+if (file_exists(lname)) file_delete(lname,NO);
+
+if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
+	|| ((num!=0) && (mp->flags & LMGR_BACKUP_LINKS)))
+	{
+	if (mp->flags & LMGR_HARD_LINKS)
+		{
+#ifdef HARDLINK_SUPPORT
+		(void)link(lp->path,lp->link=lname);
+#endif
+		}
+	else
+		{
+#ifdef SYMLINK_SUPPORT
+		(void)symlink(lp->path,lp->link=lname);
+#endif
+		}
+	}
+else
+	{
+	lp->link=NULL;
+	(void)allocate(lname,0);
+	}
+}
+
+/*----------------------------------------------*/
+/* Remember that args are of type (LOGFILE **) */
+
+static int _compare_logfiles(const void *l1,const void *l2)
+{
+return ((*(LOGFILE **)l1)->end - (*(LOGFILE **)l2)->end);
+}
+
+/*----------------------------------------------*/
+/* Sort backup files, most recent first */
+
+static void _sort_backups(LOGMANAGER *mp)
+{
+if (mp->backup.count)
+	{
+	qsort(mp->backup.files,mp->backup.count,sizeof(*(mp->backup.files))
+		,_compare_logfiles);
+	}
+}
+
+/*----------------------------------------------*/
+
+static void _refresh_backup_links(LOGMANAGER *mp)
+{
+int i;
+
+_sort_backups(mp);
+
+if (mp->backup.count)
+	{
+	for (i=0;i<mp->backup.count;i++)
+		{
+		_refresh_logfile_link(mp,mp->backup.files[i],i+1);
+		}
+	}
+}
+
+/*----------------------------------------------*/
+
+static void _refresh_active_link(LOGMANAGER *mp)
+{
+_refresh_logfile_link(mp,mp->active.file,0);
+}
+
+/*----------------------------------------------*/
+
 static void _open_active_file(LOGMANAGER *mp)
 {
 if (IS_OPEN(mp)) return;
 
 mp->active.fp=file_open_for_append(mp->active.file->path,mp->create_mode);
+
+_refresh_active_link(mp);
 
 C_HANDLER(start);
 }
@@ -328,25 +462,35 @@ _dump_status_to_file(mp);
 static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t)
 {
 LOGFILE *lp;
-int len;
+int len,add;
+char *path;
+char buf[32];
 
 lp=mp->active.file=NEW_LOGFILE();
 
 len=strlen(mp->root_path)+12;
 if (mp->compress.handler->suffix) len+=(strlen(mp->compress.handler->suffix)+1);
 
-lp->path=allocate(NULL,len);
-
-if (mp->compress.handler->suffix)
+for (path=NULL,add=0;;add++)
 	{
-	(void)snprintf(lp->path,len,"%s.%010lu.%s",mp->root_path,t
-		,mp->compress.handler->suffix);
-	}
-else
-	{
-	(void)snprintf(lp->path,len,"%s.%010lu",mp->root_path,t);
+	path=allocate(path,len=(strlen(mp->root_path)+12));
+	(void)snprintf(path,len,"%s.%010lu",mp->root_path,t);
+	if (add)
+		{
+		(void)snprintf(buf,sizeof(buf),".%d",add);
+		path=allocate(path,len += strlen(buf));
+		strcat(path,buf);
+		}
+	if (mp->compress.handler->suffix)
+		{
+		path=allocate(path,len += (strlen(mp->compress.handler->suffix)+1));
+		strcat(path,".");
+		strcat(path,mp->compress.handler->suffix);
+		}
+	if (!file_exists(path)) break;
 	}
 
+lp->path=path;
 lp->start=lp->end=t;
 }
 
@@ -363,9 +507,8 @@ if (IS_OPEN(mp)) _close_active_file(mp);
 
 mp->backup.size += ACTIVE_SIZE(mp);
 mp->backup.files=(LOGFILE **)allocate(mp->backup.files
-	,(mp->backup.count+1)*sizeof(LOGFILE *));
-mp->backup.files[mp->backup.count]=mp->active.file;
-mp->backup.count++;
+	,(++mp->backup.count)*sizeof(LOGFILE *));
+mp->backup.files[mp->backup.count-1]=mp->active.file;
 mp->active.file=(LOGFILE *)0;
 
 _purge_backup_files(mp,0);
@@ -416,8 +559,12 @@ if (oldp)
 
 mp->backup.files=newp;
 mp->backup.size=gsize;
+mp->backup.count -= offset;
 
 (void)allocate(oldp,0);
+
+_refresh_active_link(mp);
+_refresh_backup_links(mp);
 }
 
 /*----------------------------------------------*/
@@ -468,7 +615,7 @@ if (!csize) csize=size;
 
 /*-- rotate/purge ? (before writing) */
 
-if (! (flags & CANNOT_ROTATE)) ROTATE_IF_NEEDED(mp,csize,t);
+if (! (flags & LMGRW_CANNOT_ROTATE)) ROTATE_IF_NEEDED(mp,csize,t);
 _purge_backup_files(mp,csize);
 
 /*-- Write data */
@@ -508,13 +655,23 @@ while ((p2=strchr(p,'\n'))!=NULL)
 	switch (*p)
 		{
 		case 'a':
-			lp=mp->active.file=NEW_LOGFILE();
+			lp=NEW_LOGFILE();
 			lp->path=duplicate(val);
+			mp->active.file=lp;
 			break;
 
 		case 'b':
-			lp=mp->active.file=NEW_LOGFILE();
+			lp=NEW_LOGFILE();
 			lp->path=duplicate(val);
+			mp->backup.files=allocate(mp->backup.files
+				,(++mp->backup.count)*sizeof(LOGFILE *));
+			mp->backup.files[mp->backup.count-1]=lp;
+			break;
+
+		case 'C':
+			if (strcmp(val,compression_name(mp->compress.handler)))
+				FATAL_ERROR2("Cannot continue from another compression engine (previous: %s ; new: %s)"
+					,val,compression_name(mp->compress.handler));
 			break;
 
 		case 's':
@@ -563,15 +720,20 @@ int i;
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 
-file_write_string_nl(fp,"V " LOGMANAGER_VERSION);
+file_write_string_nl(fp,"I === Managelogs status data ===");
 
 file_write_string(fp,"A ");
 (void)snprintf(buf,sizeof(buf),"%d",mp->api_version);
 file_write_string_nl(fp,buf);
 
+file_write_string_nl(fp,"V " LOGMANAGER_VERSION);
+
 file_write_string(fp,"D ");
 (void)snprintf(buf,sizeof(buf),"%lu",time_now());
 file_write_string_nl(fp,buf);
+
+file_write_string(fp,"C "); /* Compression type */
+file_write_string_nl(fp,compression_name(mp->compress.handler));
 
 DUMP_FILE(mp->active.file,"a");
 

@@ -41,6 +41,10 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+#ifndef _WIN32
+#define SYMLINK_SUPPORT
+#endif
+
 #define BUFSIZE 65536
 
 /* Default permissions */

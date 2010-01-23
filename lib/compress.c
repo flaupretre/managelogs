@@ -122,3 +122,10 @@ if (!(*chpp))
 }
 
 /*----------------------------------------------*/
+
+char *compression_name(COMPRESS_HANDLER *cp)
+{
+return (cp->suffix ? cp->suffix : "plain");
+}
+
+/*----------------------------------------------*/

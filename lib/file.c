@@ -165,7 +165,7 @@ void file_write(OFILE *fp, const char *buf, apr_size_t size)
 {
 if (size==0) return;
 
-DEBUG2("Writing %d bytes to %s",(int)size,fp->path);
+/*DEBUG2("Writing %d bytes to %s",(int)size,fp->path);*/
 
 if (apr_file_write_full(fp->fd, buf, size, NULL)!=APR_SUCCESS)
 	{

@@ -38,10 +38,14 @@ static apr_getopt_option_t long_options[]=
 	{"debug",'d',0 },
 	{"compress",'c',1 },
 	{"size",'s',1 },
+	{"global-size",'S',1 },
 	{"mode",'m',1 },
 	{"user",'u',1 },
 	{"keep",'k',1 },
 	{"version",'V',0 },
+	{"link",'l',0 },
+	{"backup-links",'L',0 },
+	{"hardlink",'H',0 },
 	{"",'\0', 0 }
 	};
 
@@ -79,9 +83,8 @@ Options :\n\
                         <size> is a numeric value optionnally followed\n\
                         by 'K' (Kilo), 'M' (Mega), or 'G' (Giga)\n\
                         Default: no limit\n\
-\n\
- -k|--keep <n>       Keep only <n> log files (the current log file and <n-1>\n\
-                     backups)\n\
+ -S|--global-size    Set the maximum log files can take on disk (active +\n\
+                        backups). Arg: same syntax as '--size'\n\
 \n\
  -m|--mode <mode>    File mode to use for newly-created log files\n\
                         <mode> is a numeric Unix-style file	permission\n\
@@ -91,7 +94,17 @@ Options :\n\
                         <id> = <uid>[:<gid>]\n\
                         <uid> and <gid> are user/group names or numeric ids\n\
 \n\
+ -k|--keep <n>       Keep only <n> log files (the current log file and <n-1>\n\
+                     backups)\n\
+\n\
  -V|--version        Print version and exit\n\
+\n\
+ -l|--link           Maintain a symbolic or hard links to the actual log files\n\
+                     '-H' allows to choose between symbolic and hard links\n\
+\n\
+ -L|--backup-links   Also maintain links to the backup log files\n\
+\n\
+ -H|--hardlink       Create hard links instead of symbolic links\n\
 \n",clist,LOGFILE_MODE);
 
 (void)allocate(clist,0);
@@ -159,6 +172,18 @@ while (YES)
 
 		case 'u':
 			change_id(opt_arg);
+			break;
+
+		case 'H':
+			op->flags |= LMGR_HARD_LINKS;
+			break;
+
+		case 'l':
+			op->flags |= LMGR_ACTIVE_LINK;
+			break;
+
+		case 'L':
+			op->flags |= LMGR_BACKUP_LINKS;
 			break;
 		}
 	}

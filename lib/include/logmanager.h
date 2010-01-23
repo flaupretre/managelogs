@@ -27,14 +27,24 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+#ifndef _WIN32
+#define SYMLINK_SUPPORT
+#define HARDLINK_SUPPORT
+#endif
+
+/*----------------------------------------------*/
+
 #define LOGMANAGER_VERSION	"1.0rc1"
 
 /* logmanager_write() flags */
 
-#define CANNOT_ROTATE	0x1
-#define CAN_ROTATE	0x1
+#define LMGRW_CANNOT_ROTATE	0x1
 
-/* LOGMANAGER struct flags */
+/* LOGMANAGER flags */
+
+#define LMGR_ACTIVE_LINK	0x1
+#define LMGR_BACKUP_LINKS	0x2
+#define LMGR_HARD_LINKS		0x4
 
 /*----------------------------------------------*/
 
@@ -54,6 +64,7 @@ typedef struct
 typedef struct
 	{
 	char *path;
+	char *link;
 	TIMESTAMP start;
 	TIMESTAMP end;
 	apr_off_t size; /* Invalid for active file when open */

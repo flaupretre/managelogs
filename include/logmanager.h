@@ -26,6 +26,13 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+#ifndef _WIN32
+#define SYMLINK_SUPPORT
+#define HARDLINK_SUPPORT
+#endif
+
+/*----------------------------------------------*/
+
 typedef unsigned long TIMESTAMP;
 
 #define NOW	(TIMESTAMP)0
@@ -33,8 +40,13 @@ typedef unsigned long TIMESTAMP;
 /*----------------------------------------------*/
 /* logmanager_write() flags */
 
-#define CANNOT_ROTATE	0x1
-#define CAN_ROTATE	0x1
+#define LMGRW_CANNOT_ROTATE	0x1
+
+/* LOGMANAGER option flags */
+
+#define LMGR_ACTIVE_LINK	0x1
+#define LMGR_BACKUP_LINKS	0x2
+#define LMGR_HARD_LINKS		0x4
 
 /*----------------------------------------------*/
 

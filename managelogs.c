@@ -109,7 +109,7 @@ for (;;)
 	if (status != APR_SUCCESS) exit(3);
 
 	NOINTR_START();
-	logmanager_write(mp,buf,nread,CAN_ROTATE,NOW);
+	logmanager_write(mp,buf,nread,0,NOW);
 	NOINTR_END();
 	CHECK_EXEC_PENDING_ACTION();
 	}

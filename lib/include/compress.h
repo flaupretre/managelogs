@@ -41,6 +41,7 @@ typedef struct
 
 extern char *compress_handler_list(void);
 extern void init_compress_handler_from_string(void *sp, char *arg);
+extern char *compression_name(COMPRESS_HANDLER *cp);
 
 /*----------------------------------------------*/
 #endif	/* __COMPRESS_H */
