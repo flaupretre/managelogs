@@ -85,6 +85,7 @@ else
 		{
 		p2=malloc(size);
 		if (!p2) FATAL_ERROR("malloc error");
+		memset(p2,0,size);
 		}
 	}
 
@@ -141,7 +142,7 @@ struct passwd *pp;
 struct group *gp;
 
 if (strlen(string) >= sizeof(buf))
-	FATAL_ERROR_1("ID string too long (%s)",string);
+	FATAL_ERROR1("ID string too long (%s)",string);
 strcpy(buf,string);
 
 gid_set=NO;
@@ -149,12 +150,12 @@ if ((group=strchr(buf,':'))!=NULL) *(group++)='\0';
 
 if (isdigit(*buf))
 	{
-	if (sscanf(buf,"%d",&uid)!=1) FATAL_ERROR_1("Invalid uid (%s)",buf);
+	if (sscanf(buf,"%d",&uid)!=1) FATAL_ERROR1("Invalid uid (%s)",buf);
 	}
 else
 	{
 	if ((pp=getpwnam(buf))==NULL)
-		FATAL_ERROR_1("Cannot convert username to uid (%s)",buf);
+		FATAL_ERROR1("Cannot convert username to uid (%s)",buf);
 	uid=pp->pw_uid;
 	gid=pp->pw_gid;
 	gid_set=YES;
@@ -165,12 +166,12 @@ if (group)
 	if (isdigit(*group))
 		{
 		if (sscanf(group,"%d",&gid)!=1)
-			FATAL_ERROR_1("Invalid gid (%s)",group);
+			FATAL_ERROR1("Invalid gid (%s)",group);
 		}
 	else
 		{
 		if ((gp=getgrnam(group))==NULL)
-			FATAL_ERROR_1("Cannot convert group name to gid (%s)",group);
+			FATAL_ERROR1("Cannot convert group name to gid (%s)",group);
 		gid=gp->gr_gid;
 		}
 	gid_set=YES;
@@ -179,10 +180,10 @@ if (group)
 if (gid_set)
 	{
 	if (setgid(gid))
-		FATAL_ERROR_1("Cannot change effective group ID to %d",(char *)gid);
+		FATAL_ERROR1("Cannot change effective group ID to %d",(char *)gid);
 	}
 
-if (setuid(uid)) FATAL_ERROR_1("Cannot change effective user ID to %d",(char *)uid);
+if (setuid(uid)) FATAL_ERROR1("Cannot change effective user ID to %d",(char *)uid);
 }
 
 /*----------------------------------------------*/

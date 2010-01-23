@@ -29,7 +29,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /* logmanager_write() flags */
 
-#define NO_ROTATE	0x1
+#define CANNOT_ROTATE	0x1
+#define CAN_ROTATE	0x1
 
 /* LOGMANAGER struct flags */
 
@@ -41,6 +42,7 @@ typedef struct
 	char *path;
 	TIMESTAMP start;
 	TIMESTAMP end;
+	apr_off_t size; /* Invalid for active file when open */
 	} LOGFILE;
 
 typedef struct
@@ -65,7 +67,7 @@ typedef struct
 		LOGFILE **files;
 		int nb;
 		apr_off_t size;
-		} backups;
+		} backup;
 	apr_pool_t *pool;
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
@@ -79,7 +81,7 @@ extern LOGMANAGER *new_logmanager_v1(LOGMANAGER_OPTIONS_V1 *opts,TIMESTAMP t);
 extern void logmanager_open(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_close(LOGMANAGER *mp);
 extern void logmanager_destroy(LOGMANAGER *mp);
-extern void logmanager_write(LOGMANAGER *mp, const char *buf, apr_size_t size
+extern void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
 extern void logmanager_flush(LOGMANAGER *mp);
 extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);

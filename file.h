@@ -44,6 +44,7 @@ extern void file_write(OFILE *fp, const char *buf, apr_size_t size);
 extern void file_write_string(OFILE *fp, const char *buf);
 extern void file_write_string_nl(OFILE *fp, const char *buf);
 extern OFILE *file_close(OFILE *fp);
+extern char *file_get_contents(const char *path, apr_off_t *sizep);
 
 /*----------------------------------------------*/
 #endif	/* __FILE_H */

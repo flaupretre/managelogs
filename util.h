@@ -28,11 +28,11 @@ Copyright F. Laupretre (francois@tekwire.net)
 								fatal_error_2(_msg,NULL,NULL); \
 								}
 
-#define FATAL_ERROR_1(_msg,_arg) { \
+#define FATAL_ERROR1(_msg,_arg) { \
 								fatal_error_2(_msg,(const char *)_arg,NULL); \
 								}
 
-#define FATAL_ERROR_2(_msg,_arg1,_arg2) { \
+#define FATAL_ERROR2(_msg,_arg1,_arg2) { \
 								fatal_error_2(_msg,(const char *)_arg1 \
 									,(const char *)_arg2); \
 								}
@@ -60,7 +60,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define PRIVATE_POOL	static apr_pool_t *_private_pool=(apr_pool_t *)0;
 
 #define _POOL (_private_pool ? _private_pool \
-	: ((void)apr_pool_create(&private_pool, NULL), _private_pool))
+	: ((void)apr_pool_create(&_private_pool, NULL), _private_pool))
 
 /*----------------------------------------------*/
 

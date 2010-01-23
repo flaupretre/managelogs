@@ -19,6 +19,11 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define __TIME_H
 
 #include <apr.h>
+
+#if APR_HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
 #include <apr_time.h>
 
 #include "util.h"
@@ -32,6 +37,7 @@ typedef unsigned long TIMESTAMP;
 /*----------------------------------------------*/
 
 TIMESTAMP time_now(void);
+TIMESTAMP strval_to_time(const char *val);
 
 /*----------------------------------------------*/
 #endif	/* __TIME_H */

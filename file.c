@@ -79,7 +79,7 @@ DEBUG2("Renaming file : %s to %s",oldpath,newpath);
 
 status=(BOOL)(apr_file_rename(oldpath,newpath,_POOL)==APR_SUCCESS);
 if ((!status) && fatal)
-	FATAL_ERROR_2("Cannot rename file %s to %s",oldpath,newpath);
+	FATAL_ERROR2("Cannot rename file %s to %s",oldpath,newpath);
 
 return status;
 }
@@ -95,7 +95,7 @@ DEBUG1("Deleting file : %s",path);
 
 status=apr_file_remove(path,_POOL);
 if (fatal && (!(APR_STATUS_IS_SUCCESS(status) || APR_STATUS_IS_ENOENT(status))))
-	FATAL_ERROR_1("Cannot delete file (%s)",path);
+	FATAL_ERROR1("Cannot delete file (%s)",path);
 
 return status;
 }
@@ -112,8 +112,8 @@ fp=_new_ofile(path);
 apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_TRUNCATE,mode,_POOL);
 if (!(fp->fd))
 	{
-	destroy_ofile(fp);
-	FATAL_ERROR_1("Cannot create file (%s)",path);
+	_destroy_ofile(fp);
+	FATAL_ERROR1("Cannot create file (%s)",path);
 	}
 
 return fp;
@@ -126,7 +126,7 @@ apr_size_t file_size(const char *path)
 apr_finfo_t finfo;
 
 if (apr_stat(&finfo,path,APR_FINFO_SIZE,_POOL)!=APR_SUCCESS)
-	FATAL_ERROR_1("Cannot get file size (%s)\n",path);
+	FATAL_ERROR1("Cannot get file size (%s)\n",path);
 
 return (apr_size_t)finfo.size;
 }
@@ -144,14 +144,14 @@ fp=_new_ofile(path);
 (void)apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND,mode,_POOL);
 if (!(fp->fd))
 	{
-	destroy_ofile(fp);
-	FATAL_ERROR_1("Cannot open/append file (%s)",path);
+	_destroy_ofile(fp);
+	FATAL_ERROR1("Cannot open/append file (%s)",path);
 	}
 
 if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fp->fd)!=APR_SUCCESS)
 	{
-	destroy_ofile(fp);
-	FATAL_ERROR_1("Cannot get file size (%s)\n",path);
+	_destroy_ofile(fp);
+	FATAL_ERROR1("Cannot get file size (%s)\n",path);
 	}
 
 fp->size=(apr_size_t)finfo.size;
@@ -169,7 +169,7 @@ DEBUG2("Writing %d bytes to %s",(int)size,fp->path);
 
 if (apr_file_write_full(fp->fd, buf, size, NULL)!=APR_SUCCESS)
 	{
-	FATAL_ERROR_1("Cannot write to file (%s)",fp->path);
+	FATAL_ERROR1("Cannot write to file (%s)",fp->path);
 	}
 
 fp->size += size;
@@ -203,6 +203,36 @@ if (fp)
 	}
 
 return (OFILE *)0;
+}
+
+/*----------------------------------------------*/
+
+char *file_get_contents(const char *path, apr_off_t *sizep)
+{
+apr_file_t *fd;
+apr_finfo_t finfo;
+char *p;
+apr_size_t size;
+
+(void)apr_file_open(&fd,path,APR_READ,0,_POOL);
+if (!fd) FATAL_ERROR1("Cannot open file for reading (%s)",path);
+
+if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fd)!=APR_SUCCESS)
+	FATAL_ERROR1("Cannot get file size (%s)\n",path);
+
+p=allocate(NULL,finfo.size+1);
+p[finfo.size]='\0';
+
+if (finfo.size)
+	{
+	size=(apr_size_t)(finfo.size);
+	if (apr_file_read(fd,p,&size)!=APR_SUCCESS)
+		FATAL_ERROR1("Cannot get file contents (%s)\n",path);
+	}
+
+(void)apr_file_close(fd);
+
+return p;
 }
 
 /*----------------------------------------------*/

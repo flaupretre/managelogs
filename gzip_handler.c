@@ -1,4 +1,4 @@
-/*=============================================================================
+/*=============================================================================
 
 Copyright F. Laupretre (francois@tekwire.net)
 
@@ -95,7 +95,7 @@ switch (c=(*clevel))
 	case 'b': return Z_BEST_COMPRESSION;
 	default:
 		if ((c<'1')||(c>'9'))
-			FATAL_ERROR_1("Invalid compression level : %s",clevel);
+			FATAL_ERROR1("Invalid compression level : %s",clevel);
 		return (int)(c-'0');
 	}
 }

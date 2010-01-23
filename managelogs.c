@@ -33,12 +33,11 @@ Copyright F. Laupretre (francois@tekwire.net)
 #include <strings.h>
 #endif
 
-#include <apr_file_io.h>
 #include <apr_getopt.h>
 #include <apr_signal.h>
 
-#include "logfile.h"
-#include "compress.h"
+#include "logmanager.h"
+#include "options.h"
 #include "util.h"
 #include "intr.h"
 #include "config.h"
@@ -73,11 +72,14 @@ static apr_getopt_option_t long_options[]=
 	{"",'\0', 0 }
 	};
 
+static LOGMANAGER *mp;
+
 /*----------------------------------------------*/
 
 static void usage(int rc);
 static void shutdown_proc(void);
 static void do_action(unsigned int action);
+static void _signal_handler(int sig);
 
 /*----------------------------------------------*/
 
@@ -90,7 +92,7 @@ switch(action)
 		break;
 
 	case ROTATE_ACTION:
-		logmanager_rotate(mp);
+		logmanager_rotate(mp,time_now());
 		break;
 
 	case TERMINATE_ACTION:
@@ -153,10 +155,8 @@ if (rc >= 0) exit(rc);
 
 /*----------------------------------------------*/
 
-static void __signal_handler(int sig)
+static void _signal_handler(int sig)
 {
-unsigned int action;
-
 switch(sig)
 	{
 	case SIGUSR1:
@@ -169,12 +169,6 @@ switch(sig)
 		CHECK_EXEC_PENDING_ACTION();
 		break;
 
-#ifdef SIGHUP
-		case SIGHUP:
-#endif
-#ifdef SIGUSR1
-		case SIGUSR1:
-#endif
 #ifdef SIGTERM
 		case SIGTERM:
 #endif
@@ -196,6 +190,7 @@ switch(sig)
 		set_pending_action(TERMINATE_ACTION);
 		CHECK_EXEC_PENDING_ACTION();
 		break;
+	}
 }
 
 /*----------------------------------------------*/
@@ -264,7 +259,7 @@ static void shutdown_proc()
 {
 _signal_shutdown();
 
-logfile_shutdown();
+logmanager_destroy(mp);
 
 apr_terminate();
 }
@@ -315,7 +310,7 @@ while (YES)
 			if (!init_compress_handler_from_arg(opt_arg))
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid compression spec : %s",opt_arg);
+				FATAL_ERROR1("Invalid compression spec : %s",opt_arg);
 				}
 			break;
 
@@ -324,7 +319,7 @@ while (YES)
 			if (maxsize <= 0)
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid size : %s",opt_arg);
+				FATAL_ERROR1("Invalid size : %s",opt_arg);
 				}
 			break;
 
@@ -334,7 +329,7 @@ while (YES)
 			if (keep_count <= 0)
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid keep value : %s",opt_arg);
+				FATAL_ERROR1("Invalid keep value : %s",opt_arg);
 				}
 			break;
 
@@ -346,7 +341,7 @@ while (YES)
 			if (sscanf(opt_arg,"%x",&mode)!=1)
 				{
 				usage(-1);
-				FATAL_ERROR_1("Invalid mode : %s",opt_arg);
+				FATAL_ERROR1("Invalid mode : %s",opt_arg);
 				}
 			break;
 
@@ -381,10 +376,10 @@ for (;;)
 	nread=ntoread;
 	status=apr_file_read(f_stdin, buf, &nread);
 	if (status==APR_EOF) do_action(TERMINATE_ACTION);
-	if ((status != APR_SUCCESS) exit(3);
+	if (status != APR_SUCCESS) exit(3);
 
 	NOINTR_START();
-	logfile_write(buf,nread,CAN_ROTATE,time_now());
+	logmanager_write(mp,nread,CAN_ROTATE,time_now());
 	NOINTR_END();
 	CHECK_EXEC_PENDING_ACTION();
 	}

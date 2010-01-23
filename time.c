@@ -16,15 +16,33 @@ Copyright F. Laupretre (francois@tekwire.net)
 =============================================================================*/
 
 #include <apr.h>
+
+#if APR_HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
 #include <apr_time.h>
 
 #include "time.h"
+#include "util.h"
 
 /*----------------------------------------------*/
 
 TIMESTAMP time_now()
 {
 return (TIMESTAMP)apr_time_sec(apr_time_now());
+}
+
+/*----------------------------------------------*/
+
+TIMESTAMP strval_to_time(const char *val)
+{
+TIMESTAMP t;
+
+if (sscanf(val,"%lu",&t)!=1)
+	FATAL_ERROR1("Cannot read timestamp (%s)",val);
+
+return t;
 }
 
 /*----------------------------------------------*/

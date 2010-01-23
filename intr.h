@@ -20,6 +20,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
+#include "util.h"
+
 /*----------------------------------------------*/
 
 typedef unsigned int ACTION;
@@ -32,7 +34,7 @@ typedef unsigned int ACTION;
 
 /*----------------------------------------------*/
 
-extern BOOL intr_count=0;
+extern BOOL intr_count;
 
 /*----------------------------------------------*/
 

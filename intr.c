@@ -18,6 +18,10 @@ Copyright F. Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_signal.h>
 
+#include "intr.h"
+#include "util.h"
+#include "config.h"
+
 /*----------------------------------------------*/
 /* Interrupt system - Delays signals until they can be handled, so that
   everything remains consistent */
@@ -27,7 +31,11 @@ Copyright F. Laupretre (francois@tekwire.net)
 			RESET_PENDING_ACTION(); \
 			}
 
-#define RESET_PENDING_ACTION()	{ _pending_action=0; }
+#define RESET_PENDING_ACTION()	{ _pending_action=NO_ACTION; }
+
+#define ENABLE_INTR()	{ _intr_is_active=YES; }
+
+#define DISABLE_INTR()	{ _intr_is_active=NO; }
 
 /*----------------------------------------------*/
 
@@ -44,14 +52,14 @@ void intr_on()
 {
 intr_count=0;
 RESET_PENDING_ACTION();
-_intr_is_active=YES;
+ENABLE_INTR();
 }
 
 /*----------------------------------------------*/
 
 void intr_off()
 {
-_intr_is_active=NO;
+DISABLE_INTR();
 }
 
 /*----------------------------------------------*/
@@ -64,9 +72,10 @@ action=0;
 
 if (_intr_is_active && (intr_count==0))
 	{
-	NO_INTR_START();
-	action=pending_action;
-	NO_INTR_END_DISCARD();
+	DISABLE_INTR()();
+	action=_pending_action;
+	RESET_PENDING_ACTION();
+	ENABLE_INTR()();
 	}
 
 return action;
