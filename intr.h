@@ -20,13 +20,21 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
-#include "util.h"
+#include <logmanager.h>
 
 /*----------------------------------------------*/
 
 typedef unsigned int ACTION;
 
-#define NO_ACTION	(ACTION)0
+#define NO_ACTION			(ACTION)0
+#define FLUSH_ACTION		(ACTION)1
+#define ROTATE_ACTION		(ACTION)2
+#define TERMINATE_ACTION 	(ACTION)3
+
+#define CHECK_EXEC_PENDING_ACTION()	{ \
+	ACTION action; \
+	if ((action=check_pending_action())!=NO_ACTION) do_action(action); \
+	}
 
 #define NOINTR_START()	{ intr_count++; }
 
@@ -34,7 +42,8 @@ typedef unsigned int ACTION;
 
 /*----------------------------------------------*/
 
-extern BOOL intr_count;
+extern int intr_count;
+extern LOGMANAGER *mp;
 
 /*----------------------------------------------*/
 
@@ -42,6 +51,9 @@ extern void intr_on(void);
 extern void intr_off(void);
 extern ACTION check_pending_action();
 extern void set_pending_action(ACTION action);
+extern void signal_init();
+extern void signal_shutdown();
+extern void do_action(ACTION action);
 
 /*----------------------------------------------*/
 #endif	/* __INTR_H */

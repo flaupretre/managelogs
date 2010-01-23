@@ -20,17 +20,17 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
+#include <logmanager.h>
 
-typedef struct
-	{
-	char *root_path;
-	unsigned int flags;
-	char *compress_string;
-	apr_off_t file_maxsize;
-	apr_off_t global_maxsize;
-	unsigned int keep_count;
-	apr_fileperms_t create_mode;
-	} LOGMANAGER_OPTIONS_V1;
+/*----------------------------------------------*/
+
+extern char *cmd;
+
+/*----------------------------------------------*/
+
+extern void usage(int rc);
+LOGMANAGER_OPTIONS_V1 *get_options(int argc, char **argv);
+extern apr_off_t convert_size_string(const char *str);
 
 /*----------------------------------------------*/
 #endif	/* __OPTIONS_H */

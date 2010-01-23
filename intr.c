@@ -19,8 +19,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 #include <apr_signal.h>
 
 #include "intr.h"
-#include "util.h"
-#include "config.h"
+#include "lib/include/util.h"
 
 /*----------------------------------------------*/
 /* Interrupt system - Delays signals until they can be handled, so that
@@ -39,12 +38,17 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-BOOL intr_count=0;
+int intr_count=0;
 
 /*----------------------------------------------*/
 
 static BOOL _intr_is_active=NO;
 static ACTION _pending_action=NO_ACTION;
+
+/*----------------------------------------------*/
+
+static void _signal_handler(int sig);
+
 
 /*----------------------------------------------*/
 
@@ -72,10 +76,10 @@ action=0;
 
 if (_intr_is_active && (intr_count==0))
 	{
-	DISABLE_INTR()();
+	DISABLE_INTR();
 	action=_pending_action;
 	RESET_PENDING_ACTION();
-	ENABLE_INTR()();
+	ENABLE_INTR();
 	}
 
 return action;
@@ -86,6 +90,126 @@ return action;
 void set_pending_action(ACTION action)
 {
 if (_intr_is_active && (action > _pending_action)) _pending_action=action;
+}
+
+/*----------------------------------------------*/
+
+static void _signal_handler(int sig)
+{
+switch(sig)
+	{
+	case SIGUSR1:
+		set_pending_action(FLUSH_ACTION);
+		CHECK_EXEC_PENDING_ACTION();
+		break;
+
+	case SIGHUP:
+		set_pending_action(ROTATE_ACTION);
+		CHECK_EXEC_PENDING_ACTION();
+		break;
+
+#ifdef SIGTERM
+		case SIGTERM:
+#endif
+#ifdef SIGINT
+		case SIGINT:
+#endif
+#ifdef SIGQUIT
+		case SIGQUIT:
+#endif
+#ifdef SIGTRAP
+		case SIGTRAP:
+#endif
+#ifdef SIGABRT
+		case SIGABRT:
+#endif
+#ifdef SIGURG
+		case SIGURG:
+#endif
+		set_pending_action(TERMINATE_ACTION);
+		CHECK_EXEC_PENDING_ACTION();
+		break;
+	}
+}
+
+/*----------------------------------------------*/
+
+void signal_init()
+{
+#ifdef SIGHUP
+(void)apr_signal(SIGHUP,_signal_handler);
+#endif
+#ifdef SIGUSR1
+(void)apr_signal(SIGUSR1,_signal_handler);
+#endif
+#ifdef SIGTERM
+(void)apr_signal(SIGTERM,_signal_handler);
+#endif
+#ifdef SIGINT
+(void)apr_signal(SIGINT,_signal_handler);
+#endif
+#ifdef SIGQUIT
+(void)apr_signal(SIGQUIT,_signal_handler);
+#endif
+#ifdef SIGTRAP
+(void)apr_signal(SIGTRAP,_signal_handler);
+#endif
+#ifdef SIGABRT
+(void)apr_signal(SIGABRT,_signal_handler);
+#endif
+#ifdef SIGURG
+(void)apr_signal(SIGURG,_signal_handler);
+#endif
+}
+
+/*----------------------------------------------*/
+
+void signal_shutdown()
+{
+#ifdef SIGHUP
+(void)apr_signal(SIGHUP,SIG_IGN);
+#endif
+#ifdef SIGUSR1
+(void)apr_signal(SIGUSR1,SIG_IGN);
+#endif
+#ifdef SIGTERM
+(void)apr_signal(SIGTERM,SIG_IGN);
+#endif
+#ifdef SIGINT
+(void)apr_signal(SIGINT,SIG_IGN);
+#endif
+#ifdef SIGQUIT
+(void)apr_signal(SIGQUIT,SIG_IGN);
+#endif
+#ifdef SIGTRAP
+(void)apr_signal(SIGTRAP,SIG_IGN);
+#endif
+#ifdef SIGABRT
+(void)apr_signal(SIGABRT,SIG_IGN);
+#endif
+#ifdef SIGURG
+(void)apr_signal(SIGURG,SIG_IGN);
+#endif
+}
+
+/*----------------------------------------------*/
+
+void do_action(unsigned int action)
+{
+switch(action)
+	{
+	case FLUSH_ACTION:
+		logmanager_flush(mp);
+		break;
+
+	case ROTATE_ACTION:
+		logmanager_rotate(mp,NOW);
+		break;
+
+	case TERMINATE_ACTION:
+		exit(0);
+		break;
+	}
 }
 
 /*----------------------------------------------*/
