@@ -42,17 +42,17 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define C_HANDLER(_action) \
-	((mp->compress.handler->_action) \
-		? mp->compress.handler->_action(mp) : 0)
+#define C_HANDLER(_mp,_action) \
+	(((_mp)->compress.handler->_action) \
+		? (_mp)->compress.handler->_action(_mp) : 0)
 
-#define C_HANDLER1(_action,_arg1) \
-	((mp->compress.handler->_action) \
-		? mp->compress.handler->_action(mp,_arg1) : 0)
+#define C_HANDLER1(_mp,_action,_arg1) \
+	(((_mp)->compress.handler->_action) \
+		? (_mp)->compress.handler->_action((_mp),_arg1) : 0)
 
-#define C_HANDLER2(_action,_arg1,_arg2) \
-	((mp->compress.handler->_action) \
-		? mp->compress.handler->_action(mp,_arg1,_arg2) : 0)
+#define C_HANDLER2(_mp,_action,_arg1,_arg2) \
+	(((_mp)->compress.handler->_action) \
+		? (_mp)->compress.handler->_action((_mp),_arg1,_arg2) : 0)
 
 #define IS_OPEN(_mp) ((_mp)->active.fp)
 
@@ -88,29 +88,26 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	((_mp)->active.fp ? (_mp)->active.fp->size : \
 		((_mp)->active.file ? (_mp)->active.file->size : 0))
 
-#define ROTATE_IF_NEEDED(_mp,_add,_t)	{ \
-	if ((_mp)->file_maxsize \
-		&& (ACTIVE_SIZE(_mp)) \
-		&& ((ACTIVE_SIZE(_mp)+_add) > (_mp)->file_maxsize)) \
-		logmanager_rotate((_mp),_t); \
-	} \
+#define FUTURE_ACTIVE_SIZE(_mp,_add) \
+	(ACTIVE_SIZE(_mp) + (_mp)->eol_buffer.len + _add)
 
 #define SHOULD_ROTATE(_mp,_add)	((_mp)->file_maxsize \
 		&& (ACTIVE_SIZE(_mp)) \
-		&& ((ACTIVE_SIZE(_mp)+_add) > (_mp)->file_maxsize))
+		&& (FUTURE_ACTIVE_SIZE(_mp,_add) > (_mp)->file_maxsize))
 
 #define GLOBAL_SIZE_EXCEEDED(_mp,_add)	(((_mp)->global_maxsize) \
 	&& ((_mp)->backup.count) \
-	&& ((ACTIVE_SIZE(_mp)+_add+(_mp)->backup.size) > (_mp)->global_maxsize))
+	&& ((FUTURE_ACTIVE_SIZE((_mp),_add)+(_mp)->backup.size) \
+		> (_mp)->global_maxsize))
 
-#define CHECK_MP() { /* Security */ \
-	if (!mp) FATAL_ERROR("Received null LOGMANAGER pointer"); \
+#define CHECK_MP(_mp) { /* Security */ \
+	if (!(_mp)) FATAL_ERROR("Received null LOGMANAGER pointer"); \
 	}
 
-#define CORRECT_TIME(_t)	{ if (!t) t=time_now(); }
+#define NORMALIZE_TIMESTAMP(_t)	{ if (!t) t=time_now(); }
 
 #define CHECK_TIME(_mp,_t)	{ \
-	CORRECT_TIME(t); \
+	NORMALIZE_TIMESTAMP(t); \
 	(_mp)->last_time=_t; \
 	}
 
@@ -120,6 +117,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+static char *_pid_path(LOGMANAGER *mp);
+static char *_status_path(LOGMANAGER *mp);
 static void _create_pid_file(LOGMANAGER *mp);
 static void _remove_pid_file(LOGMANAGER *mp);
 static void _open_active_file(LOGMANAGER *mp);
@@ -140,43 +139,77 @@ static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
 
 /*----------------------------------------------*/
+/* Return absolute path of PID file */
+
+static char *_pid_path(LOGMANAGER *mp)
+{
+char *p;
+int len;
+
+p=allocate(len=(strlen(mp->root_path)+5));
+snprintf(p,len,"%s.pid",mp->root_path);
+
+return p;
+}
+
+/*----------------------------------------------*/
+/* Return absolute path of status file */
+
+static char *_status_path(LOGMANAGER *mp)
+{
+char *p;
+int len;
+
+p=allocate(len=(strlen(mp->root_path)+8));
+snprintf(p,len,"%s.status",mp->root_path);
+
+return p;
+}
+
+/*----------------------------------------------*/
 
 static void _create_pid_file(LOGMANAGER *mp)
 {
 OFILE *fp;
-char buf[32];
+char buf[32],*pid_path;
 
-DEBUG1(mp,1,"Creating PID file (%s)",mp->pid_path);
+pid_path=_pid_path(mp);
+DEBUG1(mp,1,"Creating PID file (%s)",pid_path);
 
-fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
+fp=file_create(pid_path,(apr_int32_t)PIDFILE_MODE);
 
 (void)snprintf(buf,sizeof(buf),"%lu",(unsigned long)getpid());
 file_write_string_nl(fp, buf);
 
 (void)file_close(fp);
+(void)allocate(pid_path,0);
 }
 
 /*----------------------------------------------*/
 
 static void _remove_pid_file(LOGMANAGER *mp)
 {
+char *pid_path;
+
 DEBUG(mp,1,"Removing PID file");
 
-(void)file_delete(mp->pid_path,NO);
+pid_path=_pid_path(mp);
+(void)file_delete(pid_path,NO);
+(void)allocate(pid_path,0);
 }
 
 /*----------------------------------------------*/
 
 void logmanager_flush(LOGMANAGER *mp,TIMESTAMP t)
 {
-CHECK_MP();
+CHECK_MP(mp);
 
 if (!IS_OPEN(mp)) return;
 
 DEBUG1(mp,1,"Flushing %s",mp->active.file->path);
 INCR_STAT_COUNT(flush);
 
-C_HANDLER(flush);
+C_HANDLER(mp,flush);
 }
 	
 /*----------------------------------------------*/
@@ -198,18 +231,13 @@ mp->api_version=1;
 
 /*-- Initial timestamp */
 
-CORRECT_TIME(t);
+NORMALIZE_TIMESTAMP(t);
 mp->last_time=t;
 
 /*-- Root, PID, Status paths */
 
 mp->root_path=duplicate(opts->root_path);
-
-mp->pid_path=allocate(NULL,len=(strlen(mp->root_path)+5));
-(void)snprintf(mp->pid_path,len,"%s.pid",mp->root_path);
-
-mp->status_path=allocate(NULL,len=(strlen(mp->root_path)+8));
-(void)snprintf(mp->status_path,len,"%s.status",mp->root_path);
+mp->root_dir=_dirname(mp->root_path);
 
 /*-- Flags */
 
@@ -274,7 +302,7 @@ return mp;
 
 void logmanager_open(LOGMANAGER *mp,TIMESTAMP t)
 {
-CHECK_MP();
+CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
 if (IS_OPEN(mp)) return;
@@ -306,7 +334,7 @@ void logmanager_destroy(LOGMANAGER *mp,TIMESTAMP t)
 {
 int i;
 
-CHECK_MP();
+CHECK_MP(mp);
 
 DEBUG(mp,1,"Destroying log manager");
 
@@ -320,7 +348,7 @@ _remove_pid_file(mp);
 
 /*-- Destroy compress handler */
 
-C_HANDLER(destroy);
+C_HANDLER(mp,destroy);
 
 /*-- Free the LOGFILE structs */
 
@@ -386,6 +414,22 @@ if (lp && lp->link)
 
 /*----------------------------------------------*/
 
+static char *_basename(const char *path)
+{
+char *p,c;
+int i;
+
+for (i=strlen(path);;i--)
+	{
+	if (!i) return path;
+	c=(*(p=path+i));
+	if (!c) continue; /* First char of non-empty string */
+	if ((c=='/')||(c=='\\')) return (p+1);
+	}
+}
+
+/*----------------------------------------------*/
+
 static void _create_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num)
 {
 char *lname;
@@ -401,6 +445,7 @@ if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 		{
 		file_delete(lname,NO);
 #ifdef HARDLINK_SUPPORT
+		/* Must use the full path as target */
 		(void)link(lp->path,lp->link=lname);
 #endif
 		}
@@ -408,7 +453,7 @@ if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 		{
 		file_delete(lname,NO);
 #ifdef SYMLINK_SUPPORT
-		(void)symlink(lp->path,lp->link=lname);
+		(void)symlink(_basename(lp->path),lp->link=lname);
 #endif
 		}
 	}
@@ -467,7 +512,7 @@ mp->active.fp=file_open_for_append(mp->active.file->path,mp->create_mode);
 
 _refresh_active_link(mp);
 
-C_HANDLER(start);
+C_HANDLER(mp,start);
 }
 
 /*----------------------------------------------*/
@@ -476,7 +521,7 @@ static void _close_active_file(LOGMANAGER *mp)
 {
 if (!IS_OPEN(mp)) return;
 
-C_HANDLER(end);
+C_HANDLER(mp,end);
 mp->active.file->size=mp->active.fp->size;
 
 mp->active.fp=file_close(mp->active.fp);
@@ -486,7 +531,7 @@ mp->active.fp=file_close(mp->active.fp);
 
 void logmanager_close(LOGMANAGER *mp,TIMESTAMP t)
 {
-CHECK_MP();
+CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
 DEBUG(mp,1,"Closing logmanager");
@@ -535,7 +580,7 @@ void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t)
 {
 int i;
 
-CHECK_MP();
+CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
 DEBUG1(mp,1,"Starting rotation (%s)",mp->root_path);
@@ -688,14 +733,14 @@ static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 {
 apr_off_t csize;
 
-CHECK_MP();
+CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
 INCR_STAT_COUNT(write2);
 
 if ((!buf) || (size==0) || (!IS_OPEN(mp))) return;
 
-csize=C_HANDLER1(predict_size,size);
+csize=C_HANDLER1(mp,predict_size,size);
 if (!csize) csize=size;
 
 /*-- rotate/purge ? (before writing) */
@@ -708,7 +753,7 @@ else _purge_backup_files(mp,csize);
 
 /*-- Write data */
 
-C_HANDLER2(compress_and_write,buf,size);
+C_HANDLER2(mp,compress_and_write,buf,size);
 
 /*-- Update end timestamp */
 
@@ -720,11 +765,12 @@ mp->active.file->end=t;
 
 static void _get_status_from_file(LOGMANAGER *mp)
 {
-char *buf,*p,*p2,*val;
+char *buf,*p,*p2,*val,*status_path;
 apr_off_t bufsize;
 LOGFILE *lp;
 
-DEBUG1(mp,1,"Reading status from file (%s)",mp->status_path);
+status_path=_status_path(mp);
+DEBUG1(mp,1,"Reading status from file (%s)",status_path);
 
 lp=(LOGFILE *)0; /* Just to remove a warning at compile time */
 
@@ -734,59 +780,59 @@ mp->backup.files=(LOGFILE **)0;
 mp->backup.count=0;
 mp->backup.size=0;
 
-if (!file_exists(mp->status_path)) return;
-
-buf=file_get_contents(mp->status_path,&bufsize);
-
-p=buf;
-while ((p2=strchr(p,'\n'))!=NULL)
+if (file_exists(status_path))
 	{
-	(*p2)='\0';
-	val=p+2;
-	switch (*p)
+	p=buf=file_get_contents(status_path,&bufsize);
+	while ((p2=strchr(p,'\n'))!=NULL)
 		{
-		case 'a':
-			lp=NEW_LOGFILE();
-			lp->path=duplicate(val);
-			mp->active.file=lp;
-			break;
+		(*p2)='\0';
+		val=p+2;
+		switch (*p)
+			{
+			case 'a':
+				lp=NEW_LOGFILE();
+				lp->path=path_combine(mp->root_dir,val);
+				mp->active.file=lp;
+				break;
 
-		case 'b':
-			lp=NEW_LOGFILE();
-			lp->path=duplicate(val);
-			mp->backup.files=allocate(mp->backup.files
-				,(++mp->backup.count)*sizeof(LOGFILE *));
-			mp->backup.files[mp->backup.count-1]=lp;
-			break;
+			case 'b':
+				lp=NEW_LOGFILE();
+				lp->path=path_combine(mp->root_dir,val);
+				mp->backup.files=allocate(mp->backup.files
+					,(++mp->backup.count)*sizeof(LOGFILE *));
+				mp->backup.files[mp->backup.count-1]=lp;
+				break;
 
-		case 'L':
-			if (!lp) break;	/* Security against invalid file */
-			lp->link=duplicate(val);
-			break;
+			case 'L':
+				if (!lp) break;	/* Security against invalid file */
+				lp->link=path_combine(mp->root_dir,val);
+				break;
 
-		case 'C':
-			if (strcmp(val,compression_name(mp->compress.handler)))
-				FATAL_ERROR2("Cannot continue from another compression engine (previous: %s ; new: %s)"
-					,val,compression_name(mp->compress.handler));
-			break;
+			case 'C':
+				if (strcmp(val,compression_name(mp->compress.handler)))
+					FATAL_ERROR2("Cannot continue from another compression engine (previous: %s ; new: %s)"
+						,val,compression_name(mp->compress.handler));
+				break;
 
-		case 's':
-			if (!lp) break;	/* Security against invalid file */
-			lp->start=strval_to_time(val);
-			break;
+			case 's':
+				if (!lp) break;	/* Security against invalid file */
+				lp->start=strval_to_time(val);
+				break;
 
-		case 'e':
-			if (!lp) break;	/* Security against invalid file */
-			lp->end=strval_to_time(val);
-			break;
-		/* Ignore other values */
+			case 'e':
+				if (!lp) break;	/* Security against invalid file */
+				lp->end=strval_to_time(val);
+				break;
+			/* Ignore other values */
+			}
+		p=p2+1;
 		}
-	p=p2+1;
+
+	(void)allocate(buf,0);
+	_sync_logfiles_from_disk(mp);
 	}
 
-(void)allocate(buf,0);
-
-_sync_logfiles_from_disk(mp);
+(void)allocate(status_path,0);
 }
 
 /*----------------------------------------------*/
@@ -798,7 +844,7 @@ _sync_logfiles_from_disk(mp);
 	if (_lp) \
 		{ \
 		file_write_string(fp,_type " ");	/* Path */ \
-		file_write_string_nl(fp,(_lp)->path); \
+		file_write_string_nl(fp,_basename((_lp)->path)); \
 		file_write_string(fp,"s ");			/* Start */ \
 		(void)snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
 		file_write_string_nl(fp,buf); \
@@ -808,7 +854,7 @@ _sync_logfiles_from_disk(mp);
 		if ((_lp)->link) \
 			{ \
 			file_write_string(fp,"L ");	/* Link */ \
-			file_write_string_nl(fp,(_lp)->link); \
+			file_write_string_nl(fp,_basename((_lp)->link)); \
 			} \
 		} \
 	}
