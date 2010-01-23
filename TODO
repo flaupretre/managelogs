@@ -1,0 +1,31 @@
+=============================================================================
+
+     If somebody can help on these or has other ideas, he's welcome !
+
+=============================================================================
+
+
+* Convert the build system to autoconf
+
+* man page(s)
+
+* create directories when needed. Automatically destroy directories when
+  backup files are purged.
+
+* Integrate the same time-related features as cronolog (with a new 
+  'storage (absolute/relative) path' argument), especially automatic rotation
+  on pattern. Remember: cannot chdir() as we also plan adding multiple output
+  support. So, absolute storage path has to be computed and used for file
+  access.
+
+* Multiple outputs with different formats and limits. Would create several
+  managers and write the data to all of them (would allow, for instance, to
+  make a small amount of log available in plain form somewhere, while
+  everything is stored in compressed format elsewhere. Shouldn't affect the
+  library, just the main & options parts. Would require to supply the root path
+  as an option on the command line.
+
+* An option to display in readable form the information about
+  a log environment (mostly extracted from the status file).
+
+=============================================================================

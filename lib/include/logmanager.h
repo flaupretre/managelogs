@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright F. Laupretre (francois@tekwire.net)
+Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -58,6 +58,8 @@ typedef struct
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
 	apr_fileperms_t create_mode;
+	char *debug_file;
+	int debug_level;
 	} LOGMANAGER_OPTIONS_V1;
 
 /*----------------------------------------------*/
@@ -99,8 +101,16 @@ typedef struct
 	unsigned int keep_count;
 	apr_fileperms_t create_mode;
 	TIMESTAMP last_time;
-	char *rbuf;
-	apr_off_t rlen;
+	struct
+		{
+		char *buf;
+		apr_off_t len;
+		} eol_buffer;
+	struct
+		{
+		OFILE *fp;
+		int level;
+		} debug;
 	} LOGMANAGER;
 
 /*----------------------------------------------*/

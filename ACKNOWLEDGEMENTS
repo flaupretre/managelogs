@@ -1,0 +1,19 @@
+I would like to thank the following people, whose development provided
+a lot of ideas and inspiration while designing and developing managelogs:
+
+* Ben Laurie <ben@algroup.co.uk> and Mladen Turk <mturk@mappingsoft.com> are
+  the main authors of rotatelogs, the original Apache log rotation program.
+  Their code was the base managelogs was developed from (even if almost nothing
+  remains in the current version :).
+
+* The Apache developers whose 'piped logging' feature allows managelogs to
+  exist.
+
+* Andrew Ford <A.Ford@ford-mason.co.uk> is the author of cronolog, an
+  alternative to rotatelogs. Cronolog provides a lot of time-related features.
+  More info on cronolog at http://cronolog.org
+
+* and all the people, anonymous or not, who give a lot of time and effort to
+  make free software a living and efficient reality...
+
+==============================================================================

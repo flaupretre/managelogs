@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright F. Laupretre (francois@tekwire.net)
+Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -75,8 +75,6 @@ BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal)
 {
 BOOL status;
 
-DEBUG2("Renaming file : %s to %s",oldpath,newpath);
-
 status=(BOOL)(apr_file_rename(oldpath,newpath,_POOL)==APR_SUCCESS);
 if ((!status) && fatal)
 	FATAL_ERROR2("Cannot rename file %s to %s",oldpath,newpath);
@@ -91,8 +89,6 @@ BOOL file_delete(const char *path, BOOL fatal)
 {
 apr_status_t status;
 
-DEBUG1("Deleting file : %s",path);
-
 status=apr_file_remove(path,_POOL);
 if (fatal && (!(APR_STATUS_IS_SUCCESS(status) || APR_STATUS_IS_ENOENT(status))))
 	FATAL_ERROR1("Cannot delete file (%s)",path);
@@ -105,8 +101,6 @@ return status;
 OFILE *file_create(const char *path, apr_int32_t mode)
 {
 OFILE *fp;
-
-DEBUG2("Creating/Truncating file : %s (mode %x)",path,(unsigned int)mode);
 
 fp=_new_ofile(path);
 apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_TRUNCATE,mode,_POOL);
@@ -138,23 +132,32 @@ OFILE *file_open_for_append(const char *path, apr_int32_t mode)
 OFILE *fp;
 apr_finfo_t finfo;
 
-DEBUG2("Opening/Appending file : %s (mode %x)",path,mode);
-
 fp=_new_ofile(path);
-(void)apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND,mode,_POOL);
-if (!(fp->fd))
-	{
-	_destroy_ofile(fp);
-	FATAL_ERROR1("Cannot open/append file (%s)",path);
-	}
 
-if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fp->fd)!=APR_SUCCESS)
+if (!strcmp(path,"stdout")) apr_file_open_stdout(&(fp->fd),_POOL);
+else
 	{
-	_destroy_ofile(fp);
-	FATAL_ERROR1("Cannot get file size (%s)\n",path);
-	}
+	if (!strcmp(path,"stderr")) apr_file_open_stderr(&(fp->fd),_POOL);
+	else
+		{
+		(void)apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND
+			,mode,_POOL);
 
-fp->size=(apr_size_t)finfo.size;
+		if (!(fp->fd))
+			{
+			_destroy_ofile(fp);
+			FATAL_ERROR1("Cannot open/append file (%s)",path);
+			}
+
+		if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fp->fd)!=APR_SUCCESS)
+			{
+			_destroy_ofile(fp);
+			FATAL_ERROR1("Cannot get file size (%s)\n",path);
+			}
+
+		fp->size=(apr_size_t)finfo.size;
+		}
+	}
 
 return fp;
 }
@@ -164,8 +167,6 @@ return fp;
 void file_write(OFILE *fp, const char *buf, apr_size_t size)
 {
 if (size==0) return;
-
-/*DEBUG2("Writing %d bytes to %s",(int)size,fp->path);*/
 
 if (apr_file_write_full(fp->fd, buf, size, NULL)!=APR_SUCCESS)
 	{
@@ -194,8 +195,6 @@ file_write_string(fp,"\n");
 
 OFILE *file_close(OFILE *fp)
 {
-DEBUG1("Closing file %s",fp->path);
-
 if (fp)
 	{
 	(void)apr_file_close(fp->fd);

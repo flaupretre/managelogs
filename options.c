@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright F. Laupretre (francois@tekwire.net)
+Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ static apr_getopt_t *opt_s;
 static apr_getopt_option_t long_options[]=
 	{
 	{"help",'h',0 },
-	{"debug",'d',0 },
+	{"debug-file",'d',1 },
+	{"verbose",'v',0 },
 	{"compress",'c',1 },
 	{"size",'s',1 },
 	{"global-size",'S',1 },
@@ -77,8 +78,11 @@ Options :\n\
 \n\
  -h|--help           Display this message\n\
 \n\
- -d|--debug          Display debug messages to stdout\n\
- \n\
+ -v|--verbose        Increment debug level\n\
+\n\
+ -d|--debug <path>   Set path to debug file and increment debug level\n\
+                     Can also be 'stdout' or 'stderr'\n\
+\n\
  -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
                      corresponding suffix to the log file names.\n\
                        <comp> is one of : %s\n\
@@ -94,7 +98,7 @@ Options :\n\
                        log + backups). Arg syntax: see '--size'\n\
 \n\
  -m|--mode <mode>    Permissions to set when creating a new log file\n\
-                       <mode> is a numeric Unix-style file	permission\n\
+                       <mode> is a numeric Unix-style file permission\n\
                        (man chmod(2) for more). Default mode: %x\n\
 \n\
  -u|--user <id>      Program runs with this user ID\n\
@@ -152,7 +156,12 @@ while (YES)
 			break;
 
 		case 'd':
-			set_debug(YES);
+			if (op->debug_file) op->debug_file=allocate(op->debug_file,0);
+			op->debug_file=duplicate(opt_arg);
+			/* no break here */
+		case 'v':
+			if (!op->debug_file) op->debug_file=duplicate("stderr");
+			op->debug_level++;
 			break;
 
 		case 'c':

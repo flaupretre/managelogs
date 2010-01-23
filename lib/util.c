@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright F. Laupretre (francois@tekwire.net)
+Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,10 +37,6 @@ Copyright F. Laupretre (francois@tekwire.net)
 #endif
 
 #include "include/util.h"
-
-/*----------------------------------------------*/
-
-BOOL debug_toggle=NO;
 
 /*----------------------------------------------*/
 
@@ -97,13 +93,6 @@ if (!string) return NULL;
 p=allocate(NULL,size=(strlen(string)+1));
 memcpy(p,string,size);
 return p;
-}
-
-/*----------------------------------------------*/
-
-void set_debug(BOOL toggle)
-{
-debug_toggle=toggle;
 }
 
 /*----------------------------------------------*/

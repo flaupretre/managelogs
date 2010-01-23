@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright F. Laupretre (francois@tekwire.net)
+Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define __UTIL_H
 
 #include <apr.h>
+#include <apr_file_io.h>
 
 #include "config.h"
 
@@ -39,17 +40,23 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*-------------*/
 
-#define DEBUG(_fmt)		{\
-						if (debug_toggle) printf("> " _fmt "\n"); \
-						}
+#define DBG_PASS_LEVEL(_mp,_level) \
+	((_mp)->debug.fp && (_level <= (_mp)->debug.level))
 
-#define DEBUG1(_fmt,_a1)		{\
-						if (debug_toggle) printf("> " _fmt "\n",_a1); \
-						}
+#define DEBUG(_mp,_level,_fmt)		{\
+	if (DBG_PASS_LEVEL(_mp,_level))\
+		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n");\
+	}
 
-#define DEBUG2(_fmt,_a1,_a2)		{\
-						if (debug_toggle) printf("> " _fmt "\n",_a1,_a2); \
-						}
+#define DEBUG1(_mp,_level,_fmt,_a1)		{\
+	if (DBG_PASS_LEVEL(_mp,_level))\
+		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1);\
+	}
+
+#define DEBUG2(_mp,_level,_fmt,_a1,_a2)		{\
+	if (DBG_PASS_LEVEL(_mp,_level))\
+		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1,_a2);\
+	}
 
 /*-------------*/
 
@@ -72,14 +79,9 @@ typedef enum { NO, YES } BOOL;
 
 /*----------------------------------------------*/
 
-extern BOOL debug_toggle;
-
-/*----------------------------------------------*/
-
 extern void *allocate(/*@null@*/ const void *p, size_t size);
 extern void *duplicate(const char *string);
 extern void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
-extern void set_debug(BOOL toggle);
 extern unsigned long strval_to_ulong(const char *val);
 
 /*----------------------------------------------*/

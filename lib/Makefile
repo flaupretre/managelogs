@@ -1,31 +1,5 @@
-#-------------- Modifiable parameters -------------------------------
 
-#-- External libs install directory
-
-APACHE = /logi/http/apache
-ZLIB = /logi/http/libs/z
-BZ2LIB = /logi/http/libs/bz2
-
-#-- C compiler command and options
-
-CC = gcc
-#OPTS = -O2
-#PEDANTIC = -pedantic
-CFLAGS = -g -Wall -pthread $(PEDANTIC) $(OPTS)
-
-#------
-
-#-- Enable Gzip :
-GZIP_OPT =
-#-- Disable Gzip :
-#GZIP_OPT = -D DISABLE_GZIP
-
-#-- Enable Bzip2 :
-BZ2_OPT =
-#-- Disable Bzip2 :
-#BZ2_OPT = -D DISABLE_BZ2
-
-#-------------- End of modifiable parameters ------------------------
+#--- No modifiable parameter in this file
 
 TARGETS = managelogs
 
@@ -55,7 +29,8 @@ clean:
 	/bin/rm -f $(TARGETS) $(OBJS)
 
 install: $(TARGETS)
-	cp $(LIB) $(APACHE)/lib
+	cp -p $(LIB) $(APACHE)/lib
+	cp -p ../include/logmanager.h $(APACHE)/include
 
 $(LIB): $(OBJS)
 	$(AR) cr $(LIB) $(OBJS)

@@ -1,0 +1,17 @@
+                   managelogs installation instructions
+                   ------------------------------------
+
+
+* Edit the Makefile file in the base directory and modify the
+  'modifiable' parameters according to your environment.
+
+* Run 'make'
+
+* 'make install' will copy :
+		- the managelogs executable to <apache-path>/bin
+		- the logmanager.h include file to <apache-path>/include
+		- the logmanager.a library to <apache-path>/lib
+
+A better build system (using autoconf) is planned (see the TODO file).
+
+==============================================================================

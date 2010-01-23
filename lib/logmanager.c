@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright F. Laupretre (francois@tekwire.net)
+Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -111,8 +111,6 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #define CHECK_TIME(_mp,_t)	{ \
 	CORRECT_TIME(t); \
-	if (_t < (_mp)->last_time) \
-		FATAL_ERROR("Cannot go back through time"); \
 	(_mp)->last_time=_t; \
 	}
 
@@ -126,7 +124,7 @@ static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t);
 static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add);
 static void _remove_oldest_backup(LOGMANAGER *mp);
 static void _get_status_from_file(LOGMANAGER *mp);
-static void _dump_status_to_file(LOGMANAGER *mp);
+static void _dump_status_to_file(LOGMANAGER *mp,TIMESTAMP t);
 static void _sync_logfiles_from_disk(LOGMANAGER *mp);
 static char *_link_name(LOGMANAGER *mp, int num);
 static void _refresh_backup_links(LOGMANAGER *mp);
@@ -144,6 +142,8 @@ static void _create_pid_file(LOGMANAGER *mp)
 OFILE *fp;
 char buf[32];
 
+DEBUG1(mp,1,"Creating PID file (%s)",mp->pid_path);
+
 fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
 
 (void)snprintf(buf,sizeof(buf),"%lu",(unsigned long)getpid());
@@ -156,6 +156,8 @@ file_write_string_nl(fp, buf);
 
 static void _remove_pid_file(LOGMANAGER *mp)
 {
+DEBUG(mp,1,"Removing PID file");
+
 (void)file_delete(mp->pid_path,NO);
 }
 
@@ -167,7 +169,7 @@ CHECK_MP();
 
 if (!IS_OPEN(mp)) return;
 
-DEBUG1("Flushing %s",mp->active.file->path);
+DEBUG1(mp,1,"Flushing %s",mp->active.file->path);
 
 C_HANDLER(flush);
 }
@@ -244,6 +246,14 @@ mp->keep_count=opts->keep_count;
 mp->create_mode=opts->create_mode;
 if (!mp->create_mode) mp->create_mode=0x644;
 
+/*-- Open debug file */
+
+if (opts->debug_file)
+	{
+	mp->debug.fp=file_open_for_append(opts->debug_file,(apr_int32_t)PIDFILE_MODE);
+	mp->debug.level=opts->debug_level;
+	}
+
 /*--*/
 
 return mp;
@@ -257,6 +267,8 @@ CHECK_MP();
 CHECK_TIME(mp,t);
 
 if (IS_OPEN(mp)) return;
+
+DEBUG(mp,1,"Opening log manager");
 
 /*-- Create PID file */
 
@@ -285,6 +297,8 @@ int i;
 
 CHECK_MP();
 
+DEBUG(mp,1,"Destroying log manager");
+
 /*-- First, close the current log if not already done */
 
 if (IS_OPEN(mp)) logmanager_close(mp,t);
@@ -305,6 +319,10 @@ if (mp->backup.count)
 	{
 	for (i=0;i<mp->backup.count;i++) FREE_LOGFILE(mp->backup.files[i]);
 	}
+
+/*-- Close debug file */
+
+if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 
 /* Free paths */
 
@@ -397,6 +415,8 @@ static void _refresh_backup_links(LOGMANAGER *mp)
 {
 int i;
 
+DEBUG(mp,1,"Refreshing backup links");
+
 if (mp->backup.count)
 	{
 	for (i=0;i<mp->backup.count;i++)
@@ -415,6 +435,8 @@ if (mp->backup.count)
 
 static void _refresh_active_link(LOGMANAGER *mp)
 {
+DEBUG(mp,1,"Refreshing active link");
+
 _clear_logfile_link(mp,mp->active.file);
 _create_logfile_link(mp,mp->active.file,0);
 }
@@ -424,6 +446,8 @@ _create_logfile_link(mp,mp->active.file,0);
 static void _open_active_file(LOGMANAGER *mp)
 {
 if (IS_OPEN(mp)) return;
+
+DEBUG1(mp,1,"Opening active file (%s)",mp->active.file->path);
 
 mp->active.fp=file_open_for_append(mp->active.file->path,mp->create_mode);
 
@@ -451,10 +475,12 @@ void logmanager_close(LOGMANAGER *mp,TIMESTAMP t)
 CHECK_MP();
 CHECK_TIME(mp,t);
 
+DEBUG(mp,1,"Closing logmanager");
+
 _write_end(mp,t);
 _close_active_file(mp);
 
-_dump_status_to_file(mp);
+_dump_status_to_file(mp,t);
 }
 
 /*----------------------------------------------*/
@@ -503,7 +529,7 @@ int i;
 CHECK_MP();
 CHECK_TIME(mp,t);
 
-DEBUG1("Starting rotation (%s)",mp->root_path);
+DEBUG1(mp,1,"Starting rotation (%s)",mp->root_path);
 
 if (IS_OPEN(mp)) _close_active_file(mp);
 
@@ -527,7 +553,7 @@ _refresh_backup_links(mp);
 _new_active_file(mp,t);
 _open_active_file(mp);
 
-_dump_status_to_file(mp);
+_dump_status_to_file(mp,t);
 }
 
 /*----------------------------------------------*/
@@ -548,6 +574,10 @@ static void _remove_oldest_backup(LOGMANAGER *mp)
 if (! mp->backup.count) return; /* Should never happen */
 
 mp->backup.count--;
+
+DEBUG1(mp,1,"Removing oldest backup file (%s)"
+	,mp->backup.files[mp->backup.count]->path);
+
 mp->backup.size -= mp->backup.files[mp->backup.count]->size;
 
 DELETE_LOGFILE(mp->backup.files[mp->backup.count]);
@@ -561,8 +591,8 @@ mp->backup.files=allocate(mp->backup.files,mp->backup.count*sizeof(LOGFILE *));
 
 static void _write_end(LOGMANAGER *mp, TIMESTAMP t)
 {
-_write_level2(mp,mp->rbuf,mp->rlen,0,t);
-mp->rbuf=allocate(mp->rbuf,mp->rlen=0);
+_write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,0,t);
+mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
 }
 
 /*----------------------------------------------*/
@@ -574,7 +604,7 @@ void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 int i;
 BOOL found;
 
-DEBUG1("Starting logmanager_write (size=%d)",size);
+DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",size);
 
 if ((!buf) || (!size)) return;
 
@@ -584,37 +614,37 @@ if (mp->flags & LMGR_IGNORE_EOL)
 	return;
 	}
 
-/* 1. If the buffer contains some data from a previous write, search a '\n'
-from the beginning. If found, output the buffer and data up to \n, truncate
-data. If not found, append data to the buffer */
+/* 1. If eol_buffer contains some data from a previous write, search a '\n'
+from the beginning. If found, output the buffer and input data up to \n,
+truncate data. If not found, append data to the buffer */
 
-if (mp->rbuf)
+if (mp->eol_buffer.buf)
 	{
 	for (i=0;i<size;i++)
 		{
 		if (buf[i]=='\n')
 			{
-			DEBUG1("Flushing %d bytes from eol buffer",mp->rlen);
-			_write_level2(mp,mp->rbuf,mp->rlen,flags,t);
-			mp->rbuf=allocate(mp->rbuf,mp->rlen=0);
+			DEBUG1(mp,2,"Flushing %lu bytes from eol buffer",mp->eol_buffer.len);
+			_write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,flags,t);
+			mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
 			_write_level2(mp,buf,i+1,flags|LMGRW_CANNOT_ROTATE,t);
 			buf += (i+1);
 			size -= (i+1);
 			break;
 			}
 		}
-	if (mp->rbuf) /* if not found, append to rbuf */
+	if (mp->eol_buffer.buf) /* if not found, append to eol_buffer.buf */
 		{
-		DEBUG1("Appending %d bytes to eol buffer",size);
-		mp->rbuf=allocate(mp->rbuf,mp->rlen+size);
-		memcpy(&(mp->rbuf[mp->rlen]),buf,size);
+		DEBUG1(mp,2,"Appending %lu bytes to eol buffer",size);
+		mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len+size);
+		memcpy(&(mp->eol_buffer.buf[mp->eol_buffer.len]),buf,size);
 		buf +=size;
 		size=0;
 		}
 	}
 
-/* 2. Search last \n. If found, move trailing data to rbuf and truncate. If
-not found, put everything in rbuf and return. */
+/* 2. Search last \n. If found, move trailing data to eol_buffer and truncate.
+If not found, put everything in eol_buffer and return. */
 
 if (!size) return;
 
@@ -623,12 +653,12 @@ for (found=NO,i=size-1;i>=0;i--)
 	if (buf[i]=='\n')
 		{
 		found=YES;
-		mp->rlen=size-i-1;
-		if (mp->rlen)
+		mp->eol_buffer.len=size-i-1;
+		if (mp->eol_buffer.len)
 			{
-			DEBUG1("Storing %d bytes in eol buffer",mp->rlen);
-			mp->rbuf=allocate(NULL,mp->rlen);
-			memcpy(mp->rbuf,&(buf[i+1]),mp->rlen);
+			DEBUG1(mp,2,"Storing %lu bytes in eol buffer",mp->eol_buffer.len);
+			mp->eol_buffer.buf=allocate(NULL,mp->eol_buffer.len);
+			memcpy(mp->eol_buffer.buf,&(buf[i+1]),mp->eol_buffer.len);
 			size=i+1;
 			}
 		break;
@@ -637,8 +667,8 @@ for (found=NO,i=size-1;i>=0;i--)
 
 if (!found)
 	{
-	mp->rbuf=allocate(NULL,size);
-	memcpy(mp->rbuf,buf,size);
+	mp->eol_buffer.buf=allocate(NULL,size);
+	memcpy(mp->eol_buffer.buf,buf,size);
 	return;
 	}
 
@@ -687,6 +717,8 @@ static void _get_status_from_file(LOGMANAGER *mp)
 char *buf,*p,*p2,*val;
 apr_off_t bufsize;
 LOGFILE *lp;
+
+DEBUG1(mp,1,"Reading status from file (%s)",mp->status_path);
 
 lp=(LOGFILE *)0; /* Just to remove a warning at compile time */
 
@@ -775,11 +807,13 @@ _sync_logfiles_from_disk(mp);
 		} \
 	}
 
-static void _dump_status_to_file(LOGMANAGER *mp)
+static void _dump_status_to_file(LOGMANAGER *mp, TIMESTAMP t)
 {
 OFILE *fp;
 char buf[32];
 int i;
+
+DEBUG1(mp,1,"Writing status to file (%s)",mp->status_path);
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 
@@ -792,7 +826,7 @@ file_write_string_nl(fp,buf);
 file_write_string_nl(fp,"V " LOGMANAGER_VERSION);
 
 file_write_string(fp,"D ");
-(void)snprintf(buf,sizeof(buf),"%lu",time_now());
+(void)snprintf(buf,sizeof(buf),"%lu",t);
 file_write_string_nl(fp,buf);
 
 file_write_string(fp,"C "); /* Compression type */
@@ -818,6 +852,8 @@ static void _sync_logfiles_from_disk(LOGMANAGER *mp)
 {
 int i,offset;
 LOGFILE **lpp;
+
+DEBUG(mp,1,"Syncing log files from disk");
 
 if (! IS_OPEN(mp)) SYNC_LOGFILE_FROM_DISK(mp->active.file);
 
