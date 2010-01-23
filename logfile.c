@@ -44,23 +44,6 @@ Copyright F. Laupretre (francois@tekwire.net)
 /* Interrupt system - Delays signals until they can be handled, so that
   everything remain in a consistent state */
 
-#define INTR_INIT()	{ \
-			intr_init_done=YES; \
-			NO_INTR_START(); \
-			(void)apr_signal(SIGHUP,sighup_handler); \
-			(void)apr_signal(SIGUSR1,sigusr1_handler); \
-			(void)apr_signal(SIGTERM,sig_terminate_handler); \
-			NO_INTR_END_DISCARD(); \
-			}
-
-#define INTR_SHUTDOWN()	{ \
-			intr_init_done=NO; \
-			(void)apr_signal(SIGHUP,SIG_IGN); \
-			(void)apr_signal(SIGUSR1,SIG_IGN); \
-			(void)apr_signal(SIGTERM,SIG_IGN); \
-			RESET_PENDING_ACTIONS(); \
-			}
-
 #define NO_INTR_START()	{ \
 			if (intr_init_done) intr_count++; \
 			}
@@ -115,6 +98,7 @@ static BOOL terminate_requested=NO;
 static apr_fileperms_t logfile_mode;
 static BOOL intr_init_done=NO;
 static int keep_count;
+static BOOL init_done=NO;
 
 /*----------------------------------------------*/
 
@@ -125,17 +109,21 @@ static void logfile_close(void);
 static void logfile_do_flush(void);
 static void logfile_do_rotate(void);
 static void logfile_do_terminate(void);
-static void sighup_handler(int signum);
-static void sigusr1_handler(int signum);
+static void sig_rotate_handler(int signum);
+static void sig_flush_handler(int signum);
 static void sig_terminate_handler(int signum);
 static char *logfile_filename(int num);
 static void rotate_file(int level, char *path);
+static void intr_init(void);
+static void intr_shutdown(void);
 
 /*----------------------------------------------*/
 
-static void sighup_handler(/*@unused@*/ int signum)
+static void sig_rotate_handler(/*@unused@*/ int signum)
 {
 static BOOL running=NO;
+
+DEBUG1("Rotate signal received (signal=%d)",signum);
 
 if (running) return;
 running=YES;
@@ -148,9 +136,11 @@ running=NO;
 
 /*----------------------------------------------*/
 
-static void sigusr1_handler(/*@unused@*/ int signum)
+static void sig_flush_handler(/*@unused@*/ int signum)
 {
 static BOOL running=NO;
+
+DEBUG1("Flush signal received (signal=%d)",signum);
 
 if (running) return;
 running=YES;
@@ -163,9 +153,11 @@ running=NO;
 
 /*----------------------------------------------*/
 
-static void sig_terminate_handler(/*@unused@*/ int signum)
+static void sig_terminate_handler(int signum)
 {
 static BOOL running=NO;
+
+DEBUG1("Terminate signal received (signal=%d)",signum);
 
 if (running) return;
 running=YES;
@@ -180,6 +172,7 @@ running=NO;
 
 static void logfile_do_terminate(void)
 {
+DEBUG("Exiting on signal");
 exit(0);
 }
 
@@ -228,9 +221,73 @@ logfile_open();
 	
 /*----------------------------------------------*/
 
+static void intr_init()
+{
+intr_init_done=YES; \
+
+NO_INTR_START(); \
+
+(void)apr_signal(SIGHUP,sig_rotate_handler);
+(void)apr_signal(SIGUSR1,sig_flush_handler);
+#ifdef SIGTERM
+(void)apr_signal(SIGTERM,sig_terminate_handler);
+#endif
+#ifdef SIGINT
+(void)apr_signal(SIGINT,sig_terminate_handler);
+#endif
+#ifdef SIGQUIT
+(void)apr_signal(SIGQUIT,sig_terminate_handler);
+#endif
+#ifdef SIGTRAP
+(void)apr_signal(SIGTRAP,sig_terminate_handler);
+#endif
+#ifdef SIGABRT
+(void)apr_signal(SIGABRT,sig_terminate_handler);
+#endif
+#ifdef SIGURG
+(void)apr_signal(SIGURG,sig_terminate_handler);
+#endif
+
+NO_INTR_END_DISCARD();
+}
+
+/*----------------------------------------------*/
+
+void intr_shutdown()
+{
+intr_init_done=NO; \
+
+(void)apr_signal(SIGHUP,SIG_IGN);
+(void)apr_signal(SIGUSR1,SIG_IGN);
+#ifdef SIGTERM
+(void)apr_signal(SIGTERM,SIG_IGN);
+#endif
+#ifdef SIGINT
+(void)apr_signal(SIGINT,SIG_IGN);
+#endif
+#ifdef SIGQUIT
+(void)apr_signal(SIGQUIT,SIG_IGN);
+#endif
+#ifdef SIGTRAP
+(void)apr_signal(SIGTRAP,SIG_IGN);
+#endif
+#ifdef SIGABRT
+(void)apr_signal(SIGABRT,SIG_IGN);
+#endif
+#ifdef SIGURG
+(void)apr_signal(SIGURG,SIG_IGN);
+#endif
+
+RESET_PENDING_ACTIONS(); \
+}
+
+/*----------------------------------------------*/
+
 void logfile_init(const char *path,apr_off_t maxsize_arg,apr_fileperms_t mode
 	,int keep_count_arg)
 {
+if (init_done) return;
+
 DEBUG1("Entering logfile_init: path=%s",path);
 DEBUG1("Entering logfile_init: maxsize=%lu",(unsigned long)maxsize_arg);
 DEBUG1("Entering logfile_init: mode=0x%x",(unsigned int)mode);
@@ -252,14 +309,18 @@ create_pid_file();
 
 logfile_open();
 
-INTR_INIT();
+intr_init();
+
+init_done=YES;
 }
 
 /*----------------------------------------------*/
 
 void logfile_shutdown()
 {
-INTR_SHUTDOWN();
+if (!init_done) return;
+
+intr_shutdown();
 
 logfile_close();
 
@@ -267,6 +328,8 @@ destroy_pid_file();
 
 logpath=allocate(logpath,0);
 rootpath=allocate(rootpath,0);
+
+init_done=NO;
 }
 
 /*----------------------------------------------*/
@@ -347,6 +410,10 @@ if (file_exists(path))
 		(void)file_rename(path,oldpath,YES);
 		oldpath=allocate(oldpath,0);
 		}
+	}
+else
+	{
+	DEBUG1("Stopping rotation because file %s does not exist",path);
 	}
 }
 

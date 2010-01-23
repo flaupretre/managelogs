@@ -41,7 +41,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define MANAGELOGS_VERSION	"1.0b1"
+#define MANAGELOGS_VERSION	"1.0rc1"
 
 /*----------------------------------------------*/
 

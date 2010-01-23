@@ -188,7 +188,7 @@ while (YES)
 		case 'k':
 			keep_count=-1;
 			keep_count=atoi(opt_arg);
-			if (keep_count < 0)
+			if (keep_count <= 0)
 				{
 				usage(-1);
 				FATAL_ERROR_1("Invalid keep value : %s",opt_arg);

@@ -158,15 +158,14 @@ return fp;
 
 void file_write(OFILE *fp, const char *buf, apr_size_t size)
 {
-apr_size_t nwrite;
-
 if (size==0) return;
 
 DEBUG2("Writing %d bytes to %s",(int)size,fp->path);
 
-nwrite=size;
-(void)apr_file_write(fp->fd, buf, &nwrite);
-if (nwrite!=size) FATAL_ERROR_1("Cannot write to file (%s)",fp->path);
+if (apr_file_write_full(fp->fd, buf, size, NULL)!=APR_SUCCESS)
+	{
+	FATAL_ERROR_1("Cannot write to file (%s)",fp->path);
+	}
 
 fp->size += size;
 }
