@@ -38,6 +38,7 @@ PRIVATE_POOL
 
 static OFILE *_new_ofile(const char *path);
 static void _destroy_ofile(OFILE *fp);
+static void clear_umask(void);
 
 /*----------------------------------------------*/
 
@@ -50,6 +51,13 @@ fp->path=duplicate(path);
 fp->fd=NULL;
 fp->size=0;
 return fp;
+}
+
+/*----------------------------------------------*/
+
+static void clear_umask()
+{
+(void)umask((mode_t)0);
 }
 
 /*----------------------------------------------*/
@@ -103,6 +111,7 @@ OFILE *file_create(const char *path, apr_int32_t mode)
 OFILE *fp;
 
 fp=_new_ofile(path);
+clear_umask();
 apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_TRUNCATE,mode,_POOL);
 if (!(fp->fd))
 	{
@@ -140,6 +149,7 @@ else
 	if (!strcmp(path,"stderr")) apr_file_open_stderr(&(fp->fd),_POOL);
 	else
 		{
+		clear_umask();
 		(void)apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND
 			,mode,_POOL);
 

@@ -100,15 +100,19 @@ static void _signal_handler(int sig)
 {
 switch(sig)
 	{
+#ifdef SIGUSR1
 	case SIGUSR1:
-		set_pending_action(FLUSH_ACTION);
-		check_and_run_pending_action();
-		break;
-
-	case SIGHUP:
 		set_pending_action(ROTATE_ACTION);
 		check_and_run_pending_action();
 		break;
+#endif
+
+#ifdef SIGUSR2
+	case SIGUSR2:
+		set_pending_action(FLUSH_ACTION);
+		check_and_run_pending_action();
+		break;
+#endif
 
 #ifdef SIGTERM
 		case SIGTERM:
@@ -138,11 +142,11 @@ switch(sig)
 
 void signal_init()
 {
-#ifdef SIGHUP
-(void)apr_signal(SIGHUP,_signal_handler);
-#endif
 #ifdef SIGUSR1
 (void)apr_signal(SIGUSR1,_signal_handler);
+#endif
+#ifdef SIGUSR2
+(void)apr_signal(SIGUSR2,_signal_handler);
 #endif
 #ifdef SIGTERM
 (void)apr_signal(SIGTERM,_signal_handler);
@@ -168,11 +172,11 @@ void signal_init()
 
 void signal_shutdown()
 {
-#ifdef SIGHUP
-(void)apr_signal(SIGHUP,SIG_IGN);
-#endif
 #ifdef SIGUSR1
 (void)apr_signal(SIGUSR1,SIG_IGN);
+#endif
+#ifdef SIGUSR2
+(void)apr_signal(SIGUSR2,SIG_IGN);
 #endif
 #ifdef SIGTERM
 (void)apr_signal(SIGTERM,SIG_IGN);
