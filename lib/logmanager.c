@@ -175,13 +175,17 @@ static void _create_pid_file(LOGMANAGER *mp)
 {
 OFILE *fp;
 char buf[32],*pid_path;
+unsigned long pid,ppid;
 
+pid=(unsigned long)getpid();
+ppid=(unsigned long)getppid();
 pid_path=_pid_path(mp);
-DEBUG1(mp,1,"Creating PID file (%s)",pid_path);
+DEBUG2(mp,1,"Creating PID file (%s, pid=%lu)",pid_path,pid);
+DEBUG1(mp,2,"PPID=%lu",ppid);
 
 fp=file_create(pid_path,(apr_int32_t)PIDFILE_MODE);
 
-(void)snprintf(buf,sizeof(buf),"%lu",(unsigned long)getpid());
+(void)snprintf(buf,sizeof(buf),"%lu",pid);
 file_write_string_nl(fp, buf);
 
 (void)file_close(fp);
