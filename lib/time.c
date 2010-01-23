@@ -37,12 +37,7 @@ return (TIMESTAMP)apr_time_sec(apr_time_now());
 
 TIMESTAMP strval_to_time(const char *val)
 {
-TIMESTAMP t;
-
-if (sscanf(val,"%lu",&t)!=1)
-	FATAL_ERROR1("Cannot read timestamp (%s)",val);
-
-return t;
+return (TIMESTAMP)strval_to_ulong(val);
 }
 
 /*----------------------------------------------*/

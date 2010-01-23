@@ -47,6 +47,7 @@ typedef unsigned long TIMESTAMP;
 #define LMGR_ACTIVE_LINK	0x1
 #define LMGR_BACKUP_LINKS	0x2
 #define LMGR_HARD_LINKS		0x4
+#define LMGR_IGNORE_EOL		0x8
 
 /*----------------------------------------------*/
 
@@ -70,12 +71,12 @@ typedef struct
 /* Functions */
 
 extern LOGMANAGER *new_logmanager_v1(LOGMANAGER_OPTIONS_V1 *opts,TIMESTAMP t);
-extern void logmanager_destroy(LOGMANAGER *mp);
+extern void logmanager_destroy(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_open(LOGMANAGER *mp,TIMESTAMP t);
-extern void logmanager_close(LOGMANAGER *mp);
+extern void logmanager_close(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
-extern void logmanager_flush(LOGMANAGER *mp);
+extern void logmanager_flush(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);
 extern char *logmanager_compression_list(void);
 extern char *logmanager_version(void);

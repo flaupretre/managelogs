@@ -42,7 +42,7 @@ INSTALL_DIR = $(APACHE)/bin
 
 #--------------------------------------------------------------------
 
-.PHONY: all clean install splint
+.PHONY: all clean install splint lib
 
 all: $(TARGETS)
 
@@ -53,10 +53,10 @@ clean:
 install: $(TARGETS)
 	cp $(TARGETS) $(INSTALL_DIR)
 
-managelogs: $(MANAGELOGS_OBJS) lib/liblogmanager.a
+managelogs: $(MANAGELOGS_OBJS) lib
 	$(CC) $(LDFLAGS) -o $@ $(MANAGELOGS_OBJS) $(LIBS)
 
-lib/liblogmanager.a:
+lib:
 	cd lib && $(MAKE)
 
 .c.o:

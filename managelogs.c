@@ -43,7 +43,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define BUFSIZE	65536
+#define CHUNK_MAX	65536
 
 /*----------------------------------------------*/
 
@@ -63,7 +63,7 @@ static void shutdown_proc()
 {
 signal_shutdown();
 
-if (mp) logmanager_destroy(mp);
+if (mp) logmanager_destroy(mp,NOW);
 
 apr_terminate();
 }
@@ -73,7 +73,7 @@ apr_terminate();
 int main (int argc, char * argv[])
 {
 apr_file_t *f_stdin;
-apr_size_t nread;
+apr_size_t nread,chunk_size;
 char buf[BUFSIZE];
 apr_status_t status;
 LOGMANAGER_OPTIONS_V1 *op;
@@ -91,7 +91,9 @@ op=get_options(argc,argv);
 /* Create and open log manager */
 
 mp=new_logmanager_v1(op,NOW);
+
 logmanager_open(mp,NOW);
+
 signal_init();
 
 /* Open stdin for reading */
@@ -99,11 +101,22 @@ signal_init();
 if (apr_file_open_stdin(&f_stdin,_POOL) != APR_SUCCESS)
 	FATAL_ERROR("Cannot open stdin\n");
 
+/* Adapt read size if limit is small (better precision on rotation) */
+/* '10' is my choice, it could be another value */
+
+chunk_size=CHUNK_MAX;
+if (op->file_maxsize && (op->file_maxsize/10) < chunk_size)
+	chunk_size=(op->file_maxsize/10);
+
+/* Free options struct as we don't need it anymore */
+
+free_options(op);
+
 /* Loop forever */
 
 for (;;)
 	{
-	nread=sizeof(buf);
+	nread=chunk_size;
 	status=apr_file_read(f_stdin, buf, &nread);
 	if (status==APR_EOF) do_action(TERMINATE_ACTION);
 	if (status != APR_SUCCESS) exit(3);

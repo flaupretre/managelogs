@@ -55,9 +55,5 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #define STATUSFILE_MODE	0x0644
 
-/* Lower limit for file and global max size */
-
-#define LOWER_LIMIT		(100*1024)	/* 10 Kbytes */
-
 /*----------------------------------------------*/
 #endif	/* __CONFIG_H */

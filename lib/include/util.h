@@ -80,6 +80,7 @@ extern void *allocate(/*@null@*/ const void *p, size_t size);
 extern void *duplicate(const char *string);
 extern void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
 extern void set_debug(BOOL toggle);
+extern unsigned long strval_to_ulong(const char *val);
 
 /*----------------------------------------------*/
 #endif	/* __UTIL_H */

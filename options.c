@@ -46,6 +46,7 @@ static apr_getopt_option_t long_options[]=
 	{"link",'l',0 },
 	{"backup-links",'L',0 },
 	{"hardlink",'H',0 },
+	{"ignore-eol",'n',0 },
 	{"",'\0', 0 }
 	};
 
@@ -53,7 +54,12 @@ PRIVATE_POOL
 
 /*----------------------------------------------*/
 
-void usage(int rc)
+static apr_off_t convert_size_string(const char *str);
+static void usage(int rc);
+
+/*----------------------------------------------*/
+
+static void usage(int rc)
 {
 FILE *fd;
 char *clist;
@@ -63,7 +69,7 @@ clist=logmanager_compression_list();
 
 fprintf(fd,"\
 managelogs version %s\n\
-\nUsage: %s [options...] <path>\n",MANAGELOGS_VERSION,cmd);
+\nUsage: %s [options...] <root-path>\n",MANAGELOGS_VERSION,cmd);
 
 fprintf(fd,"\
 \n\
@@ -75,36 +81,43 @@ Options :\n\
  \n\
  -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
                      corresponding suffix to the log file names.\n\
-                        <comp> is one of : %s\n\
-                        <level> is one of {0123456789bf} (f=fast, b=best)\n\
-                        Default level depends on the compression engine\n\
+                       <comp> is one of : %s\n\
+                       <level> is one of {123456789bf} (f=fast, b=best)\n\
+                       Default level depends on the compression engine\n\
 \n\
  -s|--size <size>    Set the maximum size at which rotation occurs\n\
-                        <size> is a numeric value optionnally followed\n\
-                        by 'K' (Kilo), 'M' (Mega), or 'G' (Giga)\n\
-                        Default: no limit\n\
- -S|--global-size    Set the maximum log files can take on disk (active +\n\
-                        backups). Arg: same syntax as '--size'\n\
+                       <size> is a numeric value optionnally followed\n\
+                       by 'K' (Kilo), 'M' (Mega), or 'G' (Giga)\n\
+                       Default: no limit\n\
 \n\
- -m|--mode <mode>    File mode to use for newly-created log files\n\
-                        <mode> is a numeric Unix-style file	permission\n\
-                        (see chmod(2)). Default mode: %x\n\
+ -S|--global-size    Set the maximum size log files will take on disk (active\n\
+                       log + backups). Arg syntax: see '--size'\n\
+\n\
+ -m|--mode <mode>    Permissions to set when creating a new log file\n\
+                       <mode> is a numeric Unix-style file	permission\n\
+                       (man chmod(2) for more). Default mode: %x\n\
 \n\
  -u|--user <id>      Program runs with this user ID\n\
-                        <id> = <uid>[:<gid>]\n\
-                        <uid> and <gid> are user/group names or numeric ids\n\
+                       <id> = <uid>[:<gid>]\n\
+                       <uid> and <gid> are user/group names or numeric ids\n\
 \n\
- -k|--keep <n>       Keep only <n> log files (the current log file and <n-1>\n\
+ -k|--keep <n>       Only keep <n> log files (the current log file + <n-1>\n\
                      backups)\n\
 \n\
  -V|--version        Print version and exit\n\
 \n\
- -l|--link           Maintain a symbolic or hard links to the actual log files\n\
-                     '-H' allows to choose between symbolic and hard links\n\
+ -l|--link           Maintain a link from <root-path> to the current log file\n\
+                     (See '-H' to choose between hard/symbolic links)\n\
 \n\
- -L|--backup-links   Also maintain links to the backup log files\n\
+ -L|--backup-links   Maintain links to the current and backup log files\n\
+                     (backup links are named <root-path>.<1,2,...>, most\n\
+                     recent first)\n\
 \n\
  -H|--hardlink       Create hard links instead of symbolic links\n\
+\n\
+ -n|--ignore-eol     By default, log files are always rotated on line\n\
+                     boundaries. This flag disables this mechanism.\n\
+\n\
 \n",clist,LOGFILE_MODE);
 
 (void)allocate(clist,0);
@@ -183,20 +196,24 @@ while (YES)
 			break;
 
 		case 'L':
-			op->flags |= LMGR_BACKUP_LINKS;
+			op->flags |= (LMGR_ACTIVE_LINK | LMGR_BACKUP_LINKS);
+			break;
+
+		case 'n':
+			op->flags |= LMGR_IGNORE_EOL;
 			break;
 		}
 	}
 
 op->root_path=duplicate(argv[opt_s->ind]);
-if ((!(op->root_path)) || (!(*(op->root_path)))) usage(1);
+if ((!(op->root_path)) || (op->root_path[0]=='\0')) usage(1);
 
 return op;
 }
 
 /*----------------------------------------------*/
 
-apr_off_t convert_size_string(const char *str)
+static apr_off_t convert_size_string(const char *str)
 {
 char c;
 apr_off_t result;
@@ -211,6 +228,17 @@ while ((c=(*(str++)))!='\0')
 	result = (result*10)+(apr_off_t)(c-'0');
 	}
 return result;
+}
+
+/*----------------------------------------------*/
+
+LOGMANAGER_OPTIONS_V1 *free_options(LOGMANAGER_OPTIONS_V1 *op)
+{
+
+(void)allocate(op->root_path,0);
+(void)allocate(op->compress_string,0);
+
+return allocate(op,0);
 }
 
 /*----------------------------------------------*/

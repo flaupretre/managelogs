@@ -199,7 +199,7 @@ void do_action(unsigned int action)
 switch(action)
 	{
 	case FLUSH_ACTION:
-		logmanager_flush(mp);
+		logmanager_flush(mp,NOW);
 		break;
 
 	case ROTATE_ACTION:

@@ -107,3 +107,15 @@ debug_toggle=toggle;
 }
 
 /*----------------------------------------------*/
+
+unsigned long strval_to_ulong(const char *val)
+{
+unsigned long l;
+
+if (sscanf(val,"%lu",&l)!=1)
+	FATAL_ERROR1("Cannot read numeric value (%s)",val);
+
+return l;
+}
+
+/*----------------------------------------------*/

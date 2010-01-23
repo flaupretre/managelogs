@@ -28,9 +28,8 @@ extern char *cmd;
 
 /*----------------------------------------------*/
 
-extern void usage(int rc);
-LOGMANAGER_OPTIONS_V1 *get_options(int argc, char **argv);
-extern apr_off_t convert_size_string(const char *str);
+extern LOGMANAGER_OPTIONS_V1 *get_options(int argc, char **argv);
+extern LOGMANAGER_OPTIONS_V1 *free_options(LOGMANAGER_OPTIONS_V1 *op);
 
 /*----------------------------------------------*/
 #endif	/* __OPTIONS_H */
