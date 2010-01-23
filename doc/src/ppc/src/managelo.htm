@@ -1,0 +1,145 @@
+<p>{toc}</p>
+
+<p>&nbsp;</p>
+
+<table border="1" cellpadding="3" cellspacing="0" style="border-collapse: collapse" bordercolor="#111111" width="100%">
+  <tr>
+    <th colspan="3" bgcolor="#FFFFE8" width="837"><i>Document history</i></th>
+  </tr>
+  <tr>
+    <td width="90">V 1.0rc1</td>
+    <td width="134">NOV 2008</td>
+    <td width="780">
+    First release</td>
+  </tr>
+  </table>
+<p>&nbsp;</p>
+<h1>Introduction</h1>
+<b>managelogs</b> is a log management program, primarily used as an alternative 
+to the
+<a target="_blank" href="http://httpd.apache.org/docs/2.0/programs/rotatelogs.html">rotatelogs</a> program 
+distributed with the <a target="_blank" href="http://httpd.apache.org/">Apache 
+HTTP server</a>. It provides some features not present in <i>rotatelogs,</i> nor other 
+similar software like <a target="_blank" href="http://cronolog.org/index.html">cronolog</a>.<p>
+Main features :</p>
+<ul>
+  <li>
+  Automatically rotates the log file when size exceeds a given value (same as rotatelogs),</li>
+  <li>
+  Automatically purges log files so that their total size on disk does 
+  not exceed a given value,</li>
+  <li>
+  Rotation can be triggered by an external signal sent to the managelogs process,</li>
+  <li>
+  Can write compressed log files (gzip or bzip2),</li>
+  <li>
+  The process can modify its own user/group ID, so that files are created using 
+  these credentials,</li>
+  <li>
+  The permissions to apply to newly-created log files can be set from the
+  command line</li>
+</ul>
+[:note]
+Compared to rotatelogs and cronolog, managelogs does not support  time-related features, such as
+<i>strftime</i>  patterns in filename specs, or log rotation after a given delay. 
+See the 'future development' chapter below for more on time-related issues.<h1>Features</h1>
+<h2>Rotation on file size</h2>
+<p>This feature is similar to the one provided by <i>rotatelogs</i> : each time
+some data is to be written to the log file, the resulting size is checked against
+a limit specified on the command line. If the write operation would cause the 
+size to exceed the limit, a rotation is executed first, and the write 
+operation then goes to a newly-created log file.</p>
+<p>The limit always applies to the data written on disk, which means that, when 
+this feature is used along with compression, the limit applies to the compressed
+data. See <a href="#compression"> below</a> for more on compressed size prediction.</p>
+<p>When this option is not set, the size of log files is only restricted by the available size in 
+the file system (or by other system-specific limitations).</p>
+<h2>Purge</h2>
+<h2><a name="compression"></a>Compression</h2>
+<p>managelogs can write compressed log files (gzip or bzip2 format). You can also
+set the 
+compression level (speed vs compression ratio). When compression is turned on, the 
+corresponding suffix ('.gz' or '.bz2') is appended to the log file names.</p>
+<p>The compression formats we use support concatenation, which means that data
+can be appended to an already existing compressed file. So, there is no
+restriction on Apache stop/start/restart operations when compression is
+on.&nbsp;</p>
+<p>Compression greatly reduces the size taken 
+by log files on disk, but, of course :), it also brings some constraints. The
+constraint comes from the fact that the compressed file needs to contain some trailer 
+information at the end of each block of data before it can be read and
+uncompressed by an external program. So, if you try to retrieve the original 
+data by uncompressing the active logfile, you will get an 'unexpected end of 
+file' error message. Fortunately, there is a workaround: before reading from the
+compressed log file, you must force the compression engine to flush its data and
+properly close the current block on disk. This is achieved by sending a SIGUSR1
+signal to the managelogs process (see below for more on signals). This 
+operation should not be done too often as it adds 18 bytes to the compressed 
+data.</p>
+<p>Of course, this applies only to the currently active log file. One it has 
+been rotated, it can be used as any compressed file.</p>
+<p>[:note] When using compression along with the rotation on a maximum file 
+size, the given limit can be exceeded by up to 100 Kilobytes, because it is 
+almost impossible to predict the future compressed size accurately. managelogs 
+uses an adaptative algorithm to maintain a current compression ratio, which is 
+used to predict the size of the compressed data, but the result cannot be 
+absolutely perfect. This shouldn't be too serious because, in typical 
+configurations, the log size is over 1 Mb (which is the minimum you can set in
+<i>rotatelogs</i>).</p>
+<p>Here are the compression ratio and CPU time I got when running my Apache logs 
+through managelogs with various compression formats and levels :</p>
+<table border="1" cellpadding="3" cellspacing="0" style="border-collapse: collapse" bordercolor="#111111" id="AutoNumber1" width="642">
+  <tr>
+    <th width="80" align="center">Compression</th>
+    <th width="85" align="center">&nbsp;</th>
+    <th width="59" align="center">Fast (1)</th>
+    <th width="54" align="center">Best (9)</th>
+    <th width="328">
+    <p align="center">Comments</th>
+  </tr>
+  <tr>
+    <td rowspan="2" width="80" align="center">gzip</td>
+    <td width="85" align="left">Compr. ratio</td>
+    <td width="59" align="center">1:8</td>
+    <td width="54" align="center">1:10</td>
+    <td rowspan="2" width="328">Higher level does not compress much better but 
+    uses a lot more CPU time ! </td>
+  </tr>
+  <tr>
+    <td width="85" align="left">Time(s)</td>
+    <td width="59" align="center">2</td>
+    <td width="54" align="center">7</td>
+  </tr>
+  <tr>
+    <td rowspan="2" width="80" align="center">bzip2</td>
+    <td width="85" align="left">Compr. ratio</td>
+    <td width="59" align="center">1:12</td>
+    <td width="54" align="center">1:23</td>
+    <td rowspan="2" width="328">Compression efficiency and CPU usage are more 
+    linearly related. Best compression is twice more efficient than the fastest 
+    one, and twice slower.</td>
+  </tr>
+  <tr>
+    <td width="85" align="left">Time(s)</td>
+    <td width="59" align="center">27</td>
+    <td width="54" align="center">40</td>
+  </tr>
+</table>
+<p>The figures above should be a good starting point to choose your own 
+compression parameters.</p>
+<h2>Changing user/group ID</h2>
+<h2>File permissions</h2>
+<h1>File names and rotation</h1>
+<h2>PID file</h2>
+<h2>Rotation</h2>
+<h1>Synopsis</h1>
+<h1>License</h1>
+<p>This software is released under the terms of the Apache 2.0 license.</p>
+<h1>Download</h1>
+<h1>Compiling</h1>
+<h1>FAQ</h1>
+<h1>Examples</h1>
+<h1>Features to come...</h1>
+<h2>Time-related features</h2>
+<h2>Symbolic links</h2>
+<h1>Bugs</h1>
