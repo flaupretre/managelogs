@@ -101,7 +101,8 @@ Options :\n\
 \n\
  -s|--size <size>    Set the maximum size at which rotation occurs\n\
                        <size> is a numeric value optionnally followed\n\
-                       by 'K' (Kilo), 'M' (Mega), or 'G' (Giga)\n\
+                       by 'K' (Kilo), 'M' (Mega), or 'G' (Giga). <size>\n\
+                       can also be set to 'min' (minimum value)\n\
                        Default: no limit\n\
 \n\
  -S|--global-size    Set the maximum size log files will take on disk (active\n\
@@ -131,6 +132,9 @@ Options :\n\
 \n\
  -e|--ignore-eol     By default, log files are always rotated on line\n\
                      boundaries. This flag disables this mechanism.\n\
+\n\
+ -I|--stats          Display internal stats before exiting (for\n\
+                     troubleshooting, debugging, and performance tests)\n\
 \n\
 \n",clist,LOGFILE_MODE);
 
@@ -232,9 +236,11 @@ while (YES)
 		}
 	}
 
+if ((!(argv[opt_s->ind])) || (argv[opt_s->ind+1])) usage(1);
+
 op->root_path=duplicate(argv[opt_s->ind]);
-if ((argv[opt_s->ind+1]) || (!(op->root_path)) || (op->root_path[0]=='\0'))
-	usage(1);
+
+if (! op->root_path[0]) usage(1);
 
 return op;
 }

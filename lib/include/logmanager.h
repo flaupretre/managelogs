@@ -78,6 +78,7 @@ typedef struct
 	int api_version;
 	char *root_dir;
 	char *root_path;
+	char *status_path;
 	unsigned int flags;
 	struct
 		{

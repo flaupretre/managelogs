@@ -80,7 +80,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	if (_lp) \
 		{ \
 		if (file_exists((_lp)->path)) (_lp)->size=file_size((_lp)->path); \
-		else FREE_LOGFILE(_lp); \
+		else DELETE_LOGFILE(_lp); \
 		} \
 	}
 
@@ -137,6 +137,9 @@ static void _create_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num);
 static void _write_end(LOGMANAGER *mp, TIMESTAMP t);
 static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
+static char *_absolute_path(LOGMANAGER *mp, const char *str);
+static char *_dirname(const char *path);
+static const char *_basename(const char *path);
 
 /*----------------------------------------------*/
 /* Return absolute path of PID file */
@@ -146,7 +149,7 @@ static char *_pid_path(LOGMANAGER *mp)
 char *p;
 int len;
 
-p=allocate(len=(strlen(mp->root_path)+5));
+p=allocate(NULL,len=(strlen(mp->root_path)+5));
 snprintf(p,len,"%s.pid",mp->root_path);
 
 return p;
@@ -160,7 +163,7 @@ static char *_status_path(LOGMANAGER *mp)
 char *p;
 int len;
 
-p=allocate(len=(strlen(mp->root_path)+8));
+p=allocate(NULL,len=(strlen(mp->root_path)+8));
 snprintf(p,len,"%s.status",mp->root_path);
 
 return p;
@@ -221,7 +224,6 @@ C_HANDLER(mp,flush);
 LOGMANAGER *new_logmanager_v1(LOGMANAGER_OPTIONS_V1 *opts,TIMESTAMP t)
 {
 LOGMANAGER *mp;
-int len;
 
 mp=(LOGMANAGER *)allocate(NULL,sizeof(LOGMANAGER));
 
@@ -238,6 +240,7 @@ mp->last_time=t;
 
 mp->root_path=duplicate(opts->root_path);
 mp->root_dir=_dirname(mp->root_path);
+mp->status_path=_status_path(mp);
 
 /*-- Flags */
 
@@ -357,6 +360,7 @@ FREE_LOGFILE(mp->active.file);
 if (mp->backup.count)
 	{
 	for (i=0;i<mp->backup.count;i++) FREE_LOGFILE(mp->backup.files[i]);
+	(void)allocate(mp->backup.files,0);
 	}
 
 /*-- Close debug file */
@@ -366,7 +370,7 @@ if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 /* Free paths */
 
 (void)allocate(mp->root_path,0);
-(void)allocate(mp->pid_path,0);
+(void)allocate(mp->root_dir,0);
 (void)allocate(mp->status_path,0);
 
 /* Last, free the envelope */
@@ -393,7 +397,7 @@ if (num)
 
 if (mp->compress.handler->suffix)
 	{
-	p=allocate(p,len += strlen(mp->compress.handler->suffix));
+	p=allocate(p,len += (strlen(mp->compress.handler->suffix)+1));
 	strcat(p,".");
 	strcat(p,mp->compress.handler->suffix);
 	}
@@ -413,18 +417,46 @@ if (lp && lp->link)
 }
 
 /*----------------------------------------------*/
+/* Return a pointer to the char after the last separator. If a separator
+is not found, return a pointer to the full string.
+Warning : the output is not duplicated : it is a pointer inside the input */
 
-static char *_basename(const char *path)
+static const char *_basename(const char *path)
 {
-char *p,c;
+const char *p;
+char c;
 int i;
 
 for (i=strlen(path);;i--)
 	{
-	if (!i) return path;
+	if (!i) break;
 	c=(*(p=path+i));
 	if (!c) continue; /* First char of non-empty string */
 	if ((c=='/')||(c=='\\')) return (p+1);
+	}
+return path;
+}
+
+/*----------------------------------------------*/
+/* Return a duplicate of the dirname of a path (with the trailing separator) */
+/* An empty string and a string without separator return a null pointer */
+
+static char *_dirname(const char *path)
+{
+const char *p;
+char *p2,c;
+int i;
+
+for (i=strlen(path)-1;;i--)
+	{
+	if (i < 0) return NULL;
+	c=(*(p=&(path[i])));
+	if ((c=='/')||(c=='\\'))
+		{
+		p2=duplicate_mem(path,i+2);
+		p2[i+1]='\0';
+		return p2;
+		}
 	}
 }
 
@@ -658,6 +690,9 @@ void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 {
 int i;
 
+CHECK_MP(mp);
+CHECK_TIME(mp,t);
+
 /*DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",size);*/
 INCR_STAT_COUNT(write);
 
@@ -727,14 +762,14 @@ if (size) _write_level2(mp,buf,size,flags,t);
 }
 
 /*----------------------------------------------*/
+/* Before starting a rotation, we check the existing backup files on disk
+to confirm actual sizes. If a backup file has been deleted by an external
+action, maybe we don't actually exceed the limits */
 
 static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
 apr_off_t csize;
-
-CHECK_MP(mp);
-CHECK_TIME(mp,t);
 
 INCR_STAT_COUNT(write2);
 
@@ -747,7 +782,9 @@ if (!csize) csize=size;
 
 if ((!(flags & LMGRW_CANNOT_ROTATE)) && SHOULD_ROTATE(mp,csize))
 	{
-	logmanager_rotate(mp,t); /* includes a purge */
+	/* Confirm that we should rotate */
+	_sync_logfiles_from_disk(mp);
+	if (SHOULD_ROTATE(mp,csize)) logmanager_rotate(mp,t); /* includes a purge */
 	}
 else _purge_backup_files(mp,csize);
 
@@ -761,16 +798,29 @@ mp->active.file->end=t;
 }
 
 /*----------------------------------------------*/
+
+static char *_absolute_path(LOGMANAGER *mp, const char *str)
+{
+char *p;
+int len;
+
+if (!mp->root_dir) return duplicate(str);
+
+p=allocate(NULL,len=strlen(mp->root_dir)+strlen(str)+2);
+snprintf(p,len,"%s%s",mp->root_dir,str);
+return p;
+}
+
+/*----------------------------------------------*/
 /* NB: the order of backup files must be preserved from file to mem */
 
 static void _get_status_from_file(LOGMANAGER *mp)
 {
-char *buf,*p,*p2,*val,*status_path;
+char *buf,*p,*p2,*val;
 apr_off_t bufsize;
 LOGFILE *lp;
 
-status_path=_status_path(mp);
-DEBUG1(mp,1,"Reading status from file (%s)",status_path);
+DEBUG1(mp,1,"Reading status from file (%s)",mp->status_path);
 
 lp=(LOGFILE *)0; /* Just to remove a warning at compile time */
 
@@ -780,9 +830,9 @@ mp->backup.files=(LOGFILE **)0;
 mp->backup.count=0;
 mp->backup.size=0;
 
-if (file_exists(status_path))
+if (file_exists(mp->status_path))
 	{
-	p=buf=file_get_contents(status_path,&bufsize);
+	p=buf=file_get_contents(mp->status_path,&bufsize);
 	while ((p2=strchr(p,'\n'))!=NULL)
 		{
 		(*p2)='\0';
@@ -791,13 +841,13 @@ if (file_exists(status_path))
 			{
 			case 'a':
 				lp=NEW_LOGFILE();
-				lp->path=path_combine(mp->root_dir,val);
+				lp->path=_absolute_path(mp,val);
 				mp->active.file=lp;
 				break;
 
 			case 'b':
 				lp=NEW_LOGFILE();
-				lp->path=path_combine(mp->root_dir,val);
+				lp->path=_absolute_path(mp,val);
 				mp->backup.files=allocate(mp->backup.files
 					,(++mp->backup.count)*sizeof(LOGFILE *));
 				mp->backup.files[mp->backup.count-1]=lp;
@@ -805,7 +855,7 @@ if (file_exists(status_path))
 
 			case 'L':
 				if (!lp) break;	/* Security against invalid file */
-				lp->link=path_combine(mp->root_dir,val);
+				lp->link=_absolute_path(mp,val);
 				break;
 
 			case 'C':
@@ -831,8 +881,6 @@ if (file_exists(status_path))
 	(void)allocate(buf,0);
 	_sync_logfiles_from_disk(mp);
 	}
-
-(void)allocate(status_path,0);
 }
 
 /*----------------------------------------------*/
@@ -978,6 +1026,9 @@ DISPLAY_COUNT(dump);
 DISPLAY_COUNT(sync);
 
 file_write_string_nl(fp,"===========================================================");
+
+
+if (!mp->debug.fp) file_close(fp);
 }
 
 /*----------------------------------------------*/
