@@ -37,9 +37,9 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define DEFAULT_COMPRESS_RATIO	10
+#define GZ_DEFAULT_COMPRESS_RATIO	10
 
-#define RESET_OUTPUT_BUFFER()	{ \
+#define GZ_RESET_OUTPUT_BUFFER()	{ \
 				zp->zs.next_out=(Bytef *)(zp->compbuf); \
 				zp->zs.avail_out=BUFSIZE; \
 				}
@@ -50,7 +50,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 						,BUFSIZE-zp->zs.avail_out); \
 				}
 
-#define INIT_POINTERS() \
+#define GZ_INIT_POINTERS() \
 	LOGMANAGER *mp; \
 	GZIP_DATA *zp; \
 	zp=(GZIP_DATA *)((mp=(LOGMANAGER *)sp)->compress.private); \
@@ -113,11 +113,11 @@ switch (c=(*clevel))
 
 static void gzip_init_v1(void *sp, const char *clevel)
 {
-INIT_POINTERS();
+GZ_INIT_POINTERS();
 
 zp=NEW_STRUCT(GZIP_DATA);
 
-zp->compress_ratio=DEFAULT_COMPRESS_RATIO;
+zp->compress_ratio=GZ_DEFAULT_COMPRESS_RATIO;
 zp->compress_level=_gzip_get_comp_level(clevel);
 
 mp->compress.private=zp;
@@ -127,7 +127,7 @@ mp->compress.private=zp;
 
 static void gzip_destroy(void *sp)
 {
-INIT_POINTERS();
+GZ_INIT_POINTERS();
 
 mp->compress.private=allocate(mp->compress.private,0);
 }
@@ -136,7 +136,7 @@ mp->compress.private=allocate(mp->compress.private,0);
 
 static void gzip_start(void *sp)
 {
-INIT_POINTERS();
+GZ_INIT_POINTERS();
 
 zp->zs.zalloc=(alloc_func)Z_NULL;
 zp->zs.zfree=(free_func)Z_NULL;
@@ -152,11 +152,11 @@ if (deflateInit2(&(zp->zs),zp->compress_level,Z_DEFLATED,31,8
 static void gzip_end(void *sp)
 {
 int status;
-INIT_POINTERS();
+GZ_INIT_POINTERS();
 
 while(YES)
 	{
-	RESET_OUTPUT_BUFFER();
+	GZ_RESET_OUTPUT_BUFFER();
 	status=deflate(&(zp->zs),Z_FINISH);
 	if ((status!=Z_STREAM_END)&&(status!=Z_OK))
 		FATAL_ERROR("Cannot flush compressed data\n");
@@ -177,7 +177,7 @@ if ((zp->zs.total_in > 100000) && (zp->zs.total_out!=0))
 
 static apr_size_t gzip_predict_size(void *sp, apr_size_t size)
 {
-INIT_POINTERS();
+GZ_INIT_POINTERS();
 
 return size/zp->compress_ratio;
 }
@@ -186,14 +186,14 @@ return size/zp->compress_ratio;
 
 static void gzip_compress_and_write(void *sp, const char *buf, apr_size_t size)
 {
-INIT_POINTERS();
+GZ_INIT_POINTERS();
 
 zp->zs.next_in=(unsigned char *)buf;
 zp->zs.avail_in=(uInt)size;
 
 while (zp->zs.avail_in != 0)
 	{
-	RESET_OUTPUT_BUFFER();
+	GZ_RESET_OUTPUT_BUFFER();
 	if (deflate(&(zp->zs),Z_NO_FLUSH)!=Z_OK)
 		FATAL_ERROR("Cannot compress data");
 	WRITE_OUTPUT_BUFFER();

@@ -46,7 +46,7 @@ static apr_getopt_option_t long_options[]=
 	{"link",'l',0 },
 	{"backup-links",'L',0 },
 	{"hardlink",'H',0 },
-	{"ignore-eol",'n',0 },
+	{"ignore-eol",'e',0 },
 	{"",'\0', 0 }
 	};
 
@@ -115,7 +115,7 @@ Options :\n\
 \n\
  -H|--hardlink       Create hard links instead of symbolic links\n\
 \n\
- -n|--ignore-eol     By default, log files are always rotated on line\n\
+ -e|--ignore-eol     By default, log files are always rotated on line\n\
                      boundaries. This flag disables this mechanism.\n\
 \n\
 \n",clist,LOGFILE_MODE);
@@ -199,7 +199,7 @@ while (YES)
 			op->flags |= (LMGR_ACTIVE_LINK | LMGR_BACKUP_LINKS);
 			break;
 
-		case 'n':
+		case 'e':
 			op->flags |= LMGR_IGNORE_EOL;
 			break;
 		}

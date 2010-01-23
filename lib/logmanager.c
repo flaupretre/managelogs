@@ -566,19 +566,85 @@ mp->rbuf=allocate(mp->rbuf,mp->rlen=0);
 }
 
 /*----------------------------------------------*/
+/* Buffer output so that the files are cut on line boundaries ('\n' char) */
 
 void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
+int i;
+BOOL found;
 
-/*if (mp->flags & LMGR_IGNORE_EOL)*/
+DEBUG1("Starting logmanager_write (size=%d)",size);
+
+if ((!buf) || (!size)) return;
+
+if (mp->flags & LMGR_IGNORE_EOL)
 	{
 	_write_level2(mp,buf,size,flags,t);
 	return;
 	}
 
-/* TODO: decouper sur \n (rbuf,rlen) */
+/* 1. If the buffer contains some data from a previous write, search a '\n'
+from the beginning. If found, output the buffer and data up to \n, truncate
+data. If not found, append data to the buffer */
 
+if (mp->rbuf)
+	{
+	for (i=0;i<size;i++)
+		{
+		if (buf[i]=='\n')
+			{
+			DEBUG1("Flushing %d bytes from eol buffer",mp->rlen);
+			_write_level2(mp,mp->rbuf,mp->rlen,flags,t);
+			mp->rbuf=allocate(mp->rbuf,mp->rlen=0);
+			_write_level2(mp,buf,i+1,flags|LMGRW_CANNOT_ROTATE,t);
+			buf += (i+1);
+			size -= (i+1);
+			break;
+			}
+		}
+	if (mp->rbuf) /* if not found, append to rbuf */
+		{
+		DEBUG1("Appending %d bytes to eol buffer",size);
+		mp->rbuf=allocate(mp->rbuf,mp->rlen+size);
+		memcpy(&(mp->rbuf[mp->rlen]),buf,size);
+		buf +=size;
+		size=0;
+		}
+	}
+
+/* 2. Search last \n. If found, move trailing data to rbuf and truncate. If
+not found, put everything in rbuf and return. */
+
+if (!size) return;
+
+for (found=NO,i=size-1;i>=0;i--)
+	{
+	if (buf[i]=='\n')
+		{
+		found=YES;
+		mp->rlen=size-i-1;
+		if (mp->rlen)
+			{
+			DEBUG1("Storing %d bytes in eol buffer",mp->rlen);
+			mp->rbuf=allocate(NULL,mp->rlen);
+			memcpy(mp->rbuf,&(buf[i+1]),mp->rlen);
+			size=i+1;
+			}
+		break;
+		}
+	}
+
+if (!found)
+	{
+	mp->rbuf=allocate(NULL,size);
+	memcpy(mp->rbuf,buf,size);
+	return;
+	}
+
+/* 2.If something remains, write it */
+
+if (size) _write_level2(mp,buf,size,flags,t);
 }
 
 /*----------------------------------------------*/

@@ -41,9 +41,9 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define DEFAULT_COMPRESS_RATIO	20
+#define BZ2_DEFAULT_COMPRESS_RATIO	20
 
-#define RESET_OUTPUT_BUFFER()	{ \
+#define BZ2_RESET_OUTPUT_BUFFER()	{ \
 				zp->zs.next_out=zp->compbuf; \
 				zp->zs.avail_out=BUFSIZE; \
 				}
@@ -54,7 +54,7 @@ Copyright F. Laupretre (francois@tekwire.net)
 						,BUFSIZE-zp->zs.avail_out); \
 				}
 
-#define INIT_POINTERS() \
+#define BZ2_INIT_POINTERS() \
 	LOGMANAGER *mp; \
 	BZIP2_DATA *zp; \
 	zp=(BZIP2_DATA *)((mp=(LOGMANAGER *)sp)->compress.private); \
@@ -118,11 +118,11 @@ switch (c=(*clevel))
 
 static void bzip2_init_v1(void *sp, const char *clevel)
 {
-INIT_POINTERS();
+BZ2_INIT_POINTERS();
 
 zp=NEW_STRUCT(BZIP2_DATA);
 
-zp->compress_ratio=DEFAULT_COMPRESS_RATIO;
+zp->compress_ratio=BZ2_DEFAULT_COMPRESS_RATIO;
 zp->compress_level=_bzip2_get_comp_level(clevel);
 
 mp->compress.private=zp;
@@ -132,7 +132,7 @@ mp->compress.private=zp;
 
 static void bzip2_destroy(void *sp)
 {
-INIT_POINTERS();
+BZ2_INIT_POINTERS();
 
 mp->compress.private=allocate(mp->compress.private,0);
 }
@@ -141,7 +141,7 @@ mp->compress.private=allocate(mp->compress.private,0);
 
 static void bzip2_start(void *sp)
 {
-INIT_POINTERS();
+BZ2_INIT_POINTERS();
 
 zp->zs.bzalloc=NULL;
 zp->zs.bzfree=NULL;
@@ -156,11 +156,11 @@ if (BZ2_bzCompressInit(&(zp->zs),zp->compress_level,0,0)!=BZ_OK)
 static void bzip2_end(void *sp)
 {
 int status;
-INIT_POINTERS();
+BZ2_INIT_POINTERS();
 
 while(YES)
 	{
-	RESET_OUTPUT_BUFFER();
+	BZ2_RESET_OUTPUT_BUFFER();
 	status=BZ2_bzCompress(&(zp->zs),BZ_FINISH);
 	if ((status!=BZ_STREAM_END)&&(status!=BZ_FINISH_OK))
 		FATAL_ERROR("Cannot flush compressed data\n");
@@ -182,7 +182,7 @@ if ((zp->zs.total_in_hi32==0) && (zp->zs.total_out_hi32==0)
 
 static apr_size_t bzip2_predict_size(void *sp, apr_size_t size)
 {
-INIT_POINTERS();
+BZ2_INIT_POINTERS();
 
 return size/zp->compress_ratio;
 }
@@ -191,14 +191,14 @@ return size/zp->compress_ratio;
 
 static void bzip2_compress_and_write(void *sp, const char *buf, apr_size_t size)
 {
-INIT_POINTERS();
+BZ2_INIT_POINTERS();
 
 zp->zs.next_in=(char *)buf;
 zp->zs.avail_in=(unsigned int)size;
 
 while (zp->zs.avail_in != 0)
 	{
-	RESET_OUTPUT_BUFFER();
+	BZ2_RESET_OUTPUT_BUFFER();
 	if (BZ2_bzCompress(&(zp->zs),BZ_RUN)!=BZ_RUN_OK)
 		FATAL_ERROR("Cannot compress data");
 	WRITE_OUTPUT_BUFFER();
