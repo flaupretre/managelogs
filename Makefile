@@ -34,8 +34,11 @@ BZ2_LIBS = -L $(BZ2LIB)/lib -lbz2
 TARGETS = managelogs
 
 OBJS = managelogs.o \
-	logfile.o \
+	logmanager.o \
 	file.o \
+	intr.o \
+	options.o \
+	time.o \
 	util.o \
 	compress.o \
 	gzip_handler.o \

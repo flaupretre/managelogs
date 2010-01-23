@@ -21,30 +21,23 @@ Copyright F. Laupretre (francois@tekwire.net)
 #include <apr.h>
 
 #include "file.h"
-
-/*----------------------------------------------*/
-
-#define C_HANDLER(_action,_args)	{ \
-								if (compress_handler->_action) \
-									compress_handler->_action _args; \
-								}
+#include "options.h"
 
 /*----------------------------------------------*/
 
 typedef struct
 	{
 	char *name;
-	/*@null@*/ char *suffix;
-	/*@null@*/ void (*init)(/*@null@*/ const char *clevel);
-	/*@null@*/ void (*start)(OFILE *fp);
-	/*@null@*/ void (*end)();
-	/*@null@*/ void (*predict_size)(apr_size_t *size);
-	/*@null@*/ void (*compress_and_write)(const char *buf, apr_size_t size);
+	char *suffix;
+	void (*init_v1)(void *mp, LOGMANAGER_OPTIONS_V1 *opts);
+	void (*destroy)(void *mp);
+	void (*start)(void *mp);
+	void (*end)(void *mp);
+	apr_size_t (*predict_size)(void *mp, apr_size_t size);
+	void (*compress_and_write)(void *mp, const char *buf
+		,apr_size_t size);
+	void (*flush)(void *mp);
 	} COMPRESS_HANDLER;
-
-/*----------------------------------------------*/
-
-extern COMPRESS_HANDLER *compress_handler;
 
 /*----------------------------------------------*/
 

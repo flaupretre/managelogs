@@ -45,10 +45,6 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#ifndef MAX_PATH
-#define MAX_PATH		1024
-#endif
-
 #define BUFSIZE 65536
 
 /* Default permissions for files that are created */
@@ -58,6 +54,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define LOGFILE_MODE	0x644
 
 #define PIDFILE_MODE	0x0644
+
+#define STATUSFILE_MODE	0x0644
 
 /*----------------------------------------------*/
 #endif	/* __CONFIG_H */

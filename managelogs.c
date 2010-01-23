@@ -35,16 +35,29 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr_file_io.h>
 #include <apr_getopt.h>
+#include <apr_signal.h>
 
 #include "logfile.h"
 #include "compress.h"
 #include "util.h"
+#include "intr.h"
 #include "config.h"
 
 /*----------------------------------------------*/
 
+#define FLUSH_ACTION		1
+#define ROTATE_ACTION		2
+#define TERMINATE_ACTION 	3
+
+#define CHECK_EXEC_PENDING_ACTION()	{ \
+	ACTION action; \
+	if ((action=check_pending_action())!=NO_ACTION) do_action(action); \
+	}
+
+/*----------------------------------------------*/
+
 static char *cmd;
-static apr_pool_t *pool;
+PRIVATE_POOL
 
 static apr_getopt_t *opt_s;
 static apr_getopt_option_t long_options[]=
@@ -64,6 +77,27 @@ static apr_getopt_option_t long_options[]=
 
 static void usage(int rc);
 static void shutdown_proc(void);
+static void do_action(unsigned int action);
+
+/*----------------------------------------------*/
+
+static void do_action(unsigned int action)
+{
+switch(action)
+	{
+	case FLUSH_ACTION:
+		logmanager_flush(mp);
+		break;
+
+	case ROTATE_ACTION:
+		logmanager_rotate(mp);
+		break;
+
+	case TERMINATE_ACTION:
+		exit(0);
+		break;
+	}
+}
 
 /*----------------------------------------------*/
 
@@ -119,8 +153,117 @@ if (rc >= 0) exit(rc);
 
 /*----------------------------------------------*/
 
+static void __signal_handler(int sig)
+{
+unsigned int action;
+
+switch(sig)
+	{
+	case SIGUSR1:
+		set_pending_action(FLUSH_ACTION);
+		CHECK_EXEC_PENDING_ACTION();
+		break;
+
+	case SIGHUP:
+		set_pending_action(ROTATE_ACTION);
+		CHECK_EXEC_PENDING_ACTION();
+		break;
+
+#ifdef SIGHUP
+		case SIGHUP:
+#endif
+#ifdef SIGUSR1
+		case SIGUSR1:
+#endif
+#ifdef SIGTERM
+		case SIGTERM:
+#endif
+#ifdef SIGINT
+		case SIGINT:
+#endif
+#ifdef SIGQUIT
+		case SIGQUIT:
+#endif
+#ifdef SIGTRAP
+		case SIGTRAP:
+#endif
+#ifdef SIGABRT
+		case SIGABRT:
+#endif
+#ifdef SIGURG
+		case SIGURG:
+#endif
+		set_pending_action(TERMINATE_ACTION);
+		CHECK_EXEC_PENDING_ACTION();
+		break;
+}
+
+/*----------------------------------------------*/
+
+static void _signal_init()
+{
+#ifdef SIGHUP
+(void)apr_signal(SIGHUP,_signal_handler);
+#endif
+#ifdef SIGUSR1
+(void)apr_signal(SIGUSR1,_signal_handler);
+#endif
+#ifdef SIGTERM
+(void)apr_signal(SIGTERM,_signal_handler);
+#endif
+#ifdef SIGINT
+(void)apr_signal(SIGINT,_signal_handler);
+#endif
+#ifdef SIGQUIT
+(void)apr_signal(SIGQUIT,_signal_handler);
+#endif
+#ifdef SIGTRAP
+(void)apr_signal(SIGTRAP,_signal_handler);
+#endif
+#ifdef SIGABRT
+(void)apr_signal(SIGABRT,_signal_handler);
+#endif
+#ifdef SIGURG
+(void)apr_signal(SIGURG,_signal_handler);
+#endif
+}
+
+/*----------------------------------------------*/
+
+void _signal_shutdown()
+{
+#ifdef SIGHUP
+(void)apr_signal(SIGHUP,SIG_IGN);
+#endif
+#ifdef SIGUSR1
+(void)apr_signal(SIGUSR1,SIG_IGN);
+#endif
+#ifdef SIGTERM
+(void)apr_signal(SIGTERM,SIG_IGN);
+#endif
+#ifdef SIGINT
+(void)apr_signal(SIGINT,SIG_IGN);
+#endif
+#ifdef SIGQUIT
+(void)apr_signal(SIGQUIT,SIG_IGN);
+#endif
+#ifdef SIGTRAP
+(void)apr_signal(SIGTRAP,SIG_IGN);
+#endif
+#ifdef SIGABRT
+(void)apr_signal(SIGABRT,SIG_IGN);
+#endif
+#ifdef SIGURG
+(void)apr_signal(SIGURG,SIG_IGN);
+#endif
+}
+
+/*----------------------------------------------*/
+
 static void shutdown_proc()
 {
+_signal_shutdown();
+
 logfile_shutdown();
 
 apr_terminate();
@@ -143,8 +286,8 @@ int keep_count;
 cmd=argv[0];
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
+intr_on();
 (void)atexit(shutdown_proc);
-apr_pool_create(&pool, NULL);
 
 /*-- Get options and arg */
 
@@ -152,7 +295,7 @@ maxsize=0;
 mode=LOGFILE_MODE;
 keep_count=0;
 
-(void)apr_getopt_init(&opt_s,pool,argc,(char const * const *)argv);
+(void)apr_getopt_init(&opt_s,_POOL,argc,(char const * const *)argv);
 while (YES)
 	{
 	status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
@@ -228,7 +371,7 @@ DEBUG1("Reading by chunks of %d bytes",ntoread);
 
 /* Open stdin for reading */
 
-if (apr_file_open_stdin(&f_stdin,pool) != APR_SUCCESS)
+if (apr_file_open_stdin(&f_stdin,_POOL) != APR_SUCCESS)
 	FATAL_ERROR("Cannot open stdin\n");
 
 /* Loop forever */
@@ -236,10 +379,14 @@ if (apr_file_open_stdin(&f_stdin,pool) != APR_SUCCESS)
 for (;;)
 	{
 	nread=ntoread;
-	if ((status=apr_file_read(f_stdin, buf, &nread)) != APR_SUCCESS)
-		exit((status==APR_EOF) ? 0 :3);
+	status=apr_file_read(f_stdin, buf, &nread);
+	if (status==APR_EOF) do_action(TERMINATE_ACTION);
+	if ((status != APR_SUCCESS) exit(3);
 
-	logfile_write(buf,nread,CAN_ROTATE);
+	NOINTR_START();
+	logfile_write(buf,nread,CAN_ROTATE,time_now());
+	NOINTR_END();
+	CHECK_EXEC_PENDING_ACTION();
 	}
 
 /* return prevents compiler warnings */

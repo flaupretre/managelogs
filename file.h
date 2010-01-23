@@ -27,23 +27,23 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 typedef struct
 	{
-	/*@null@*/ apr_file_t *fd;
+	apr_file_t *fd;
 	const char *path;
 	apr_size_t size;
 	} OFILE;
 
 /*----------------------------------------------*/
 
-void file_init(void);
-BOOL file_exists(const char *path);
-BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal);
-BOOL file_delete(const char *path, BOOL fatal);
-OFILE *file_create(const char *path, apr_int32_t mode);
-OFILE *file_open_for_append(const char *path, apr_int32_t mode);
-void file_write(OFILE *fp, const char *buf, apr_size_t size);
-void file_write_string(OFILE *fp, const char *buf);
-void file_write_string_nl(OFILE *fp, const char *buf);
-OFILE *file_close(OFILE *fp);
+extern BOOL file_exists(const char *path);
+extern BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal);
+extern BOOL file_delete(const char *path, BOOL fatal);
+extern OFILE *file_create(const char *path, apr_int32_t mode);
+extern apr_size_t file_size(const char *path);
+extern OFILE *file_open_for_append(const char *path, apr_int32_t mode);
+extern void file_write(OFILE *fp, const char *buf, apr_size_t size);
+extern void file_write_string(OFILE *fp, const char *buf);
+extern void file_write_string_nl(OFILE *fp, const char *buf);
+extern OFILE *file_close(OFILE *fp);
 
 /*----------------------------------------------*/
 #endif	/* __FILE_H */

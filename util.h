@@ -37,6 +37,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 									,(const char *)_arg2); \
 								}
 
+/*-------------*/
+
 #define DEBUG(_fmt)		{\
 						if (debug_toggle) printf("> " _fmt "\n"); \
 						}
@@ -48,6 +50,19 @@ Copyright F. Laupretre (francois@tekwire.net)
 #define DEBUG2(_fmt,_a1,_a2)		{\
 						if (debug_toggle) printf("> " _fmt "\n",_a1,_a2); \
 						}
+
+/*-------------*/
+
+#ifdef _POOL
+#undef _POOL
+#endif
+
+#define PRIVATE_POOL	static apr_pool_t *_private_pool=(apr_pool_t *)0;
+
+#define _POOL (_private_pool ? _private_pool \
+	: ((void)apr_pool_create(&private_pool, NULL), _private_pool))
+
+/*----------------------------------------------*/
 
 typedef enum { NO, YES } BOOL;
 
