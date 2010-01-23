@@ -201,14 +201,16 @@ void signal_shutdown()
 
 void do_action(unsigned int action)
 {
+int i;
+
 switch(action)
 	{
 	case FLUSH_ACTION:
-		logmanager_flush(mp,timestamp);
+		for (i=0;i<mgr_count;i++) logmanager_flush(mpp[i],timestamp);
 		break;
 
 	case ROTATE_ACTION:
-		logmanager_rotate(mp,timestamp);
+		for (i=0;i<mgr_count;i++) logmanager_rotate(mpp[i],timestamp);
 		break;
 
 	case TERMINATE_ACTION:

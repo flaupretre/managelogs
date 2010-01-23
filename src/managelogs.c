@@ -49,11 +49,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 PRIVATE_POOL
 
-LOGMANAGER *mp=(LOGMANAGER *)0;
+LOGMANAGER **mpp=(LOGMANAGER **)0;
+int mgr_count;
 
-char *cmd;
 TIMESTAMP timestamp=NOW;
 int stats_toggle=0;
+int refresh_only=0;
 
 /*----------------------------------------------*/
 
@@ -63,12 +64,17 @@ static void shutdown_proc(void);
 
 static void shutdown_proc()
 {
+int i;
+
 signal_shutdown();
 
-if (mp)
+if (mpp)
 	{
-	if (stats_toggle) logmanager_display_stats(mp);
-	logmanager_destroy(mp,timestamp);
+	for (i=0;i<mgr_count;i++)
+		{
+		if (stats_toggle) logmanager_display_stats(mpp[i]);
+		logmanager_destroy(mpp[i],timestamp);
+		}
 	}
 
 apr_terminate();
@@ -82,9 +88,8 @@ apr_file_t *f_stdin;
 apr_size_t nread,chunk_size;
 char buf[CHUNK_MAX];
 apr_status_t status;
-LOGMANAGER_OPTIONS_V1 *op;
-
-cmd=argv[0];
+LOGMANAGER_OPTIONS_V1 **opp;
+int i;
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
 intr_on();
@@ -92,13 +97,18 @@ intr_on();
 
 /*-- Get options and arg */
 
-op=get_options(argc,argv);
+opp=get_options(argc,argv,&mgr_count);
 
-/* Create and open log manager */
+/* Create and open log managers */
 
-mp=new_logmanager_v1(op,timestamp);
+mpp=allocate(NULL,mgr_count*sizeof(LOGMANAGER *));
+for (i=0;i<mgr_count;i++)
+	{
+	mpp[i]=new_logmanager_v1(opp[i],timestamp);
+	logmanager_open(mpp[i],timestamp);
+	}
 
-logmanager_open(mp,timestamp);
+if (refresh_only) exit(0); /* calls shutdown_proc() */
 
 signal_init();
 
@@ -111,12 +121,15 @@ if (apr_file_open_stdin(&f_stdin,_POOL) != APR_SUCCESS)
 /* '10' is my choice, it could be another value */
 
 chunk_size=CHUNK_MAX;
-if (op->file_maxsize && (op->file_maxsize/10) < chunk_size)
-	chunk_size=(op->file_maxsize/10);
+for (i=0;i<mgr_count;i++)
+	{
+	if (opp[i]->file_maxsize && (opp[i]->file_maxsize/10) < chunk_size)
+		chunk_size=(opp[i]->file_maxsize/10);
+	}
 
-/* Free options struct as we don't need it anymore */
+/* Free options structs as we don't need them anymore */
 
-free_options(op);
+free_options(opp,mgr_count);
 
 /* Loop forever */
 
@@ -128,7 +141,7 @@ for (;;)
 	if (status != APR_SUCCESS) exit(3);
 
 	NOINTR_START();
-	logmanager_write(mp,buf,nread,0,timestamp);
+	for (i=0;i<mgr_count;i++) logmanager_write(mpp[i],buf,nread,0,timestamp);
 	NOINTR_END();
 	CHECK_EXEC_PENDING_ACTION();
 	}

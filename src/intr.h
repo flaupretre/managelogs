@@ -43,7 +43,6 @@ typedef unsigned int ACTION;
 /*----------------------------------------------*/
 
 extern int intr_count;
-extern LOGMANAGER *mp;
 
 /*----------------------------------------------*/
 

@@ -62,6 +62,8 @@ typedef struct
 	int debug_level;
 	} LOGMANAGER_OPTIONS_V1;
 
+#define LOGMANAGER_API_VERSION	1
+
 /*----------------------------------------------*/
 
 typedef struct
@@ -75,7 +77,6 @@ typedef struct
 
 typedef struct
 	{
-	int api_version;
 	char *root_dir;
 	char *root_path;
 	char *status_path;

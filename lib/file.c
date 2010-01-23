@@ -195,7 +195,7 @@ file_write_string(fp,"\n");
 
 OFILE *file_close(OFILE *fp)
 {
-if (fp)
+if (fp && (strcmp(fp->path,"stdout") && strcmp(fp->path,"stderr")))
 	{
 	(void)apr_file_close(fp->fd);
 	_destroy_ofile(fp);

@@ -18,8 +18,19 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __MANAGELOGS_H
 #define __MANAGELOGS_H
 
+/*----------------------------------------------*/
 
 #define MANAGELOGS_VERSION	"1.0rc1"
+
+#define MANAGELOGS_BANNER	"\
+*============================================================================*\n\
+|                           managelogs V 1.0rc1                              |\n\
+|                                                                            |\n\
+| http://managelogs.tekwire.net                                              |\n\
+|                                                                            |\n\
+| Copyright (C) 2008 by Francois Laupretre <francois@tekwire.net>            |\n\
+*============================================================================*\n\
+"
 
 #define LOGFILE_MODE	0x644
 
@@ -27,6 +38,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 extern TIMESTAMP timestamp;
 extern int stats_toggle;
+extern int refresh_only;
+extern LOGMANAGER **mpp;
+extern int mgr_count;
 
 /*----------------------------------------------*/
 #endif	/* __MANAGELOGS_H */

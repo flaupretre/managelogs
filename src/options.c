@@ -58,10 +58,13 @@ static apr_getopt_option_t long_options[]=
 	{"ignore-eol",'e',0 },
 	{"time",'t',1 },
 	{"stats",'I',0 },
+	{"refresh-only",'R',0 },
 	{"",'\0', 0 }
 	};
 
 PRIVATE_POOL
+
+/*----------------------------------------------*/
 
 /*----------------------------------------------*/
 
@@ -78,17 +81,29 @@ char *clist;
 fd=((rc>0) ? stderr : stdout);
 clist=logmanager_compression_list();
 
-fprintf(fd,"\
-managelogs version %s\n\
-\nUsage: %s [options...] <root-path>\n",MANAGELOGS_VERSION,cmd);
+fprintf(fd,"%s\n\
+Usage: managelogs [options...] <root-path> [[options...] <root-path> ]... \n",MANAGELOGS_BANNER);
 
 fprintf(fd,"\
 \n\
-Options :\n\
+*---- Global options (these options apply to the whole process) :\n\
 \n\
  -h|--help           Display this message\n\
 \n\
+ -u|--user <id>      Program runs with this user ID\n\
+                       <id> = <uid>[:<gid>]\n\
+                       <uid> and <gid> are user/group names or numeric ids\n\
+\n\
+ -V|--version        Print version and exit\n\
+\n\
  -v|--verbose        Increment debug level\n\
+\n\
+ -I|--stats          Display internal stats before exiting (for\n\
+                     troubleshooting, debugging, and performance tests)\n\
+\n\
+ -R|--refresh-only   Just refresh/purge files and exit\n\
+\n\
+*---- Manager options (these options apply to the next <root-path> only) :\n\
 \n\
  -d|--debug <path>   Set path to debug file and increment debug level\n\
                      Can also be 'stdout' or 'stderr'\n\
@@ -112,14 +127,8 @@ Options :\n\
                        <mode> is a numeric Unix-style file permission\n\
                        (man chmod(2) for more). Default mode: %x\n\
 \n\
- -u|--user <id>      Program runs with this user ID\n\
-                       <id> = <uid>[:<gid>]\n\
-                       <uid> and <gid> are user/group names or numeric ids\n\
-\n\
  -k|--keep <n>       Only keep <n> log files (the current log file + <n-1>\n\
                      backups)\n\
-\n\
- -V|--version        Print version and exit\n\
 \n\
  -l|--link           Maintain a link from <root-path> to the current log file\n\
                      (See '-H' to choose between hard/symbolic links)\n\
@@ -133,9 +142,6 @@ Options :\n\
  -e|--ignore-eol     By default, log files are always rotated on line\n\
                      boundaries. This flag disables this mechanism.\n\
 \n\
- -I|--stats          Display internal stats before exiting (for\n\
-                     troubleshooting, debugging, and performance tests)\n\
-\n\
 \n",clist,LOGFILE_MODE);
 
 (void)allocate(clist,0);
@@ -146,103 +152,118 @@ if (rc >= 0) exit(rc);
 /*----------------------------------------------*/
 /*-- Get options from command line */
 
-LOGMANAGER_OPTIONS_V1 *get_options(int argc, char **argv)
+LOGMANAGER_OPTIONS_V1 **get_options(int argc, char **argv, int *countp)
 {
 apr_status_t status;
-LOGMANAGER_OPTIONS_V1 *op;
+LOGMANAGER_OPTIONS_V1 **opp, *op;
 int optch;
 const char *opt_arg;
 
-op=NEW_STRUCT(LOGMANAGER_OPTIONS_V1);
+opp=(LOGMANAGER_OPTIONS_V1 **)0;
+(*countp)=0;
 
-op->create_mode=LOGFILE_MODE;
-
-(void)apr_getopt_init(&opt_s,_POOL,argc,(char const * const *)argv);
-while (YES)
+while (1)
 	{
-	status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
-	if (status==APR_EOF) break;
-	if (status != APR_SUCCESS) usage(1);
-	switch ((char)optch)
+	if (argc < 2) break;
+
+	op=NEW_STRUCT(LOGMANAGER_OPTIONS_V1);
+	op->create_mode=LOGFILE_MODE;
+	opp=allocate(opp,(++(*countp))*sizeof(LOGMANAGER_OPTIONS_V1 *));
+	opp[(*countp)-1]=op;
+
+	(void)apr_getopt_init(&opt_s,_POOL,argc,(char const * const *)argv);
+	while (YES)
 		{
-		case 'h':
-			usage(0);
-			break;
+		status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
+		if (status==APR_EOF) break;
+		if (status != APR_SUCCESS) usage(1);
+		switch ((char)optch)
+			{
+			case 'h':
+				usage(0);
+				break;
 
-		case 'd':
-			if (op->debug_file) op->debug_file=allocate(op->debug_file,0);
-			op->debug_file=duplicate(opt_arg);
-			/* no break here */
-		case 'v':
-			if (!op->debug_file) op->debug_file=duplicate("stderr");
-			op->debug_level++;
-			break;
+			case 'd':
+				if (op->debug_file) op->debug_file=allocate(op->debug_file,0);
+				op->debug_file=duplicate(opt_arg);
+				/* no break here */
+			case 'v':
+				if (!op->debug_file) op->debug_file=duplicate("stderr");
+				op->debug_level++;
+				break;
 
-		case 'c':
-			op->compress_string=duplicate(opt_arg);
-			break;
+			case 'c':
+				op->compress_string=duplicate(opt_arg);
+				break;
 
-		case 's':
-			op->file_maxsize=convert_size_string(opt_arg);
-			break;
+			case 's':
+				op->file_maxsize=convert_size_string(opt_arg);
+				break;
 
-		case 'S':
-			op->global_maxsize=convert_size_string(opt_arg);
-			break;
+			case 'S':
+				op->global_maxsize=convert_size_string(opt_arg);
+				break;
 
-		case 'k':
-			op->keep_count=atoi(opt_arg);
-			break;
+			case 'k':
+				op->keep_count=atoi(opt_arg);
+				break;
 
-		case 'V':
-			printf(MANAGELOGS_VERSION "\n");
-			exit(0);
+			case 'V':
+				printf(MANAGELOGS_VERSION "\n");
+				exit(0);
 
-		case 'm':
-			if (sscanf(opt_arg,"%x",&(op->create_mode))!=1)
-				{
-				usage(-1);
-				FATAL_ERROR1("Invalid mode : %s",opt_arg);
-				}
-			break;
+			case 'm':
+				if (sscanf(opt_arg,"%x",&(op->create_mode))!=1)
+					{
+					usage(-1);
+					FATAL_ERROR1("Invalid mode : %s",opt_arg);
+					}
+				break;
 
-		case 'u':
-			change_id(opt_arg);
-			break;
+			case 'u':
+				change_id(opt_arg);
+				break;
 
-		case 'H':
-			op->flags |= LMGR_HARD_LINKS;
-			break;
+			case 'H':
+				op->flags |= LMGR_HARD_LINKS;
+				break;
 
-		case 'l':
-			op->flags |= LMGR_ACTIVE_LINK;
-			break;
+			case 'l':
+				op->flags |= LMGR_ACTIVE_LINK;
+				break;
 
-		case 'L':
-			op->flags |= (LMGR_ACTIVE_LINK | LMGR_BACKUP_LINKS);
-			break;
+			case 'L':
+				op->flags |= (LMGR_ACTIVE_LINK | LMGR_BACKUP_LINKS);
+				break;
 
-		case 'e':
-			op->flags |= LMGR_IGNORE_EOL;
-			break;
+			case 'e':
+				op->flags |= LMGR_IGNORE_EOL;
+				break;
 
-		case 't':
-			sscanf(opt_arg,"%lX",&timestamp);
-			break;
+			case 't':
+				sscanf(opt_arg,"%lX",&timestamp);
+				break;
 
-		case 'I':
-			stats_toggle=1;
-			break;
+			case 'I':
+				stats_toggle=1;
+				break;
+
+			case 'R':
+				refresh_only=1;
+				break;
+			}
 		}
+
+	if (!(argv[opt_s->ind])) usage(1);
+	op->root_path=duplicate(argv[opt_s->ind]);
+	if (! op->root_path[0]) usage(1);
+
+	argc -= opt_s->ind;
+	argv += opt_s->ind;
 	}
 
-if ((!(argv[opt_s->ind])) || (argv[opt_s->ind+1])) usage(1);
-
-op->root_path=duplicate(argv[opt_s->ind]);
-
-if (! op->root_path[0]) usage(1);
-
-return op;
+if (!opp) usage(1);
+return opp;
 }
 
 /*----------------------------------------------*/
@@ -269,13 +290,18 @@ return result;
 
 /*----------------------------------------------*/
 
-LOGMANAGER_OPTIONS_V1 *free_options(LOGMANAGER_OPTIONS_V1 *op)
+void free_options(LOGMANAGER_OPTIONS_V1 **opp, int count)
 {
+int i;
 
-(void)allocate(op->root_path,0);
-(void)allocate(op->compress_string,0);
+for (i=0;i<count;i++)
+	{
+	(void)allocate(opp[i]->root_path,0);
+	(void)allocate(opp[i]->compress_string,0);
+	(void)allocate(opp[i],0);
+	}
 
-return allocate(op,0);
+(void)allocate(opp,0);
 }
 
 /*----------------------------------------------*/

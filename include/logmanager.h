@@ -51,10 +51,7 @@ typedef unsigned long TIMESTAMP;
 
 /*----------------------------------------------*/
 
-typedef struct
-	{
-	int opaque;	/* Avoids warning on empty struct */
-	} LOGMANAGER;
+typedef void LOGMANAGER; /* Opaque to client */
 
 typedef struct
 	{

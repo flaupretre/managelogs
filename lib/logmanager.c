@@ -227,10 +227,6 @@ LOGMANAGER *mp;
 
 mp=(LOGMANAGER *)allocate(NULL,sizeof(LOGMANAGER));
 
-/*-- API version */
-
-mp->api_version=1;
-
 /*-- Initial timestamp */
 
 NORMALIZE_TIMESTAMP(t);
@@ -921,7 +917,7 @@ fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 file_write_string_nl(fp,"I === Managelogs status data ===");
 
 file_write_string(fp,"A ");
-(void)snprintf(buf,sizeof(buf),"%d",mp->api_version);
+(void)snprintf(buf,sizeof(buf),"%d",LOGMANAGER_API_VERSION);
 file_write_string_nl(fp,buf);
 
 file_write_string_nl(fp,"V " LOGMANAGER_VERSION);
@@ -1012,6 +1008,9 @@ char buf[32];
 fp=(mp->debug.fp ? mp->debug.fp : file_open_for_append("stdout",0));
 
 file_write_string_nl(fp,"================== logmanager statistics ==================");
+
+file_write_string(fp,"Root path : ");
+file_write_string_nl(fp,mp->root_path);
 
 DISPLAY_COUNT(write);
 DISPLAY_COUNT(write2);
