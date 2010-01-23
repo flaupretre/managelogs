@@ -73,21 +73,18 @@ DISABLE_INTR();
 
 /*----------------------------------------------*/
 
-ACTION check_pending_action()
+void check_and_run_pending_action()
 {
-ACTION action;
-
-action=0;
-
 if (_intr_is_active && (intr_count==0))
 	{
 	DISABLE_INTR();
-	action=_pending_action;
+	if (_pending_action!=NO_ACTION)
+		{
+		do_action(_pending_action);
+		}
 	RESET_PENDING_ACTION();
 	ENABLE_INTR();
 	}
-
-return action;
 }
 
 /*----------------------------------------------*/
@@ -105,12 +102,12 @@ switch(sig)
 	{
 	case SIGUSR1:
 		set_pending_action(FLUSH_ACTION);
-		CHECK_EXEC_PENDING_ACTION();
+		check_and_run_pending_action();
 		break;
 
 	case SIGHUP:
 		set_pending_action(ROTATE_ACTION);
-		CHECK_EXEC_PENDING_ACTION();
+		check_and_run_pending_action();
 		break;
 
 #ifdef SIGTERM
@@ -132,7 +129,7 @@ switch(sig)
 		case SIGURG:
 #endif
 		set_pending_action(TERMINATE_ACTION);
-		CHECK_EXEC_PENDING_ACTION();
+		check_and_run_pending_action();
 		break;
 	}
 }

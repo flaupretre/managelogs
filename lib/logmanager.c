@@ -95,10 +95,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 		&& (ACTIVE_SIZE(_mp)) \
 		&& (FUTURE_ACTIVE_SIZE(_mp,_add) > (_mp)->file_maxsize))
 
-#define GLOBAL_SIZE_EXCEEDED(_mp,_add)	(((_mp)->global_maxsize) \
+#define GLOBAL_CONDITIONS_EXCEEDED(_mp,_add)	((((_mp)->global_maxsize) \
 	&& ((_mp)->backup.count) \
-	&& ((FUTURE_ACTIVE_SIZE((_mp),_add)+(_mp)->backup.size) \
-		> (_mp)->global_maxsize))
+	&& ((FUTURE_ACTIVE_SIZE((_mp),_add)+(_mp)->backup.size) > (_mp)->global_maxsize)) \
+	|| (mp->keep_count && (mp->backup.count > (mp->keep_count - 1))))
 
 #define CHECK_MP(_mp) { /* Security */ \
 	if (!(_mp)) FATAL_ERROR("Received null LOGMANAGER pointer"); \
@@ -566,6 +566,7 @@ DEBUG(mp,1,"Closing logmanager");
 
 _write_end(mp,t);
 _close_active_file(mp);
+_purge_backup_files(mp,0);
 
 _dump_status_to_file(mp,t);
 }
@@ -640,13 +641,17 @@ _dump_status_to_file(mp,t);
 }
 
 /*----------------------------------------------*/
+/* Before removing backup files, we check the existing backup files on disk
+to confirm actual sizes. If a backup file has been deleted by an external
+action, maybe we don't actually exceed the limits */
 
 static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add)
 {
-while (GLOBAL_SIZE_EXCEEDED(mp,add)
-	|| ((mp->keep_count) && (mp->backup.count > (mp->keep_count - 1))))
+if (GLOBAL_CONDITIONS_EXCEEDED(mp,add))
 	{
-	_remove_oldest_backup(mp);
+	_sync_logfiles_from_disk(mp);	/* Confirm that limits are REALLY exceeded */
+
+	while (GLOBAL_CONDITIONS_EXCEEDED(mp,add)) _remove_oldest_backup(mp);
 	}
 }
 
@@ -758,9 +763,6 @@ if (size) _write_level2(mp,buf,size,flags,t);
 }
 
 /*----------------------------------------------*/
-/* Before starting a rotation, we check the existing backup files on disk
-to confirm actual sizes. If a backup file has been deleted by an external
-action, maybe we don't actually exceed the limits */
 
 static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
@@ -778,9 +780,7 @@ if (!csize) csize=size;
 
 if ((!(flags & LMGRW_CANNOT_ROTATE)) && SHOULD_ROTATE(mp,csize))
 	{
-	/* Confirm that we should rotate */
-	_sync_logfiles_from_disk(mp);
-	if (SHOULD_ROTATE(mp,csize)) logmanager_rotate(mp,t); /* includes a purge */
+	logmanager_rotate(mp,t); /* includes a purge */
 	}
 else _purge_backup_files(mp,csize);
 

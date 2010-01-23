@@ -82,7 +82,7 @@ fd=((rc>0) ? stderr : stdout);
 clist=logmanager_compression_list();
 
 fprintf(fd,"%s\n\
-Usage: managelogs [options...] <root-path> [[options...] <root-path> ]... \n",MANAGELOGS_BANNER);
+Usage: managelogs [options...] <root-path1> [[options...] <root-path2> ...] \n",MANAGELOGS_BANNER);
 
 fprintf(fd,"\
 \n\
@@ -120,28 +120,27 @@ fprintf(fd,"\
                        can also be set to 'min' (minimum value)\n\
                        Default: no limit\n\
 \n\
- -S|--global-size    Set the maximum size log files will take on disk (active\n\
-                       log + backups). Arg syntax: see '--size'\n\
+ -S|--global-size    Set the maximum size log files can take on disk (active\n\
+                     log + backups). Argument: see '--size'\n\
 \n\
  -m|--mode <mode>    Permissions to set when creating a new log file\n\
                        <mode> is a numeric Unix-style file permission\n\
                        (man chmod(2) for more). Default mode: %x\n\
 \n\
- -k|--keep <n>       Only keep <n> log files (the current log file + <n-1>\n\
+ -k|--keep <n>       Only keep <n> log files (the active one + <n-1>\n\
                      backups)\n\
 \n\
- -l|--link           Maintain a link from <root-path> to the current log file\n\
+ -l|--link           Maintain a link to the active log file\n\
                      (See '-H' to choose between hard/symbolic links)\n\
 \n\
- -L|--backup-links   Maintain links to the current and backup log files\n\
+ -L|--backup-links   Maintain links to the active and backup log files\n\
                      (backup links are named <root-path>.<1,2,...>, most\n\
                      recent first)\n\
 \n\
  -H|--hardlink       Create hard links instead of symbolic links\n\
 \n\
- -e|--ignore-eol     By default, log files are always rotated on line\n\
-                     boundaries. This flag disables this mechanism.\n\
-\n\
+ -e|--ignore-eol     By default, a mechanism ensures that log files are rotated\n\
+                     on line boundaries. This flag disables this mechanism.\n\
 \n",clist,LOGFILE_MODE);
 
 (void)allocate(clist,0);
@@ -298,6 +297,7 @@ for (i=0;i<count;i++)
 	{
 	(void)allocate(opp[i]->root_path,0);
 	(void)allocate(opp[i]->compress_string,0);
+	(void)allocate(opp[i]->debug_file,0);
 	(void)allocate(opp[i],0);
 	}
 

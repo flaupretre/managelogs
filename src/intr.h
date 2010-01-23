@@ -31,11 +31,6 @@ typedef unsigned int ACTION;
 #define ROTATE_ACTION		(ACTION)2
 #define TERMINATE_ACTION 	(ACTION)3
 
-#define CHECK_EXEC_PENDING_ACTION()	{ \
-	ACTION action; \
-	if ((action=check_pending_action())!=NO_ACTION) do_action(action); \
-	}
-
 #define NOINTR_START()	{ intr_count++; }
 
 #define NOINTR_END()	{ intr_count--; }
@@ -48,10 +43,10 @@ extern int intr_count;
 
 extern void intr_on(void);
 extern void intr_off(void);
-extern ACTION check_pending_action();
+extern void check_and_run_pending_action(void);
 extern void set_pending_action(ACTION action);
-extern void signal_init();
-extern void signal_shutdown();
+extern void signal_init(void);
+extern void signal_shutdown(void);
 extern void do_action(ACTION action);
 
 /*----------------------------------------------*/
