@@ -7,7 +7,7 @@
 Name: managelogs
 Summary: managelogs log management software
 Group: Applications/Internet
-Version: 1.0
+Version: 1.0.1
 Release: 0
 ExclusiveOs: Linux
 License: Apache license 2.0

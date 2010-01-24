@@ -1,4 +1,10 @@
 
+1.0.1:
+
+* Cosmetic changes
+
+* Add man page
+
 1.0:
 
 * Fix problem with error_log when starting Apache : httpd starts a managelogs

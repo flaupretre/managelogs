@@ -1,6 +1,9 @@
                    managelogs installation instructions
                    ------------------------------------
 
+An up-to-date version of this document is available in the managelogs web site:
+<http://managelogs.tekwire.net>
+
 * Prerequisites :
 
 	- managelogs uses the Apache Portable Runtime library, provided with the
@@ -18,16 +21,17 @@ These software are provided pre-compiled on most platforms.
 As far as I know, there is no requirement on the version of these libraries. The
 versions I used here are :
 
-	- APR 0.9.17 (included in Apache http server 2.0.63)
+	- APR 0.9.17 (included in Apache http server 2.0.63). The APR library
+	  version 1 (distributed with Apache 2.2) is also compatible.
 	- Zlib library 1.2.3
 	- Bzip2 library 1.0.1
 
 * Compiling
 
 	- Edit the make.vars file in the base directory and modify the
-	  'modifiable parameters' section according to your environment. This will
-	  define where Apache, zlib, and bzip2 are installed, whether you want
-	  zlib and bzip2 support, and compile options.
+	  'modifiable parameters' section according to your environment.
+          This will define where Apache, zlib, and bzip2 are installed,
+          whether you want zlib and bzip2 support, and compile options.
 
 	- Run 'make'
 

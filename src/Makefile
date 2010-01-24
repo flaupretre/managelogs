@@ -13,7 +13,7 @@ MANAGELOGS_LOBJS = managelogs.lo \
 
 LOBJS = $(MANAGELOGS_LOBJS)
 
-INCLUDES = -I../include
+INCLUDES = -I../lib/ext_include
 
 #--------------------------------------------------------------------
 

@@ -9,7 +9,7 @@ managelogs \- Piped logging program to rotate/purge Apache logs
 managelogs is a log processing program to be used in conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
-
+.PP
 The primary purpose is to solve the 'log file system full' issue in a
 way different from the quite-unreliable cron-based solutions one
 typically uses to solve it. The approach is different, here, because the purge
@@ -122,9 +122,11 @@ Increment debug level (can be set more than once).
 .BR -d | --debug " " \fI<path>\fR
 Write debug messages to \fI<path>\fR.
 .br
-\fI<path>\fR can be 'stdout' or 'stderr'.
+Special values : when the <path> argument is equal to 'stdout' or 'stderr', it
+is interpreted as, respectively, the process' standard output and standard error
+streams.
 .br
-Default : stderr.
+Default : if this option is not present, messages go to stderr.
 .TP
 .BR -c | --compress " " \fI<comp>[:<level>]\fR
 Activate compression and append the corresponding suffix to the log file names.
@@ -142,21 +144,24 @@ If this option is not present, the output flow is not compressed.
 Sets the log file size at which rotation occurs.
 .br
 \fI<size>\fR is a numeric value
-optionnally followed by 'k|K' (Kilobytes), 'm|M' (Megabytes), or 'g|G'
-(Gigabytes).
+optionnally followed by a unit : \fBK\fR (Kilobytes), \fBM\fR (Megabytes), or
+\fBG\fR (Gigabytes).
 .br
-Default: no size limit
+Default: no limit
+.br
+Note that the size we set here is the size the file will take on disk. So,
+when the compression is turned on, the size limit applies to the compressed size.
 .TP
 .BR -S | --global-size " " \fI<size>\fR
 Sets the maximum size that the managed log files (active + backup) can take .
 When this size is reached, a purge occurs (the oldest backup file is removed).
 .br
-Argument: same format as '--size'. If this argument is set and the '--size'
-argument is not, the individual file limit is implicitely set to a value of
-one half of the global size (so that the directory always contains one backup
+Argument: same format as for '--size'. If this option is set and the '--size'
+option is not, the individual file limit is implicitely set to a value of
+half the global limit (so that the directory always contains one backup
 file).
 .br
-Default : no global size limit.
+Default : no global limit
 .TP
 .BR -m | --mode " " \fI<mode>\fR
 File permissions to apply to newly-created log files.
@@ -189,12 +194,14 @@ so that log files contain entire lines. This option disables this mechanism.
 .SH "FILES"
 Each log manager maintains its own set of files. The files are named after the
 manager's base path. They all lie in the same directory (the directory part of
-the base path).
+the base path). This directory must exist before managelogs is started. It must
+also be writable be the user managelogs is running as.
 .PP
 Here are the files that a log manager may create and maintain :
 .TP
 <base-path>.pid
-This file is present when a process is currently managing this path. It contains
+This file is present when a process is currently managing this base path. It
+contains
 the pid of the managelogs process. This is the file to read if you want to send
 signals. When the process exits, the pid file is removed.
 .TP
@@ -229,12 +236,12 @@ in reverse chhronological order : <base-path>.1 is the most recent backup,
 <base-path>.2 is the previous one...
 .SH "SIGNALS"
 .TP
-SIGUSR1
+.B SIGUSR1
 This signal triggers an immediate rotation on every log managers attached to
 the managelogs process. Note that, if the '--keep' option is set, and if the
 maximum number of log files is exceeded, a purge will occur. 
 .TP
-SIGUSR2
+.B SIGUSR2
 This signal causes every log managers to flush to disk the data they may
 have in memory. This is useful only for compressed streams, as compressed files
 cannot be read before such a flush operation is done. This is due to the fact
@@ -296,8 +303,8 @@ The corresponding directive looks like :
 CustomLog "| <apache_dir>/bin/managelogs --size 1M --global-size 3M --link --backup-links <apache_dir>/logs/access_log --size 100M --global-size 1G --compression bz2:best /archives/logs/access_log" combined
 .PP
 With such a configuration, the files in the <apache_dir>/logs directory will
-be the same  as in the previous example, but it will also maintain the most
-recent 1 Gbytes of compressed access_log data in /archives/logs (in
+be the same  as in the previous example, but managelogs will also maintain the
+most recent 1 Gbytes of compressed access_log data in /archives/logs (in
 chunks of 100 Mbytes). This way, we have two levels of access to the log
 data : the most recent data is easily accessible and, when we need to examine
 something older, it is less easy, but the retention size is much bigger.
@@ -312,12 +319,12 @@ files contain the same. This signal will trigger a rotation in both directories.
 .SH "SEE ALSO"
 .PP
 managelogs web site : http://managelogs.tekwire.net
+.SH "AUTHOR"
+.PP
+Francois Laupretre <francois@tekwire.net>
 .SH "LICENSE"
 .PP
 Apache license, Version 2.0 <http://www.apache.org/licenses/>
 .SH BUGS
 .PP
 Please send bug reports to <managelogs-bugs@tekwire.net>
-.SH "AUTHOR"
-.PP
-Francois Laupretre <francois@tekwire.net>

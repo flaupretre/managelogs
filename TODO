@@ -7,8 +7,6 @@
 
 * Convert the build system to autoconf
 
-* man page(s)
-
 * create directories when needed. Automatically destroy directories when
   backup files are purged.
 
@@ -16,9 +14,9 @@
   'storage (absolute/relative) path' argument), automatic rotation
   on pattern. Remember: cannot chdir() because of multiple output support.
 
-* An option to display in readable form some information about
-  a log environment (mostly extracted from the status file).
+* An option to display in readable form information about
+  a log manager current state (mostly extracted from the status file).
 
-* Use a more robust mechanism for signals, based on a mutex.
+* Use a more robust mutex-based mechanism for signals.
 
 =============================================================================

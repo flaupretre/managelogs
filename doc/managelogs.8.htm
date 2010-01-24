@@ -1,12 +1,9 @@
-Content-type: text/html
 
-<HTML><HEAD><TITLE>Manpage of MANAGELOGS</TITLE>
-</HEAD><BODY>
-<H1>MANAGELOGS</H1>
-Section: managelogs (8)<BR>Updated: March 2009<BR><A HREF="#index">Index</A>
-<A HREF="http://localhost/cgi-bin/man/man2html">Return to Main Contents</A><HR>
+<head>
+<TITLE>Manpage of MANAGELOGS</TITLE>
+</head>
 
-<A NAME="lbAB">&nbsp;</A>
+<HTML><BODY>
 <H2>NAME</H2>
 
 managelogs - Piped logging program to rotate/purge Apache logs
@@ -26,6 +23,7 @@ managelogs is a log processing program to be used in conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 <P>
+
 The primary purpose is to solve the 'log file system full' issue in a
 way different from the quite-unreliable cron-based solutions one
 typically uses to solve it. The approach is different, here, because the purge
@@ -177,10 +175,12 @@ Increment debug level (can be set more than once).
 Write debug messages to <I>&lt;path&gt;</I>.
 <BR>
 
-<I>&lt;path&gt;</I> can be 'stdout' or 'stderr'.
+Special values : when the &lt;path&gt; argument is equal to 'stdout' or 'stderr', it
+is interpreted as, respectively, the process' standard output and standard error
+streams.
 <BR>
 
-Default : stderr.
+Default : if this option is not present, messages go to stderr.
 <DT><B>-c</B>|<B>--compress</B> <B></B><I>&lt;comp&gt;[:&lt;level&gt;]</I>
 
 <DD>
@@ -205,11 +205,15 @@ Sets the log file size at which rotation occurs.
 <BR>
 
 <I>&lt;size&gt;</I> is a numeric value
-optionnally followed by 'k|K' (Kilobytes), 'm|M' (Megabytes), or 'g|G'
-(Gigabytes).
+optionnally followed by a unit : <B>K</B> (Kilobytes), <B>M</B> (Megabytes), or
+<B>G</B> (Gigabytes).
 <BR>
 
-Default: no size limit
+Default: no limit
+<BR>
+
+Note that the size we set here is the size the file will take on disk. So,
+when the compression is turned on, the size limit applies to the compressed size.
 <DT><B>-S</B>|<B>--global-size</B> <B></B><I>&lt;size&gt;</I>
 
 <DD>
@@ -217,13 +221,13 @@ Sets the maximum size that the managed log files (active + backup) can take .
 When this size is reached, a purge occurs (the oldest backup file is removed).
 <BR>
 
-Argument: same format as '--size'. If this argument is set and the '--size'
-argument is not, the individual file limit is implicitely set to a value of
-one half of the global size (so that the directory always contains one backup
+Argument: same format as for '--size'. If this option is set and the '--size'
+option is not, the individual file limit is implicitely set to a value of
+half the global limit (so that the directory always contains one backup
 file).
 <BR>
 
-Default : no global size limit.
+Default : no global limit
 <DT><B>-m</B>|<B>--mode</B> <B></B><I>&lt;mode&gt;</I>
 
 <DD>
@@ -267,13 +271,15 @@ so that log files contain entire lines. This option disables this mechanism.
 
 Each log manager maintains its own set of files. The files are named after the
 manager's base path. They all lie in the same directory (the directory part of
-the base path).
+the base path). This directory must exist before managelogs is started. It must
+also be writable be the user managelogs is running as.
 <P>
 
 Here are the files that a log manager may create and maintain :
 <DL COMPACT>
 <DT>&lt;base-path&gt;.pid<DD>
-This file is present when a process is currently managing this path. It contains
+This file is present when a process is currently managing this base path. It
+contains
 the pid of the managelogs process. This is the file to read if you want to send
 signals. When the process exits, the pid file is removed.
 <DT>&lt;base-path&gt;.status<DD>
@@ -308,11 +314,15 @@ in reverse chhronological order : &lt;base-path&gt;.1 is the most recent backup,
 <H2>SIGNALS</H2>
 
 <DL COMPACT>
-<DT>SIGUSR1<DD>
+<DT><B>SIGUSR1</B>
+
+<DD>
 This signal triggers an immediate rotation on every log managers attached to
 the managelogs process. Note that, if the '--keep' option is set, and if the
 maximum number of log files is exceeded, a purge will occur. 
-<DT>SIGUSR2<DD>
+<DT><B>SIGUSR2</B>
+
+<DD>
 This signal causes every log managers to flush to disk the data they may
 have in memory. This is useful only for compressed streams, as compressed files
 cannot be read before such a flush operation is done. This is due to the fact
@@ -343,8 +353,7 @@ CustomLog &quot;| &lt;apache_dir&gt;/bin/managelogs --size 1M --global-size 3M -
 
 Here is a typical list of files present in the &lt;apache-dir&gt;/logs directory with
 such a configuration :
-<PRE>
-# ls -l $apache_dir/logs/access_log*
+<PRE># ls -l $apache_dir/logs/access_log*
 ...
 lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log -&gt; access_log._49BFB0A2
 lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.1 -&gt; access_log._49BF8366
@@ -392,8 +401,8 @@ CustomLog &quot;| &lt;apache_dir&gt;/bin/managelogs --size 1M --global-size 3M -
 <P>
 
 With such a configuration, the files in the &lt;apache_dir&gt;/logs directory will
-be the same  as in the previous example, but it will also maintain the most
-recent 1 Gbytes of compressed access_log data in /archives/logs (in
+be the same  as in the previous example, but managelogs will also maintain the
+most recent 1 Gbytes of compressed access_log data in /archives/logs (in
 chunks of 100 Mbytes). This way, we have two levels of access to the log
 data : the most recent data is easily accessible and, when we need to examine
 something older, it is less easy, but the retention size is much bigger.
@@ -415,44 +424,22 @@ files contain the same. This signal will trigger a rotation in both directories.
 
 managelogs web site : <A HREF="http://managelogs.tekwire.net">http://managelogs.tekwire.net</A>
 <A NAME="lbAJ">&nbsp;</A>
-<H2>LICENSE</H2>
-
-<P>
-
-Apache license, Version 2.0 &lt;<A HREF="http://www.apache.org/licenses/">http://www.apache.org/licenses/</A>&gt;
-<A NAME="lbAK">&nbsp;</A>
-<H2>BUGS</H2>
-
-<P>
-
-Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;
-<A NAME="lbAL">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 <P>
 
 Francois Laupretre &lt;<A HREF="mailto:francois@tekwire.net">francois@tekwire.net</A>&gt;
+<A NAME="lbAK">&nbsp;</A>
+<H2>LICENSE</H2>
+
 <P>
 
-<HR>
-<A NAME="index">&nbsp;</A><H2>Index</H2>
-<DL>
-<DT><A HREF="#lbAB">NAME</A><DD>
-<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
-<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">OPTIONS</A><DD>
-<DT><A HREF="#lbAF">FILES</A><DD>
-<DT><A HREF="#lbAG">SIGNALS</A><DD>
-<DT><A HREF="#lbAH">EXAMPLES</A><DD>
-<DT><A HREF="#lbAI">SEE ALSO</A><DD>
-<DT><A HREF="#lbAJ">LICENSE</A><DD>
-<DT><A HREF="#lbAK">BUGS</A><DD>
-<DT><A HREF="#lbAL">AUTHOR</A><DD>
-</DL>
-<HR>
-This document was created by
-<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
-using the manual pages.<BR>
-Time: 17:43:19 GMT, March 17, 2009
+Apache license, Version 2.0 &lt;<A HREF="http://www.apache.org/licenses/">http://www.apache.org/licenses/</A>&gt;
+<A NAME="lbAL">&nbsp;</A>
+<H2>BUGS</H2>
+
+<P>
+
+Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;
 </BODY>
 </HTML>

@@ -33,7 +33,7 @@ install-lib: $(TARGET_LIB)
 	$(LIBTOOL) --mode=install cp $(TARGET_LIB) $(APACHE)/lib$(LIB_SUFFIX)
 
 install-include:
-	$(LIBTOOL) --mode=install cp ../include/logmanager.h $(APACHE)/include
+	$(LIBTOOL) --mode=install cp ./ext_include/logmanager.h $(APACHE)/include
 
 $(TARGET_LIB): $(LOBJS)
 	$(LINK_LIB) $(LOBJS) -rpath $(APACHE)/lib$(LIB_SUFFIX)
