@@ -18,7 +18,7 @@ These software are provided pre-compiled on most platforms.
 As far as I know, there is no requirement on the version of these libraries. The
 versions I used here are :
 
-	- APR 0.9.12 (included in Apache http server 2.0.59)
+	- APR 0.9.17 (included in Apache http server 2.0.63)
 	- Zlib library 1.2.3
 	- Bzip2 library 1.0.1
 
@@ -51,5 +51,11 @@ The software was succesfully tested on the following environments :
 
 If you build and run it on other environments, please let me know, so I can
 add them to this list.
+
+* Additional documents
+
+http://www.tekwire.net/building/apache : A whole set of documents describing
+how to compile a full-featured Apache/PHP server (including managelogs) on
+several Unix/Linux architectures.
 
 ==============================================================================

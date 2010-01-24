@@ -217,6 +217,8 @@ return (OFILE *)0;
 }
 
 /*----------------------------------------------*/
+/* Returns a nnull-terminated buffer
+if sizep is not null, return the data size (without trailing null) */
 
 char *file_get_contents(const char *path, apr_off_t *sizep)
 {
@@ -233,6 +235,7 @@ if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fd)!=APR_SUCCESS)
 
 p=allocate(NULL,finfo.size+1);
 p[finfo.size]='\0';
+if (sizep) (*sizep)=finfo.size;
 
 if (finfo.size)
 	{

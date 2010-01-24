@@ -120,6 +120,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 static char *_pid_path(LOGMANAGER *mp);
 static char *_status_path(LOGMANAGER *mp);
 static void _create_pid_file(LOGMANAGER *mp);
+static BOOL _pid_file_is_overwritten(LOGMANAGER *mp);
 static void _remove_pid_file(LOGMANAGER *mp);
 static void _open_active_file(LOGMANAGER *mp);
 static void _close_active_file(LOGMANAGER *mp);
@@ -174,35 +175,45 @@ return p;
 static void _create_pid_file(LOGMANAGER *mp)
 {
 OFILE *fp;
-char buf[32],*pid_path;
-unsigned long pid,ppid;
+char buf[32];
+unsigned long pid;
 
 pid=(unsigned long)getpid();
-ppid=(unsigned long)getppid();
-pid_path=_pid_path(mp);
-DEBUG2(mp,1,"Creating PID file (%s, pid=%lu)",pid_path,pid);
-DEBUG1(mp,2,"PPID=%lu",ppid);
+DEBUG2(mp,1,"Creating PID file (%s, pid=%lu)",mp->pid_path,pid);
+DEBUG1(mp,2,"PPID=%lu",(unsigned long)getppid());
 
-fp=file_create(pid_path,(apr_int32_t)PIDFILE_MODE);
+fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
 
 (void)snprintf(buf,sizeof(buf),"%lu",pid);
 file_write_string_nl(fp, buf);
 
 (void)file_close(fp);
-(void)allocate(pid_path,0);
+}
+
+/*----------------------------------------------*/
+
+static BOOL _pid_file_is_overwritten(LOGMANAGER *mp)
+{
+char *buf;
+unsigned long pid;
+
+if (!file_exists(mp->pid_path)) return NO; /* Should not happen but, in case... */
+
+buf=file_get_contents(mp->pid_path,NULL);
+pid=0;
+(void)sscanf(buf,"%lu",&pid);
+(void)allocate(buf,0);
+
+return (pid != (unsigned long)getpid());
 }
 
 /*----------------------------------------------*/
 
 static void _remove_pid_file(LOGMANAGER *mp)
 {
-char *pid_path;
+DEBUG1(mp,1,"Removing PID file(%s)",mp->pid_path);
 
-DEBUG(mp,1,"Removing PID file");
-
-pid_path=_pid_path(mp);
-(void)file_delete(pid_path,NO);
-(void)allocate(pid_path,0);
+(void)file_delete(mp->pid_path,NO);
 }
 
 /*----------------------------------------------*/
@@ -241,6 +252,7 @@ mp->last_time=t;
 mp->root_path=duplicate(opts->root_path);
 mp->root_dir=_dirname(mp->root_path);
 mp->status_path=_status_path(mp);
+mp->pid_path=_pid_path(mp);
 
 /*-- Flags */
 
@@ -318,7 +330,12 @@ _create_pid_file(mp);
 
 /* Open active file */
 
-if (!mp->active.file) _new_active_file(mp,t);
+if (!mp->active.file)
+	{
+	_new_active_file(mp,t);
+	_dump_status_to_file(mp,t);
+	}
+
 _open_active_file(mp);
 
 /*-- If options have changed, we can have to rotate and/or purge backups */
@@ -332,6 +349,8 @@ else
 }
 
 /*----------------------------------------------*/
+/* Note: Don't remove the pid file if it has been overwritten by another 
+log manager (happens with error_log when apache starts) */
 
 void logmanager_destroy(LOGMANAGER *mp,TIMESTAMP t)
 {
@@ -347,7 +366,7 @@ if (IS_OPEN(mp)) logmanager_close(mp,t);
 
 /*-- Remove the PID file */
 
-_remove_pid_file(mp);
+if (!_pid_file_is_overwritten(mp)) _remove_pid_file(mp);
 
 /*-- Destroy compress handler */
 
@@ -372,6 +391,7 @@ if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 (void)allocate(mp->root_path,0);
 (void)allocate(mp->root_dir,0);
 (void)allocate(mp->status_path,0);
+(void)allocate(mp->pid_path,0);
 
 /* Last, free the envelope */
 
@@ -582,6 +602,7 @@ static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t)
 LOGFILE *lp;
 int len;
 char *path;
+TIMESTAMP ti;
 
 INCR_STAT_COUNT(new_active_file);
 
@@ -590,10 +611,10 @@ lp=mp->active.file=NEW_LOGFILE();
 len=strlen(mp->root_path)+12;
 if (mp->compress.handler->suffix) len+=(strlen(mp->compress.handler->suffix)+1);
 
-for (path=NULL;;t++)
+for (ti=t,path=NULL;;ti++)
 	{
 	path=allocate(path,len=(strlen(mp->root_path)+11));
-	(void)snprintf(path,len,"%s._%08lX",mp->root_path,t);
+	(void)snprintf(path,len,"%s._%08lX",mp->root_path,ti);
 	if (mp->compress.handler->suffix)
 		{
 		path=allocate(path,len += (strlen(mp->compress.handler->suffix)+1));
@@ -817,7 +838,6 @@ return p;
 static void _get_status_from_file(LOGMANAGER *mp)
 {
 char *buf,*p,*p2,*val;
-apr_off_t bufsize;
 LOGFILE *lp;
 
 DEBUG1(mp,1,"Reading status from file (%s)",mp->status_path);
@@ -832,7 +852,7 @@ mp->backup.size=0;
 
 if (file_exists(mp->status_path))
 	{
-	p=buf=file_get_contents(mp->status_path,&bufsize);
+	p=buf=file_get_contents(mp->status_path,NULL);
 	while ((p2=strchr(p,'\n'))!=NULL)
 		{
 		(*p2)='\0';

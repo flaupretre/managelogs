@@ -80,6 +80,7 @@ typedef struct
 	char *root_dir;
 	char *root_path;
 	char *status_path;
+	char *pid_path;
 	unsigned int flags;
 	struct
 		{

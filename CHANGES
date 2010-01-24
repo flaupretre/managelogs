@@ -1,4 +1,24 @@
 
+1.0:
+
+* Fix problem with error_log when starting Apache : httpd starts a managelogs
+  process, then forks and the forked process starts another managelogs. Then,
+  the first process exits. So, by default, the pid file is overwritten and
+  deleted by the first managelogs. And, as the status file does not exist
+  when the second one starts, a new active file is created.
+  Fixes :
+    - In logmanager_destroy(), don't remove the pid file if it has been
+      overwritten (if it does not contain our pid).
+    - In logmanager_open(), dump status if the active file
+      did not exist. So, when the second process gets in, it finds a status
+      file and reopens the same active file.
+
+* In file_get_contents(), the sizep argument was not returned. Also, make
+  it optional (can be NULL).
+
+* Add pid_path element in LOGMANAGER structure, so that it is not recomputed
+  each time we need it.
+
 1.0rc1:
 
 * First public release
