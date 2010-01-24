@@ -1,10 +1,36 @@
 
+-------------------------------------------------------------------------------
+1.1.0 :
+
+* Added a '--rotate-cmd' option (a command to be launched in background when
+  a rotation occurs). Used primarily to gather statistics.
+  
+* Additional protection against file system full errors (E_NOSPC). When such an
+  error occurs during a data write operation, it is ignored, except if
+  the '--enospc-abort' option is set. Ensures that a file system overflow
+  does not cause Apache to abort.
+
+* Modified the way memory pools are used. In the previous versions, only one
+  global pool was used and, as the pool mechanism does not allow a block to be
+  freed, this pool grew (not fast, but) indefinitely. We now use temporary
+  pools where it is possible (when the alloc/free is local to a function), and
+  persistent pools are created to store apr_file_t structures for open files.
+  Each file has its own a private pool, so that it can be freed.
+
+* Set lib directory under src
+
+* Improved Makefiles
+
+* Replace 'root_path' with 'base_path' everywhere in the code
+
+-------------------------------------------------------------------------------
 1.0.1:
 
 * Cosmetic changes
 
 * Add man page
 
+-------------------------------------------------------------------------------
 1.0:
 
 * Fix problem with error_log when starting Apache : httpd starts a managelogs
@@ -29,7 +55,9 @@
 
 * Cosmetic changes to suppress warnings in '-Wall' mode.
 
+-------------------------------------------------------------------------------
 1.0rc1:
 
 * First public release
 
+===============================================================================

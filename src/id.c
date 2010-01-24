@@ -24,7 +24,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
-#include "util.h"
+#include "util/util.h"
 
 /*----------------------------------------------*/
 

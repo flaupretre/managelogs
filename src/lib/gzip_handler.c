@@ -30,12 +30,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <zlib.h>
 
-#include "include/gzip_handler.h"
-#include "include/logmanager.h"
-#include "include/file.h"
-#include "include/util.h"
-#include "include/config.h"
-
 /*----------------------------------------------*/
 
 #define GZ_DEFAULT_COMPRESS_RATIO	10
@@ -48,7 +42,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define WRITE_OUTPUT_BUFFER()	{ \
 				if (zp->zs.avail_out != BUFSIZE) \
 					file_write(mp->active.fp,zp->compbuf \
-						,BUFSIZE-zp->zs.avail_out); \
+					  ,BUFSIZE-zp->zs.avail_out,mp->flags & LMGR_FAIL_ENOSPC); \
 				}
 
 #define GZ_INIT_POINTERS() \
@@ -79,7 +73,7 @@ static void gzip_flush(void *sp);
 
 /*----------------------------------------------*/
 
-COMPRESS_HANDLER gzip_handler=
+LIB_INTERNAL COMPRESS_HANDLER gzip_handler=
 	{
 	"gz",							/* suffix */
 	gzip_init_v1,					/* init_v1 */

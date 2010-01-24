@@ -15,19 +15,26 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __GZIP_HANDLER_H
-#define __GZIP_HANDLER_H
+#include <apr.h>
 
-#ifndef DISABLE_GZIP
-/*----------------------------------------------*/
-
-#include "compress.h"
-
-/*----------------------------------------------*/
-
-extern COMPRESS_HANDLER gzip_handler;
-
-/*----------------------------------------------*/
+#if APR_HAVE_STDIO_H
+#include <stdio.h>
 #endif
+
+#include <apr_time.h>
+
 /*----------------------------------------------*/
-#endif /* DISABLE_GZIP */
+
+LIB_INTERNAL TIMESTAMP time_now()
+{
+return (TIMESTAMP)apr_time_sec(apr_time_now());
+}
+
+/*----------------------------------------------*/
+
+LIB_INTERNAL TIMESTAMP strval_to_time(const char *val)
+{
+return (TIMESTAMP)strval_to_ulong(val);
+}
+
+/*----------------------------------------------*/

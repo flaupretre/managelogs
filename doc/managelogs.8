@@ -1,4 +1,4 @@
-.TH MANAGELOGS 8 "March 2009" "managelogs" "managelogs"
+.TH MANAGELOGS 8 "May 2009" "managelogs" "managelogs"
 .SH NAME
 managelogs \- Piped logging program to rotate/purge Apache logs
 .SH "SYNOPSIS"
@@ -10,49 +10,64 @@ managelogs is a log processing program to be used in conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 .PP
-The primary purpose is to solve the 'log file system full' issue in a
-way different from the quite-unreliable cron-based solutions one
-typically uses to solve it. The approach is different, here, because the purge
-is not delegated to an external program. This way, even if the file system is
-limited in free space, the size limits you define will never be exceeded, even
-temporarily.
+The first idea is to provide an efficient protection
+against 'file system full' failures. Several log rotation programs exist in the
+Apache world but, as  far as I know, none of them features an automatic purge
+of obsolete log files. The usual solution is to complement the log rotation
+mechanism with cron-based purge operations. This approach is prone to a lot of
+errors such as inadvertent inactivation of the cron job, inconsistencies between
+the script shell and the Apache configuration (different directory paths), bugs
+in the shell code, and others, most of them remaining undetected.
+It also requires the Apache administrator to write some code (shell,  perl...)
+and cannot ensure that the file system will not fill up between two consecutive
+cron invocations.
 .PP
-Main features :
+managelogs implements a different approach, as it includes both the rotation
+and purge mechanisms, providing a simpler and more reliable solution. Among
+other benefits, it ensures that the size limits you define will never be
+exceeded, even temporarily.
+.PP
+Here is a short list of manegelogs main features :
 .IP
-- File rotation based on individual file size or on a signal,
+- Rotation on a file size limit,
 .br
-- File purge based on a global size limit, a maximum number of files,
+- Rotation on an external signal,
+.br
+- Can run an external command in background each time a rotation occurs
+(useful for statistics gathering),
+.br
+- Purge log files based on a global size limit, a maximum number of log files,
 or a combination of both,
 .br
-- Optional on-the-fly compression,
+- Integrated on-the-fly compression,
 .br
-- Can maintain symbolic links on log files (active and backup),
+- Maintains symbolic links on log files (active and/or backup),
 .br
-- Can switch to a given (non-root) uid/gid,
+- Can change its uid/gid to run as a given (non-root) user/group,
 .br
 - Ensures that rotations occur on line boundaries,
 .br
-- Maintains its state across stop/starts/restarts
+- Maintains its state across stop/starts/restart operations
 .PP
 A managelogs process continuously reads data from its standard input and
 sends it to its
 .I log manager(s).
-Log managers should be considered as independant output channels. Each log 
+A log manager can be considered as an output channel. Each log 
 manager is defined
-on the command line by a set of options followed by a path we call the
+on the command line by a set of options followed by a path named
 .I base path
-, as this path is used as the base every file names are computed from. Each set
-of '[ \fIoptions\fR ] \fI<base-path>\fR' arguments on the command line
-defines a log manager.
+, as this path is used as the base every subsequent file names are computed
+from. Each set of '[ \fIoptions\fR ] \fI<base-path>\fR' arguments defines a
+log manager.
 .PP
 There is no limit to the number of log managers a
-process can handle. They all receive a copy of the data read from
-the process' standard input and each one processes it according to its
+managelogs process can handle. They all receive a copy of the data read from
+the process' standard input and each one processes this data according to its
 configuration.
 .PP
 Note: In most cases, and especially
 during your first steps with managelogs, you will define only one log
-manager and you won't make the difference between it and the process
+manager, making no difference between the log manager and the managelogs process
 it belongs to.
 .PP
 A log manager manages an
@@ -61,60 +76,59 @@ log file (the file it is currently writing into) and a set of
 .I backup
 log files.
 .I Backup
-files are previous log files which have been closed during a file
+log files are previous active log files which have been closed during a
 .I rotation.
 Every time the global limits
 are exceeded, a
 .I purge
-occurs, meaning that the oldest backup file is deleted.
+operation takes place and the oldest backup file is deleted.
 .PP
 Each log manager also maintains a
 .I status file
-which, among other information, contains the names of the active and backup log
-files. Thanks to this file, managelogs processes can be stopped and restarted
-without loosing their state. So, when a process is started, each log manager
-recovers the state it was in when the previous process was stopped. It means,
-among others, that it will reopen the log file it was writing into when it was
-stopped.
-As a consequence, note that, unlike other log managemenent programs like
-rotatelogs, (re)starting the Apache server does not cause managelogs to
-switch to a new log file. In order to force a file rotation, you must send
-a SIGUSR1 signal to the process (see SIGNALS).
-
-Another difference with other log management programs is that you cannot
-share an active log file between several processes. In the managelogs world,
-each
+which, among other information, contains the paths of the active and backup log
+files. Thanks to this file, a managelogs process can be stopped and restarted
+without loosing its state. When a managelogs process is restarted, each log
+manager recovers the state it was in when the process was previously stopped.
+.PP
+Note : unlike other log management programs like
+rotatelogs, (re)starting the Apache server does not cause its managelogs
+processes to switch to a new log file. The only way to force a file rotation
+from the 'outside' is to send a SIGUSR1 signal to the managelogs process
+(see SIGNALS).
+.PP
+Another difference with other usual log rotation programs is that several
+processes cannot write to the same log file at the same time. A given
 .I base path
-is privately owned and managed by only one log manager. If another program
-writes to the active log file, the result is undefined. The rule is less strict
-for backup log files : writing into them is forbidden, but they can be deleted
-by an external program (before actually performing a purge, the log manager
-checks the presence of each backup file and recomputes the global size).
+must be privately owned and managed by only one log manager. If another program
+writes to one of the files it maintains, the result is unpredictable.
+The only exception to this rule is that backup log files can be deleted
+(but not written to) at any time without disturbing the logic of the purge
+engine.
 .SH "OPTIONS"
 .PP
----- Global options (apply to the process) :
+---- Global options (these options apply to the whole managelogs process) :
 .TP
 .BR -h | --help
-Display the list of available options
+Display the list of available options and exit
+.TP
+.BR -V | --version
+Print version and exit
 .TP
 .BR -u | --user " " \fI<id>\fR
-run with this user ID (possible only when the program is started by the root 
-user).
+run with this user/group ID (usable only when the program is started
+by the \fIroot\fR user)
 .br
 \fI<id>\fR = \fI<uid>[:<gid>]\fR, where \fI<uid>\fR and \fI<gid>\fR are 
 user/group names or numeric ids.
 .TP
-.BR -V | --version
-Print version and exit.
-.TP
 .BR -I | --stats
-Display internal statistics before exiting (used for troubleshooting, debugging, or
-performance tests)
+Display internal statistics before exiting (used for troubleshooting, debugging,
+or performance tests)
 .TP
 .BR -R | --refresh-only
-Just refresh/purge files and exit
+Just refresh/purge log files and exit
 .PP
----- Log manager options (apply to the following \fI<base-path>\fR only) :
+---- Log manager options (apply to the next \fI<base-path>\fR only) :
 .TP
 .BR -v | --verbose
 Increment debug level (can be set more than once).
@@ -122,17 +136,16 @@ Increment debug level (can be set more than once).
 .BR -d | --debug " " \fI<path>\fR
 Write debug messages to \fI<path>\fR.
 .br
-Special values : when the <path> argument is equal to 'stdout' or 'stderr', it
-is interpreted as, respectively, the process' standard output and standard error
-streams.
+Special values : the 'stdout' and 'stderr' strings respectively correspond to
+the process' standard output and standard error streams.
 .br
-Default : if this option is not present, messages go to stderr.
+Default : if this option is not present, debug messages go to stderr.
 .TP
 .BR -c | --compress " " \fI<comp>[:<level>]\fR
 Activate compression and append the corresponding suffix to the log file names.
 .br
-\fI<comp>\fR is \fBgz\fR or \fBbz2\fR (this is also the value of the appended
-suffix).
+\fI<comp>\fR is one of \fBgz\fR or \fBbz2\fR (this is also the value of the
+appended suffix).
 .br
 \fI<level>\fR is one of {1|2|3|4|5|6|7|8|9|best|fast}
 .br
@@ -149,16 +162,17 @@ optionnally followed by a unit : \fBK\fR (Kilobytes), \fBM\fR (Megabytes), or
 .br
 Default: no limit
 .br
-Note that the size we set here is the size the file will take on disk. So,
-when the compression is turned on, the size limit applies to the compressed size.
+Note that the size we set here is the size the file takes on disk. If compression
+is on, the limit is checked against the compressed size.
 .TP
 .BR -S | --global-size " " \fI<size>\fR
-Sets the maximum size that the managed log files (active + backup) can take .
-When this size is reached, a purge occurs (the oldest backup file is removed).
+Sets the maximum size that the managed log files (active + backup) can take on
+disk. As soon as this size is exceeded, a purge occurs (the oldest backup file
+is removed).
 .br
 Argument: same format as for '--size'. If this option is set and the '--size'
-option is not, the individual file limit is implicitely set to a value of
-half the global limit (so that the directory always contains one backup
+option is not, the individual file limit is implicitely set to 1/2 of
+the global limit (so that the directory always contains one backup
 file).
 .br
 Default : no global limit
@@ -166,16 +180,16 @@ Default : no global limit
 .BR -m | --mode " " \fI<mode>\fR
 File permissions to apply to newly-created log files.
 .br
-\fI<mode>\fR is a numeric Unix-style file permission (see chmod for more).
+\fI<mode>\fR is a numeric Unix-style file permission (see chmod(1) for more).
 .br
 Default mode: 644
 .TP
 .BR -k | --keep " " \fI<n>\fR
-Only keep \fI<n>\fR log files (the active one + \fI<n-1>\fR backups). This
+Keep only \fI<n>\fR log files (the active one + \fI<n-1>\fR backups). This
 option is an alternative to the '--global-size' option, but it can also be
-used in conjunction, especially if you use signals to trigger some rotations
-before the sizes reach their limits. When this argument is set along with a
-global size limit, the first limit to be reached triggers the purge operation. 
+used in conjunction, especially if you send signals to trigger rotations
+before the size limit is reached. When this option is set along with a
+global size limit, the first condition to be met triggers the purge. 
 .TP
 .BR -l | --link
 Maintain a link file (named \fI<base-path>\fR) to the active log file. The '-H'
@@ -190,27 +204,52 @@ Create hard links instead of symbolic links.
 .TP
 .BR -e | --ignore-eol
 By default, managelogs ensures that log file rotation occurs on line boundaries,
-so that log files contain entire lines. This option disables this mechanism.
+so that every log files contain entire lines. This option disables this
+buffering mechanism.
+.TP
+.BR -C | --rotate-cmd " " \fI<cmd>\fR
+Run this command in background each time a rotation occurs.
+.br
+\fI<cmd>\fR is a command line in Bourne shell format and can contain arguments,
+separated by spaces and tabs. If \fI<cmd>\fR contains spaces or tabs, it must
+be enclosed between quotes, so that it is considered as a single managelogs
+argument.
+.br
+managelogs sets several environment variables before launching \fI<cmd>\fR.
+These variables can be used in the \fI<cmd>\fR string itself, but also in the
+script or binary program launched by the command.
+.br
+See 'ROTATE COMMAND' below for more.
+.TP
+.BR -x | --enospc-abort
+Exit on 'file system full' errors.
+.br
+The default is to ignore such errors when trying to write data to a log file,so
+that the underlying service (typically Apache) is kept running as long as
+possible. The drawback is that, when it happens, data that cannot be written is
+silently discarded.
+Setting this option inhibits the default 'permissive' behavior and causes the
+program to abort on 'file system full' errors.
 .SH "FILES"
 Each log manager maintains its own set of files. The files are named after the
-manager's base path. They all lie in the same directory (the directory part of
-the base path). This directory must exist before managelogs is started. It must
-also be writable be the user managelogs is running as.
+log manager's base path. They all reside in the same directory (the directory
+part of the base path). This directory must exist before managelogs is started.
+It must also be writable by the user managelogs is running as.
 .PP
-Here are the files that a log manager may create and maintain :
+Here are the files that a log manager creates and maintains :
 .TP
 <base-path>.pid
 This file is present when a process is currently managing this base path. It
 contains
-the pid of the managelogs process. This is the file to read if you want to send
-signals. When the process exits, the pid file is removed.
+the pid of the managelogs process. This is the file to read to know who to send
+signals to. When the process exits, the pid file is removed.
 .TP
 <base-path>.status
 The status file. As described above, this file allows a log manager to recover
 its previous state at start time. This way, the memory of active and backup
 files is kept.
 .TP
-<base-path>._\fI<xxxxxxxx>\fR.log[.gz|.bz2]
+<base-path>._\fI<xxxxxxxx>\fR[.gz|.bz2]
 A log file. The \fI<xxxxxxxx>\fR part of the name is a unique identifier
 computed
 by the log manager when the file is created. When several log files are present,
@@ -218,7 +257,7 @@ their alphabetical order always corresponds to their creation time chronological
 order. So, when you list a directory in
 alphabetical order (ls -l), the oldest backup
 log file comes first, and the active log
-file comes last. And a command like 'cat <base-path>._*.log' displays the
+file comes last. And a command like 'cat <base-path>._*' displays the
 whole log data in chronological order.
 .br
 When compression is turned on, the log manager automatically appends the
@@ -253,10 +292,51 @@ engine flushes the data it currently has in memory, writes the corresponding
 trailer data to the file, and starts a new block. Then, you can uncompress
 the data from the compreessed file. Note that this flush operation adds about
 16 bytes to the log file, so it shouldn't be done too often.
+.SH "ROTATE COMMAND"
+Every time managelogs decides to switch to a new log file, whatever reason it
+may have for this, an external command can be executed. This is what we call
+.I rotate command.
+This command is set via an option on the managelogs command line.
+It is a command in shell format, which
+can contain arguments, separated by spaces or tabs. If the command contains
+arguments, it must be enclosed between quotes, so that it is seen as a single
+managelogs argument.
+.PP
+managelogs runs the command in background, ignoring its return code. So, there
+is no limit to the time the command may run, as managelogs does not wait
+for its completion to keep on processing the log data.
+.PP
+Before launching the rotate command, managelogs sets several environment
+variables that can be used, either in the command string (prefixed with a $
+sign), or from within the script or program run by the command:
+.TP
+.B LOGMANAGER_FILE_PATH
+The path to the log file managelogs just closed. In a statistics gathering
+scenario, the data to integrate will be read from this file.
+.TP
+.B LOGMANAGER_BASE_PATH
+This is the
+.I base path
+associated with this log manager.
+.TP
+.B LOGMANAGER_ROOT_DIR
+This is the directory part of the
+.I base path
+.TP
+.B LOGMANAGER_COMPRESSION
+This is the compression type used to write to the log file. If compression
+is off, contains an empty string.
+.TP
+.B LOGMANAGER_VERSION
+The version of the log manager library.
+.PP
+Note : During its execution, the rotate command is allowed to delete the
+file pointed by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
+want some statistics without the detailed logs.
 .SH "EXAMPLES"
 .PP
 Say we want to keep the last 3 Mbytes of access_log data in <apache-dir>/logs,
-each log file will take at most 1 Mbytes, and we want to maintain a symbolic
+each log file will take at most 1 Mbyte, and we want to maintain a symbolic
 link to the active and backup log files.
 .PP
 The corresponding configuration line looks like :
@@ -316,9 +396,22 @@ kill -USR1 `cat <apache_dir>/logs/access_log.pid`
 .PP
 Note that we could also have used '/archives/logs/access_log.pid', as both pid
 files contain the same. This signal will trigger a rotation in both directories.
+.PP
+Here is a typical example of using a rotate command : the options below cause
+the log data to be integrated into an AWStats database each time a rotation
+occurs :
+.PP
+CustomLog "| <apache_dir>/bin/managelogs --size 100k --global-size 1M --rotate-cmd 'perl <awstat-dir>/awstats.pl -config=<mysite> -update -LogFile=$LOGMANAGER_FILE_PATH' <apache_dir>/logs/access_log" combined
+.PP
+In order to ensure that statistics are integrated at least once per day, this
+configuration can be complemented with a cron job like this one :
+.PP
+0 0 * * * kill -USR1 `cat <apache_dir>/logs/access_log.pid`
+.PP
+which causes a rotation to occur every night at midnight.
 .SH "SEE ALSO"
 .PP
-managelogs web site : http://managelogs.tekwire.net
+the managelogs web site : http://managelogs.tekwire.net
 .SH "AUTHOR"
 .PP
 Francois Laupretre <francois@tekwire.net>

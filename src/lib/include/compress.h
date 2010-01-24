@@ -15,37 +15,28 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __FILE_H
-#define __FILE_H
-
-#include <apr.h>
-#include <apr_file_io.h>
-
-#include "util.h"
+#ifndef __COMPRESS_H
+#define __COMPRESS_H
 
 /*----------------------------------------------*/
 
 typedef struct
 	{
-	apr_file_t *fd;
-	const char *path;
-	apr_size_t size;
-	} OFILE;
+	char suffix[LMGR_COMPRESS_SIZE+1];	/* Uncompressed : empty string */
+	void (*init_v1)(void *sp, const char *level);
+	void (*destroy)(void *sp);
+	void (*start)(void *sp);
+	void (*end)(void *sp);
+	apr_size_t (*predict_size)(void *sp, apr_size_t size);
+	void (*compress_and_write)(void *sp, const char *buf
+		,apr_size_t size);
+	void (*flush)(void *sp);
+	} COMPRESS_HANDLER;
 
 /*----------------------------------------------*/
 
-extern BOOL file_exists(const char *path);
-extern BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal);
-extern BOOL file_delete(const char *path, BOOL fatal);
-extern OFILE *file_create(const char *path, apr_int32_t mode);
-extern apr_size_t file_size(const char *path);
-extern OFILE *file_open_for_append(const char *path, apr_int32_t mode);
-extern void file_write(OFILE *fp, const char *buf, apr_size_t size);
-extern void file_write_string(OFILE *fp, const char *buf);
-extern void file_write_string_nl(OFILE *fp, const char *buf);
-extern OFILE *file_close(OFILE *fp);
-extern char *file_get_contents(const char *path, apr_off_t *sizep);
+LIB_INTERNAL char *compress_handler_list(void);
+LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg);
 
 /*----------------------------------------------*/
-#endif	/* __FILE_H */
-
+#endif	/* __COMPRESS_H */

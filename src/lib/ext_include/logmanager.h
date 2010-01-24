@@ -33,9 +33,11 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+#ifndef NOW
 typedef unsigned long TIMESTAMP;
 
 #define NOW	(TIMESTAMP)0
+#endif
 
 /*----------------------------------------------*/
 /* logmanager_write() flags */
@@ -44,27 +46,111 @@ typedef unsigned long TIMESTAMP;
 
 /* LOGMANAGER option flags */
 
-#define LMGR_ACTIVE_LINK	0x1
-#define LMGR_BACKUP_LINKS	0x2
-#define LMGR_HARD_LINKS		0x4
-#define LMGR_IGNORE_EOL		0x8
+#define LMGR_ACTIVE_LINK	0x01
+#define LMGR_BACKUP_LINKS	0x02
+#define LMGR_HARD_LINKS		0x04
+#define LMGR_IGNORE_EOL		0x08
+#define LMGR_FAIL_ENOSPC	0x10
+
+/* Max size of compress method */
+
+#define LMGR_COMPRESS_SIZE	5
+#define LMGR_COMPRESS_STRING_SIZE	(LMGR_COMPRESS_SIZE+3)
 
 /*----------------------------------------------*/
 
-typedef void LOGMANAGER; /* Opaque to client */
+#define LOGMANAGER_API_VERSION	1
+
+/*----------------------------------------------*/
 
 typedef struct
 	{
-	char *root_path;
+	char *base_path;
 	unsigned int flags;
-	char *compress_string;
+	char compress_string[LMGR_COMPRESS_STRING_SIZE];
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
 	apr_fileperms_t create_mode;
 	char *debug_file;
 	int debug_level;
+	char *rotate_cmd;
 	} LOGMANAGER_OPTIONS_V1;
+
+/*----------------------------------------------*/
+
+#ifdef IN_LMGR_LIB
+
+#include "../include/compress.h"
+#include "../include/file.h"
+
+typedef struct
+	{
+	char *path;
+	char *link;
+	TIMESTAMP start;
+	TIMESTAMP end;
+	apr_off_t size; /* Invalid for active file when open */
+	} LOGFILE;
+
+typedef struct
+	{
+	char *root_dir;
+	char *base_path;
+	char *status_path;
+	char *pid_path;
+	unsigned int flags;
+	struct
+		{
+		COMPRESS_HANDLER *handler;
+		void *private;
+		} compress;
+	struct
+		{
+		OFILE *fp;
+		LOGFILE *file;
+		} active;
+	struct
+		{
+		LOGFILE **files;
+		unsigned int count;
+		apr_off_t size;
+		} backup;
+	apr_off_t file_maxsize;
+	apr_off_t global_maxsize;
+	unsigned int keep_count;
+	apr_fileperms_t create_mode;
+	TIMESTAMP last_time;
+	char *rotate_cmd;
+	struct
+		{
+		char *buf;
+		apr_off_t len;
+		} eol_buffer;
+	struct
+		{
+		OFILE *fp;
+		int level;
+		} debug;
+	struct
+		{
+		int write_count;
+		int write2_count;
+		int flush_count;
+		int link_count;
+		int refresh_backup_links_count;
+		int refresh_active_link_count;
+		int new_active_file_count;
+		int rotate_count;
+		int remove_oldest_count;
+		int dump_count;
+		int sync_count;
+		} stats;
+	} LOGMANAGER;
+
+#else
+typedef void LOGMANAGER; /* Opaque to client */
+#endif
 
 /*----------------------------------------------*/
 /* Functions */

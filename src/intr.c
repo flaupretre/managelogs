@@ -22,8 +22,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <stdlib.h>
 #endif
 
+#include "util/util.h"
 #include "intr.h"
-#include "util.h"
 #include "managelogs.h"
 
 /*----------------------------------------------*/
@@ -142,6 +142,10 @@ switch(sig)
 
 void signal_init()
 {
+#ifdef SIGCHLD
+(void)apr_signal(SIGCHLD,SIG_IGN);
+#endif
+
 #ifdef SIGUSR1
 (void)apr_signal(SIGUSR1,_signal_handler);
 #endif

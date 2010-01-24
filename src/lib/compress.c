@@ -29,12 +29,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <stdio.h>
 #endif
 
-#include "include/gzip_handler.h"
-#include "include/bzip2_handler.h"
+/*----------------------------------------------*/
 
-#include "include/file.h"
-#include "include/util.h"
-#include "include/logmanager.h"
+#define PLAIN_INIT_POINTERS() LOGMANAGER *mp=(LOGMANAGER *)sp;
 
 /*----------------------------------------------*/
 
@@ -44,16 +41,17 @@ static void plain_write(void *sp, const char *buf, apr_size_t size);
 
 static COMPRESS_HANDLER plain_handler=
 	{
-	NULL,						/* suffix */
-	NULL,						/* init */
-	NULL,						/* destroy */
-	NULL,						/* start */
-	NULL,						/* end */
-	NULL,						/* predict_size */
-	plain_write					/* compress_and_write */
+	"",				/* suffix */
+	NULL,			/* init */
+	NULL,			/* destroy */
+	NULL,			/* start */
+	NULL,			/* end */
+	NULL,			/* predict_size */
+	plain_write		/* compress_and_write */
 	};
 
 static COMPRESS_HANDLER *compress_handlers[]={
+	&plain_handler,
 #ifndef DISABLE_GZIP
 	&gzip_handler,
 #endif
@@ -66,12 +64,14 @@ static COMPRESS_HANDLER *compress_handlers[]={
 
 static void plain_write(void *sp, const char *buf, apr_size_t size)
 {
-file_write(((LOGMANAGER *)sp)->active.fp,buf,size);
+PLAIN_INIT_POINTERS();
+
+file_write(((LOGMANAGER *)sp)->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
 }
 
 /*----------------------------------------------*/
 
-char *compress_handler_list()
+LIB_INTERNAL char *compress_handler_list()
 {
 COMPRESS_HANDLER **chpp;
 char *result,*suffix;
@@ -82,7 +82,7 @@ result[size=0]='\0';
 
 for (chpp=compress_handlers;*chpp;chpp++)
 	{
-	suffix=(*chpp)->suffix;
+	if (! *(suffix=(*chpp)->suffix)) continue;	/* Plain handler */
 	result=allocate(result,size+strlen(suffix)+2);
 	strcat(result," ");
 	strcat(result,suffix);
@@ -92,18 +92,13 @@ return result;
 
 /*----------------------------------------------*/
 
-void init_compress_handler_from_string(void *sp, char *arg)
+LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg)
 {
 COMPRESS_HANDLER **chpp;
-char buf[16],*level;
+char buf[LMGR_COMPRESS_STRING_SIZE],*level;
+LOGMANAGER *mp=(LOGMANAGER *)sp;
 
-if (!arg)
-	{
-	((LOGMANAGER *)sp)->compress.handler=&plain_handler;
-	return;
-	}
-
-if (strlen(arg) >= sizeof(buf)) FATAL_ERROR("compression arg too long");
+if ((strlen(arg)+1) >= sizeof(buf)) FATAL_ERROR("compression arg too long");
 strcpy(buf,arg);
 
 if ((level=strchr(buf,':'))!=NULL) *(level++)='\0';
@@ -112,20 +107,12 @@ for (chpp=compress_handlers;*chpp;chpp++)
 	{
 	if (!strcmp((*chpp)->suffix,buf))
 		{
-		((LOGMANAGER *)sp)->compress.handler=(*chpp);
+		mp->compress.handler=(*chpp);
 		if ((*chpp)->init_v1) (*chpp)->init_v1(sp,level);
 		break;
 		}
 	}
-if (!(*chpp))
-	FATAL_ERROR1("Invalid compression : %s",buf);
-}
-
-/*----------------------------------------------*/
-
-char *compression_name(COMPRESS_HANDLER *cp)
-{
-return (cp->suffix ? cp->suffix : "plain");
+if (!(*chpp)) FATAL_ERROR1("Invalid compression : %s",buf);
 }
 
 /*----------------------------------------------*/

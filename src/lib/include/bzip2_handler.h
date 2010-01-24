@@ -15,29 +15,16 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#include <apr.h>
+#ifndef __BZIP2_HANDLER_H
+#define __BZIP2_HANDLER_H
 
-#if APR_HAVE_STDIO_H
-#include <stdio.h>
+#ifndef DISABLE_BZIP2
+
+/*----------------------------------------------*/
+
+LIB_INTERNAL COMPRESS_HANDLER bzip2_handler;
+
+/*----------------------------------------------*/
 #endif
-
-#include <apr_time.h>
-
-#include "include/time.h"
-#include "include/util.h"
-
 /*----------------------------------------------*/
-
-TIMESTAMP time_now()
-{
-return (TIMESTAMP)apr_time_sec(apr_time_now());
-}
-
-/*----------------------------------------------*/
-
-TIMESTAMP strval_to_time(const char *val)
-{
-return (TIMESTAMP)strval_to_ulong(val);
-}
-
-/*----------------------------------------------*/
+#endif /* DISABLE_BZIP2 */

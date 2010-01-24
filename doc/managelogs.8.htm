@@ -24,37 +24,55 @@ piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 <P>
 
-The primary purpose is to solve the 'log file system full' issue in a
-way different from the quite-unreliable cron-based solutions one
-typically uses to solve it. The approach is different, here, because the purge
-is not delegated to an external program. This way, even if the file system is
-limited in free space, the size limits you define will never be exceeded, even
-temporarily.
+The first idea is to provide an efficient protection
+against 'file system full' failures. Several log rotation programs exist in the
+Apache world but, as  far as I know, none of them features an automatic purge
+of obsolete log files. The usual solution is to complement the log rotation
+mechanism with cron-based purge operations. This approach is prone to a lot of
+errors such as inadvertent inactivation of the cron job, inconsistencies between
+the script shell and the Apache configuration (different directory paths), bugs
+in the shell code, and others, most of them remaining undetected.
+It also requires the Apache administrator to write some code (shell,  perl...)
+and cannot ensure that the file system will not fill up between two consecutive
+cron invocations.
 <P>
 
-Main features :
+managelogs implements a different approach, as it includes both the rotation
+and purge mechanisms, providing a simpler and more reliable solution. Among
+other benefits, it ensures that the size limits you define will never be
+exceeded, even temporarily.
+<P>
+
+Here is a short list of manegelogs main features :
 <DL COMPACT>
 <DT><DD>
-- File rotation based on individual file size or on a signal,
+- Rotation on a file size limit,
 <BR>
 
-- File purge based on a global size limit, a maximum number of files,
+- Rotation on an external signal,
+<BR>
+
+- Can run an external command in background each time a rotation occurs
+(useful for statistics gathering),
+<BR>
+
+- Purge log files based on a global size limit, a maximum number of log files,
 or a combination of both,
 <BR>
 
-- Optional on-the-fly compression,
+- Integrated on-the-fly compression,
 <BR>
 
-- Can maintain symbolic links on log files (active and backup),
+- Maintains symbolic links on log files (active and/or backup),
 <BR>
 
-- Can switch to a given (non-root) uid/gid,
+- Can change its uid/gid to run as a given (non-root) user/group,
 <BR>
 
 - Ensures that rotations occur on line boundaries,
 <BR>
 
-- Maintains its state across stop/starts/restarts
+- Maintains its state across stop/starts/restart operations
 </DL>
 <P>
 
@@ -62,25 +80,25 @@ A managelogs process continuously reads data from its standard input and
 sends it to its
 <I>log manager(s).</I>
 
-Log managers should be considered as independant output channels. Each log 
+A log manager can be considered as an output channel. Each log 
 manager is defined
-on the command line by a set of options followed by a path we call the
+on the command line by a set of options followed by a path named
 <I>base path</I>
 
-, as this path is used as the base every file names are computed from. Each set
-of '[ <I>options</I> ] <I>&lt;base-path&gt;</I>' arguments on the command line
-defines a log manager.
+, as this path is used as the base every subsequent file names are computed
+from. Each set of '[ <I>options</I> ] <I>&lt;base-path&gt;</I>' arguments defines a
+log manager.
 <P>
 
 There is no limit to the number of log managers a
-process can handle. They all receive a copy of the data read from
-the process' standard input and each one processes it according to its
+managelogs process can handle. They all receive a copy of the data read from
+the process' standard input and each one processes this data according to its
 configuration.
 <P>
 
 Note: In most cases, and especially
 during your first steps with managelogs, you will define only one log
-manager and you won't make the difference between it and the process
+manager, making no difference between the log manager and the managelogs process
 it belongs to.
 <P>
 
@@ -93,77 +111,78 @@ log file (the file it is currently writing into) and a set of
 log files.
 <I>Backup</I>
 
-files are previous log files which have been closed during a file
+log files are previous active log files which have been closed during a
 <I>rotation.</I>
 
 Every time the global limits
 are exceeded, a
 <I>purge</I>
 
-occurs, meaning that the oldest backup file is deleted.
+operation takes place and the oldest backup file is deleted.
 <P>
 
 Each log manager also maintains a
 <I>status file</I>
 
-which, among other information, contains the names of the active and backup log
-files. Thanks to this file, managelogs processes can be stopped and restarted
-without loosing their state. So, when a process is started, each log manager
-recovers the state it was in when the previous process was stopped. It means,
-among others, that it will reopen the log file it was writing into when it was
-stopped.
-As a consequence, note that, unlike other log managemenent programs like
-rotatelogs, (re)starting the Apache server does not cause managelogs to
-switch to a new log file. In order to force a file rotation, you must send
-a SIGUSR1 signal to the process (see SIGNALS).
+which, among other information, contains the paths of the active and backup log
+files. Thanks to this file, a managelogs process can be stopped and restarted
+without loosing its state. When a managelogs process is restarted, each log
+manager recovers the state it was in when the process was previously stopped.
 <P>
-Another difference with other log management programs is that you cannot
-share an active log file between several processes. In the managelogs world,
-each
+
+Note : unlike other log management programs like
+rotatelogs, (re)starting the Apache server does not cause its managelogs
+processes to switch to a new log file. The only way to force a file rotation
+from the 'outside' is to send a SIGUSR1 signal to the managelogs process
+(see SIGNALS).
+<P>
+
+Another difference with other usual log rotation programs is that several
+processes cannot write to the same log file at the same time. A given
 <I>base path</I>
 
-is privately owned and managed by only one log manager. If another program
-writes to the active log file, the result is undefined. The rule is less strict
-for backup log files : writing into them is forbidden, but they can be deleted
-by an external program (before actually performing a purge, the log manager
-checks the presence of each backup file and recomputes the global size).
+must be privately owned and managed by only one log manager. If another program
+writes to one of the files it maintains, the result is unpredictable.
+The only exception to this rule is that backup log files can be deleted
+(but not written to) at any time without disturbing the logic of the purge
+engine.
 <A NAME="lbAE">&nbsp;</A>
 <H2>OPTIONS</H2>
 
 <P>
 
----- Global options (apply to the process) :
+---- Global options (these options apply to the whole managelogs process) :
 <DL COMPACT>
 <DT><B>-h</B>|<B>--help</B>
 
 <DD>
-Display the list of available options
+Display the list of available options and exit
+<DT><B>-V</B>|<B>--version</B>
+
+<DD>
+Print version and exit
 <DT><B>-u</B>|<B>--user</B> <B></B><I>&lt;id&gt;</I>
 
 <DD>
-run with this user ID (possible only when the program is started by the root 
-user).
+run with this user/group ID (usable only when the program is started
+by the <I>root</I> user)
 <BR>
 
 <I>&lt;id&gt;</I> = <I>&lt;uid&gt;[:&lt;gid&gt;]</I>, where <I>&lt;uid&gt;</I> and <I>&lt;gid&gt;</I> are 
 user/group names or numeric ids.
-<DT><B>-V</B>|<B>--version</B>
-
-<DD>
-Print version and exit.
 <DT><B>-I</B>|<B>--stats</B>
 
 <DD>
-Display internal statistics before exiting (used for troubleshooting, debugging, or
-performance tests)
+Display internal statistics before exiting (used for troubleshooting, debugging,
+or performance tests)
 <DT><B>-R</B>|<B>--refresh-only</B>
 
 <DD>
-Just refresh/purge files and exit
+Just refresh/purge log files and exit
 </DL>
 <P>
 
----- Log manager options (apply to the following <I>&lt;base-path&gt;</I> only) :
+---- Log manager options (apply to the next <I>&lt;base-path&gt;</I> only) :
 <DL COMPACT>
 <DT><B>-v</B>|<B>--verbose</B>
 
@@ -175,20 +194,19 @@ Increment debug level (can be set more than once).
 Write debug messages to <I>&lt;path&gt;</I>.
 <BR>
 
-Special values : when the &lt;path&gt; argument is equal to 'stdout' or 'stderr', it
-is interpreted as, respectively, the process' standard output and standard error
-streams.
+Special values : the 'stdout' and 'stderr' strings respectively correspond to
+the process' standard output and standard error streams.
 <BR>
 
-Default : if this option is not present, messages go to stderr.
+Default : if this option is not present, debug messages go to stderr.
 <DT><B>-c</B>|<B>--compress</B> <B></B><I>&lt;comp&gt;[:&lt;level&gt;]</I>
 
 <DD>
 Activate compression and append the corresponding suffix to the log file names.
 <BR>
 
-<I>&lt;comp&gt;</I> is <B>gz</B> or <B>bz2</B> (this is also the value of the appended
-suffix).
+<I>&lt;comp&gt;</I> is one of <B>gz</B> or <B>bz2</B> (this is also the value of the
+appended suffix).
 <BR>
 
 <I>&lt;level&gt;</I> is one of {1|2|3|4|5|6|7|8|9|best|fast}
@@ -212,18 +230,19 @@ optionnally followed by a unit : <B>K</B> (Kilobytes), <B>M</B> (Megabytes), or
 Default: no limit
 <BR>
 
-Note that the size we set here is the size the file will take on disk. So,
-when the compression is turned on, the size limit applies to the compressed size.
+Note that the size we set here is the size the file takes on disk. If compression
+is on, the limit is checked against the compressed size.
 <DT><B>-S</B>|<B>--global-size</B> <B></B><I>&lt;size&gt;</I>
 
 <DD>
-Sets the maximum size that the managed log files (active + backup) can take .
-When this size is reached, a purge occurs (the oldest backup file is removed).
+Sets the maximum size that the managed log files (active + backup) can take on
+disk. As soon as this size is exceeded, a purge occurs (the oldest backup file
+is removed).
 <BR>
 
 Argument: same format as for '--size'. If this option is set and the '--size'
-option is not, the individual file limit is implicitely set to a value of
-half the global limit (so that the directory always contains one backup
+option is not, the individual file limit is implicitely set to 1/2 of
+the global limit (so that the directory always contains one backup
 file).
 <BR>
 
@@ -234,18 +253,18 @@ Default : no global limit
 File permissions to apply to newly-created log files.
 <BR>
 
-<I>&lt;mode&gt;</I> is a numeric Unix-style file permission (see chmod for more).
+<I>&lt;mode&gt;</I> is a numeric Unix-style file permission (see <A HREF="http://localhost/cgi-bin/man/man2html?1+chmod">chmod</A>(1) for more).
 <BR>
 
 Default mode: 644
 <DT><B>-k</B>|<B>--keep</B> <B></B><I>&lt;n&gt;</I>
 
 <DD>
-Only keep <I>&lt;n&gt;</I> log files (the active one + <I>&lt;n-1&gt;</I> backups). This
+Keep only <I>&lt;n&gt;</I> log files (the active one + <I>&lt;n-1&gt;</I> backups). This
 option is an alternative to the '--global-size' option, but it can also be
-used in conjunction, especially if you use signals to trigger some rotations
-before the sizes reach their limits. When this argument is set along with a
-global size limit, the first limit to be reached triggers the purge operation. 
+used in conjunction, especially if you send signals to trigger rotations
+before the size limit is reached. When this option is set along with a
+global size limit, the first condition to be met triggers the purge. 
 <DT><B>-l</B>|<B>--link</B>
 
 <DD>
@@ -264,29 +283,60 @@ Create hard links instead of symbolic links.
 
 <DD>
 By default, managelogs ensures that log file rotation occurs on line boundaries,
-so that log files contain entire lines. This option disables this mechanism.
+so that every log files contain entire lines. This option disables this
+buffering mechanism.
+<DT><B>-C</B>|<B>--rotate-cmd</B> <B></B><I>&lt;cmd&gt;</I>
+
+<DD>
+Run this command in background each time a rotation occurs.
+<BR>
+
+<I>&lt;cmd&gt;</I> is a command line in Bourne shell format and can contain arguments,
+separated by spaces and tabs. If <I>&lt;cmd&gt;</I> contains spaces or tabs, it must
+be enclosed between quotes, so that it is considered as a single managelogs
+argument.
+<BR>
+
+managelogs sets several environment variables before launching <I>&lt;cmd&gt;</I>.
+These variables can be used in the <I>&lt;cmd&gt;</I> string itself, but also in the
+script or binary program launched by the command.
+<BR>
+
+See 'ROTATE COMMAND' below for more.
+<DT><B>-x</B>|<B>--enospc-abort</B>
+
+<DD>
+Exit on 'file system full' errors.
+<BR>
+
+The default is to ignore such errors when trying to write data to a log file,so
+that the underlying service (typically Apache) is kept running as long as
+possible. The drawback is that, when it happens, data that cannot be written is
+silently discarded.
+Setting this option inhibits the default 'permissive' behavior and causes the
+program to abort on 'file system full' errors.
 </DL>
 <A NAME="lbAF">&nbsp;</A>
 <H2>FILES</H2>
 
 Each log manager maintains its own set of files. The files are named after the
-manager's base path. They all lie in the same directory (the directory part of
-the base path). This directory must exist before managelogs is started. It must
-also be writable be the user managelogs is running as.
+log manager's base path. They all reside in the same directory (the directory
+part of the base path). This directory must exist before managelogs is started.
+It must also be writable by the user managelogs is running as.
 <P>
 
-Here are the files that a log manager may create and maintain :
+Here are the files that a log manager creates and maintains :
 <DL COMPACT>
 <DT>&lt;base-path&gt;.pid<DD>
 This file is present when a process is currently managing this base path. It
 contains
-the pid of the managelogs process. This is the file to read if you want to send
-signals. When the process exits, the pid file is removed.
+the pid of the managelogs process. This is the file to read to know who to send
+signals to. When the process exits, the pid file is removed.
 <DT>&lt;base-path&gt;.status<DD>
 The status file. As described above, this file allows a log manager to recover
 its previous state at start time. This way, the memory of active and backup
 files is kept.
-<DT>&lt;base-path&gt;._<I>&lt;xxxxxxxx&gt;</I>.log[.gz|.bz2]<DD>
+<DT>&lt;base-path&gt;._<I>&lt;xxxxxxxx&gt;</I>[.gz|.bz2]<DD>
 A log file. The <I>&lt;xxxxxxxx&gt;</I> part of the name is a unique identifier
 computed
 by the log manager when the file is created. When several log files are present,
@@ -294,7 +344,7 @@ their alphabetical order always corresponds to their creation time chronological
 order. So, when you list a directory in
 alphabetical order (ls -l), the oldest backup
 log file comes first, and the active log
-file comes last. And a command like 'cat &lt;base-path&gt;._*.log' displays the
+file comes last. And a command like 'cat &lt;base-path&gt;._*' displays the
 whole log data in chronological order.
 <BR>
 
@@ -336,12 +386,68 @@ the data from the compreessed file. Note that this flush operation adds about
 16 bytes to the log file, so it shouldn't be done too often.
 </DL>
 <A NAME="lbAH">&nbsp;</A>
+<H2>ROTATE COMMAND</H2>
+
+Every time managelogs decides to switch to a new log file, whatever reason it
+may have for this, an external command can be executed. This is what we call
+<I>rotate command.</I>
+
+This command is set via an option on the managelogs command line.
+It is a command in shell format, which
+can contain arguments, separated by spaces or tabs. If the command contains
+arguments, it must be enclosed between quotes, so that it is seen as a single
+managelogs argument.
+<P>
+
+managelogs runs the command in background, ignoring its return code. So, there
+is no limit to the time the command may run, as managelogs does not wait
+for its completion to keep on processing the log data.
+<P>
+
+Before launching the rotate command, managelogs sets several environment
+variables that can be used, either in the command string (prefixed with a $
+sign), or from within the script or program run by the command:
+<DL COMPACT>
+<DT><B>LOGMANAGER_FILE_PATH</B>
+
+<DD>
+The path to the log file managelogs just closed. In a statistics gathering
+scenario, the data to integrate will be read from this file.
+<DT><B>LOGMANAGER_BASE_PATH</B>
+
+<DD>
+This is the
+<I>base path</I>
+
+associated with this log manager.
+<DT><B>LOGMANAGER_ROOT_DIR</B>
+
+<DD>
+This is the directory part of the
+<I>base path</I>
+
+<DT><B>LOGMANAGER_COMPRESSION</B>
+
+<DD>
+This is the compression type used to write to the log file. If compression
+is off, contains an empty string.
+<DT><B>LOGMANAGER_VERSION</B>
+
+<DD>
+The version of the log manager library.
+</DL>
+<P>
+
+Note : During its execution, the rotate command is allowed to delete the
+file pointed by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
+want some statistics without the detailed logs.
+<A NAME="lbAI">&nbsp;</A>
 <H2>EXAMPLES</H2>
 
 <P>
 
 Say we want to keep the last 3 Mbytes of access_log data in &lt;apache-dir&gt;/logs,
-each log file will take at most 1 Mbytes, and we want to maintain a symbolic
+each log file will take at most 1 Mbyte, and we want to maintain a symbolic
 link to the active and backup log files.
 <P>
 
@@ -417,29 +523,45 @@ kill -USR1 `cat &lt;apache_dir&gt;/logs/access_log.pid`
 
 Note that we could also have used '/archives/logs/access_log.pid', as both pid
 files contain the same. This signal will trigger a rotation in both directories.
-<A NAME="lbAI">&nbsp;</A>
+<P>
+
+Here is a typical example of using a rotate command : the options below cause
+the log data to be integrated into an AWStats database each time a rotation
+occurs :
+<P>
+
+CustomLog &quot;| &lt;apache_dir&gt;/bin/managelogs --size 100k --global-size 1M --rotate-cmd 'perl &lt;awstat-dir&gt;/awstats.pl -config=&lt;mysite&gt; -update -LogFile=$LOGMANAGER_FILE_PATH' &lt;apache_dir&gt;/logs/access_log&quot; combined
+<P>
+
+In order to ensure that statistics are integrated at least once per day, this
+configuration can be complemented with a cron job like this one :
+<P>
+
+0 0 * * * kill -USR1 `cat &lt;apache_dir&gt;/logs/access_log.pid`
+<P>
+
+which causes a rotation to occur every night at midnight.
+<A NAME="lbAJ">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
 <P>
 
-managelogs web site : <A HREF="http://managelogs.tekwire.net">http://managelogs.tekwire.net</A>
-<A NAME="lbAJ">&nbsp;</A>
+the managelogs web site : <A HREF="http://managelogs.tekwire.net">http://managelogs.tekwire.net</A>
+<A NAME="lbAK">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 <P>
 
 Francois Laupretre &lt;<A HREF="mailto:francois@tekwire.net">francois@tekwire.net</A>&gt;
-<A NAME="lbAK">&nbsp;</A>
+<A NAME="lbAL">&nbsp;</A>
 <H2>LICENSE</H2>
 
 <P>
 
 Apache license, Version 2.0 &lt;<A HREF="http://www.apache.org/licenses/">http://www.apache.org/licenses/</A>&gt;
-<A NAME="lbAL">&nbsp;</A>
+<A NAME="lbAM">&nbsp;</A>
 <H2>BUGS</H2>
 
 <P>
 
-Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;
-</BODY>
-</HTML>
+Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;</BODY></HTML>

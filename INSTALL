@@ -8,7 +8,7 @@ An up-to-date version of this document is available in the managelogs web site:
 
 	- managelogs uses the Apache Portable Runtime library, provided with the
 	  Apache web server. So, you need to install Apache
-	  (available from http://httpd.apache.org).
+	  (available from http://httpd.apache.org) or at least the APR library.
 
 	- you need the zlib library if you want managelogs to support gzip
 	  compression. zlib is available from http://www.zlib.net
@@ -18,7 +18,7 @@ An up-to-date version of this document is available in the managelogs web site:
 
 These software are provided pre-compiled on most platforms.
 
-As far as I know, there is no requirement on the version of these libraries. The
+There is no known requirement on the version of these libraries. The
 versions I used here are :
 
 	- APR 0.9.17 (included in Apache http server 2.0.63). The APR library
@@ -29,9 +29,9 @@ versions I used here are :
 * Compiling
 
 	- Edit the make.vars file in the base directory and modify the
-	  'modifiable parameters' section according to your environment.
-          This will define where Apache, zlib, and bzip2 are installed,
-          whether you want zlib and bzip2 support, and compile options.
+      'modifiable parameters' section according to your environment.
+      This will define where Apache, zlib, and bzip2 are installed,
+      whether you want zlib and bzip2 support, and some compile options.
 
 	- Run 'make'
 
@@ -39,7 +39,7 @@ versions I used here are :
 
 	- Run 'make install'. This will install :
 
-		- the managelogs executable in <apache-path>/bin
+		- the managelogs executable file in <apache-path>/bin
 		- the logmanager.h include file in <apache-path>/include
 		- the logmanager library in <apache-path>/lib
 
@@ -54,7 +54,7 @@ The software was succesfully tested on the following environments :
 	- HP-UX 11.11
 
 If you build and run it on other environments, please let me know, so I can
-add them to this list.
+add them here.
 
 * Additional documents
 

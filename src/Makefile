@@ -6,31 +6,43 @@ include ../make.vars
 
 TARGETS = managelogs
 
-MANAGELOGS_LOBJS = managelogs.lo \
+LOBJS = managelogs.lo \
 	intr.lo \
 	options.lo \
 	id.lo
 
-LOBJS = $(MANAGELOGS_LOBJS)
-
-INCLUDES = -I../lib/ext_include
+INCLUDES = -Ilib/ext_include
 
 #--------------------------------------------------------------------
 
-.PHONY: all clean install
+.PHONY: all clean install clean-prog lib clean-lib install-lib install-prog prog
 .SUFFIXES: .c .lo
 
-all: $(TARGETS)
+all: lib prog
 
-clean:
+clean: clean-lib clean-prog
+
+install: install-lib install-prog
+
+clean-prog:
 	$(LIBTOOL) --mode=clean /bin/rm -f $(TARGETS) $(LOBJS)
 
-install: $(TARGETS)
+lib clean-lib install-lib:
+	cd lib && $(MAKE) $@
+
+install-prog: prog
+	@echo Installing program...
+	@test -d $(APACHE)/bin || $(MKINSTALLDIRS) $(APACHE)/bin
 	$(LIBTOOL) --mode=install cp $(TARGETS) $(APACHE)/bin
 
-managelogs: $(MANAGELOGS_LOBJS)
-	$(LINK_PROG) $(MANAGELOGS_LOBJS) -L../lib -llogmanager \
+prog: $(TARGETS)
+
+managelogs: $(LOBJS)
+	$(LINK_PROG) $(LOBJS) -L./lib -llogmanager \
 		-rpath $(APACHE)/lib$(LIB_SUFFIX)
+
+check:
+	@echo '<TODO>'
 
 .c.lo:
 	$(LT_COMPILE_STATIC)

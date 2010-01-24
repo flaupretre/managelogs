@@ -37,9 +37,11 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <logmanager.h>
 
+#include "util/util.h"
 #include "intr.h"
 #include "options.h"
-#include "util.h"
+
+#include "util/util.c"
 
 /*----------------------------------------------*/
 
@@ -47,14 +49,14 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-PRIVATE_POOL
-
 LOGMANAGER **mpp=(LOGMANAGER **)0;
 int mgr_count;
 
 TIMESTAMP timestamp=NOW;
 int stats_toggle=0;
 int refresh_only=0;
+
+DECLARE_POOL(main_pool);
 
 /*----------------------------------------------*/
 
@@ -79,7 +81,7 @@ if (mpp)
 
 mpp=allocate(mpp,0);
 
-apr_terminate();
+apr_terminate();	/* Includes main_pool free */
 }
 
 /*----------------------------------------------*/
@@ -116,7 +118,7 @@ signal_init();
 
 /* Open stdin for reading */
 
-if (apr_file_open_stdin(&f_stdin,_POOL) != APR_SUCCESS)
+if (apr_file_open_stdin(&f_stdin,CHECK_POOL(main_pool)) != APR_SUCCESS)
 	FATAL_ERROR("Cannot open stdin\n");
 
 /* Adapt read size if limit is small (better precision on rotation) */

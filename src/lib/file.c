@@ -19,6 +19,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <sys/stat.h>
 
 #include <apr.h>
+#include <apr_errno.h>
 
 #if APR_HAVE_STRING_H
 #include <string.h>
@@ -27,13 +28,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr_file_io.h>
 #include <apr_file_info.h>
 
-#include "include/file.h"
-#include "include/util.h"
-
-/*----------------------------------------------*/
-
-PRIVATE_POOL
-
 /*----------------------------------------------*/
 
 static OFILE *_new_ofile(const char *path);
@@ -41,12 +35,15 @@ static void _destroy_ofile(OFILE *fp);
 static void clear_umask(void);
 
 /*----------------------------------------------*/
+/* As blocks allocated in a pool cannot be freed independantly, each open */
+/* file has its own pool */
 
 static OFILE *_new_ofile(const char *path)
 {
 OFILE *fp;
 
 fp=allocate(NULL,sizeof(OFILE));
+fp->pool=NULL_POOL;
 fp->path=duplicate(path);
 fp->fd=NULL;
 fp->size=0;
@@ -64,55 +61,66 @@ static void clear_umask()
 
 static void _destroy_ofile(OFILE *fp)
 {
+FREE_POOL(fp->pool);
 (void)allocate(fp->path,0);
 (void)allocate(fp,0);
 }
 
 /*----------------------------------------------*/
 
-BOOL file_exists(const char *path)
+LIB_INTERNAL BOOL file_exists(const char *path)
 {
 apr_finfo_t finfo;
+apr_status_t status;
+DECLARE_TPOOL
 
-return (apr_stat(&finfo,path,0,_POOL)==APR_SUCCESS);
+status=apr_stat(&finfo,path,0,CHECK_TPOOL());
+
+FREE_TPOOL();
+return (status==APR_SUCCESS);
 }
 
 /*----------------------------------------------*/
 
-BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal)
+LIB_INTERNAL BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal)
 {
 BOOL status;
+DECLARE_TPOOL
 
-status=(BOOL)(apr_file_rename(oldpath,newpath,_POOL)==APR_SUCCESS);
+status=(BOOL)(apr_file_rename(oldpath,newpath,CHECK_TPOOL())==APR_SUCCESS);
 if ((!status) && fatal)
 	FATAL_ERROR2("Cannot rename file %s to %s",oldpath,newpath);
 
+FREE_TPOOL();
 return status;
 }
 
 /*----------------------------------------------*/
 /* Deleting a non-existent file is NOT an error */
 
-BOOL file_delete(const char *path, BOOL fatal)
+LIB_INTERNAL BOOL file_delete(const char *path, BOOL fatal)
 {
 apr_status_t status;
+DECLARE_TPOOL
 
-status=apr_file_remove(path,_POOL);
+status=apr_file_remove(path,CHECK_TPOOL());
 if (fatal && (status!=APR_SUCCESS) && (status!=APR_ENOENT))
 	FATAL_ERROR1("Cannot delete file (%s)",path);
 
-return status;
+FREE_TPOOL();
+return (status==APR_SUCCESS);
 }
 
 /*----------------------------------------------*/
 
-OFILE *file_create(const char *path, apr_int32_t mode)
+LIB_INTERNAL OFILE *file_create(const char *path, apr_int32_t mode)
 {
 OFILE *fp;
 
 fp=_new_ofile(path);
 clear_umask();
-apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_TRUNCATE,mode,_POOL);
+apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_TRUNCATE,mode
+	,CHECK_POOL(fp->pool));
 if (!(fp->fd))
 	{
 	_destroy_ofile(fp);
@@ -124,34 +132,42 @@ return fp;
 
 /*----------------------------------------------*/
 
-apr_size_t file_size(const char *path)
+LIB_INTERNAL apr_size_t file_size(const char *path)
 {
 apr_finfo_t finfo;
+apr_size_t size;
+DECLARE_TPOOL
 
-if (apr_stat(&finfo,path,APR_FINFO_SIZE,_POOL)!=APR_SUCCESS)
+if (apr_stat(&finfo,path,APR_FINFO_SIZE,CHECK_TPOOL())!=APR_SUCCESS)
 	FATAL_ERROR1("Cannot get file size (%s)\n",path);
+size=(apr_size_t)(finfo.size);
 
-return (apr_size_t)finfo.size;
+FREE_TPOOL();
+return size;
 }
 
 /*----------------------------------------------*/
 
-OFILE *file_open_for_append(const char *path, apr_int32_t mode)
+LIB_INTERNAL OFILE *file_open_for_append(const char *path, apr_int32_t mode)
 {
 OFILE *fp;
 apr_finfo_t finfo;
 
 fp=_new_ofile(path);
 
-if (!strcmp(path,"stdout")) apr_file_open_stdout(&(fp->fd),_POOL);
+if (!strcmp(path,"stdout"))
+	{
+	apr_file_open_stdout(&(fp->fd),CHECK_POOL(fp->pool));
+	}
 else
 	{
-	if (!strcmp(path,"stderr")) apr_file_open_stderr(&(fp->fd),_POOL);
+	if (!strcmp(path,"stderr")) apr_file_open_stderr(&(fp->fd)
+		,CHECK_POOL(fp->pool));
 	else
 		{
 		clear_umask();
 		(void)apr_file_open(&(fp->fd),path,APR_WRITE|APR_CREATE|APR_APPEND
-			,mode,_POOL);
+			,mode,CHECK_POOL(fp->pool));
 
 		if (!(fp->fd))
 			{
@@ -174,13 +190,21 @@ return fp;
 
 /*----------------------------------------------*/
 
-void file_write(OFILE *fp, const char *buf, apr_size_t size)
+LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_size_t size
+	,BOOL no_space_fatal)
 {
+apr_status_t status;
+
 if (size==0) return;
 
-if (apr_file_write_full(fp->fd, buf, size, NULL)!=APR_SUCCESS)
+if ((status=apr_file_write_full(fp->fd, buf, size, NULL))!=APR_SUCCESS)
 	{
-	FATAL_ERROR1("Cannot write to file (%s)",fp->path);
+	size=0;	/* Written size */
+	if (no_space_fatal || (! APR_STATUS_IS_ENOSPC(status)))
+		{
+		FATAL_ERROR2("Cannot write to file %s (errno=%d)",fp->path
+			,apr_get_os_error());
+		}
 	}
 
 fp->size += size;
@@ -188,22 +212,24 @@ fp->size += size;
 
 /*----------------------------------------------*/
 
-void file_write_string(OFILE *fp, const char *buf)
+LIB_INTERNAL void file_write_string(OFILE *fp, const char *buf
+	,BOOL no_space_fatal)
 {
-file_write(fp,buf,(apr_size_t)strlen(buf));
+file_write(fp,buf,(apr_size_t)strlen(buf),no_space_fatal);
 }
 
 /*----------------------------------------------*/
 
-void file_write_string_nl(OFILE *fp, const char *buf)
+LIB_INTERNAL void file_write_string_nl(OFILE *fp, const char *buf
+	,BOOL no_space_fatal)
 {
-file_write_string(fp,buf);
-file_write_string(fp,"\n");
+file_write_string(fp,buf,no_space_fatal);
+file_write_string(fp,"\n",no_space_fatal);
 }
 
 /*----------------------------------------------*/
 
-OFILE *file_close(OFILE *fp)
+LIB_INTERNAL OFILE *file_close(OFILE *fp)
 {
 if (fp)
 	{
@@ -217,17 +243,18 @@ return (OFILE *)0;
 }
 
 /*----------------------------------------------*/
-/* Returns a nnull-terminated buffer
+/* Returns a null-terminated buffer
 if sizep is not null, return the data size (without trailing null) */
 
-char *file_get_contents(const char *path, apr_off_t *sizep)
+LIB_INTERNAL char *file_get_contents(const char *path, apr_off_t *sizep)
 {
 apr_file_t *fd;
 apr_finfo_t finfo;
 char *p;
 apr_size_t size;
+DECLARE_TPOOL
 
-(void)apr_file_open(&fd,path,APR_READ,0,_POOL);
+(void)apr_file_open(&fd,path,APR_READ,0,CHECK_TPOOL());
 if (!fd) FATAL_ERROR1("Cannot open file for reading (%s)",path);
 
 if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fd)!=APR_SUCCESS)
@@ -246,6 +273,7 @@ if (finfo.size)
 
 (void)apr_file_close(fd);
 
+FREE_TPOOL();
 return p;
 }
 

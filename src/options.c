@@ -26,10 +26,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <string.h>
 #endif
 
+#include "util/util.h"
 #include "options.h"
 #include "managelogs.h"
 #include "id.h"
-#include "util.h"
 
 /*----------------------------------------------*/
 
@@ -59,12 +59,10 @@ static apr_getopt_option_t long_options[]=
 	{"time",'t',1 },
 	{"stats",'I',0 },
 	{"refresh-only",'R',0 },
+	{"rotate-cmd",'C',1 },
+	{"enospc-abort",'x',0 },
 	{"",'\0', 0 }
 	};
-
-PRIVATE_POOL
-
-/*----------------------------------------------*/
 
 /*----------------------------------------------*/
 
@@ -141,6 +139,10 @@ fprintf(fd,"\
 \n\
  -e|--ignore-eol     By default, a mechanism ensures that log files are rotated\n\
                      on line boundaries. This flag disables this mechanism.\n\
+\n\
+ -C|--rotate-cmd <cmd>    Run <cmd> on every rotation\n\
+\n\
+ -x|--enospc-abort   Abort on 'no more space' write error (default: ignore)\n\
 \n",clist,LOGFILE_MODE);
 
 (void)allocate(clist,0);
@@ -157,6 +159,7 @@ apr_status_t status;
 LOGMANAGER_OPTIONS_V1 **opp, *op;
 int optch;
 const char *opt_arg;
+DECLARE_TPOOL
 
 opp=(LOGMANAGER_OPTIONS_V1 **)0;
 (*countp)=0;
@@ -170,7 +173,7 @@ while (1)
 	opp=allocate(opp,(++(*countp))*sizeof(LOGMANAGER_OPTIONS_V1 *));
 	opp[(*countp)-1]=op;
 
-	(void)apr_getopt_init(&opt_s,_POOL,argc,(char const * const *)argv);
+	(void)apr_getopt_init(&opt_s,CHECK_TPOOL(),argc,(char const * const *)argv);
 	while (YES)
 		{
 		status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
@@ -193,7 +196,9 @@ while (1)
 				break;
 
 			case 'c':
-				op->compress_string=duplicate(opt_arg);
+				if (strlen(opt_arg) >= LMGR_COMPRESS_STRING_SIZE)
+					FATAL_ERROR1("Invalid compression parameter : %s",opt_arg);
+				strcpy(op->compress_string,opt_arg);
 				break;
 
 			case 's':
@@ -240,6 +245,10 @@ while (1)
 				op->flags |= LMGR_IGNORE_EOL;
 				break;
 
+			case 'x':
+				op->flags |= LMGR_FAIL_ENOSPC;
+				break;
+
 			case 't':
 				sscanf(opt_arg,"%lX",&timestamp);
 				break;
@@ -251,18 +260,23 @@ while (1)
 			case 'R':
 				refresh_only=1;
 				break;
+
+			case 'C':
+				op->rotate_cmd=duplicate(opt_arg);
+				break;
 			}
 		}
 
 	if (!(argv[opt_s->ind])) usage(1);
-	op->root_path=duplicate(argv[opt_s->ind]);
-	if (! op->root_path[0]) usage(1);
+	op->base_path=duplicate(argv[opt_s->ind]);
+	if (! op->base_path[0]) usage(1);
 
 	argc -= opt_s->ind;
 	argv += opt_s->ind;
 	}
 
 if (!opp) usage(1);
+FREE_TPOOL();
 return opp;
 }
 
@@ -296,9 +310,9 @@ int i;
 
 for (i=0;i<count;i++)
 	{
-	(void)allocate(opp[i]->root_path,0);
-	(void)allocate(opp[i]->compress_string,0);
+	(void)allocate(opp[i]->base_path,0);
 	(void)allocate(opp[i]->debug_file,0);
+	(void)allocate(opp[i]->rotate_cmd,0);
 	(void)allocate(opp[i],0);
 	}
 

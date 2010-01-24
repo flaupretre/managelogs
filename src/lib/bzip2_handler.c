@@ -34,12 +34,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <bzlib.h>
 
-#include "include/bzip2_handler.h"
-#include "include/logmanager.h"
-#include "include/file.h"
-#include "include/util.h"
-#include "include/config.h"
-
 /*----------------------------------------------*/
 
 #define BZ2_DEFAULT_COMPRESS_RATIO	20
@@ -52,7 +46,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define WRITE_OUTPUT_BUFFER()	{ \
 				if (zp->zs.avail_out != BUFSIZE) \
 					file_write(mp->active.fp,zp->compbuf \
-						,BUFSIZE-zp->zs.avail_out); \
+						,BUFSIZE-zp->zs.avail_out,mp->flags & LMGR_FAIL_ENOSPC); \
 				}
 
 #define BZ2_INIT_POINTERS() \
@@ -83,7 +77,7 @@ static void bzip2_flush(void *sp);
 
 /*----------------------------------------------*/
 
-COMPRESS_HANDLER bzip2_handler=
+LIB_INTERNAL COMPRESS_HANDLER bzip2_handler=
 	{
 	"bz2",							/* suffix */
 	bzip2_init_v1,					/* init_v1 */

@@ -15,8 +15,19 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#define IN_LMGR_LIB
+
+#define LOGMANAGER_VERSION	"1.1.0"
+
 #include <apr.h>
 #include <apr_signal.h>
+#include <apr_time.h>
+#include <apr_file_io.h>
+#include <apr_env.h>
+#include <apr_errno.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
@@ -34,11 +45,28 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <strings.h>
 #endif
 
+#if APR_HAVE_STDIO_H
+#include <stdio.h>
+#endif
 
-#include "include/logmanager.h"
+#include "../util/util.h"
+#include "ext_include/logmanager.h"
 #include "include/config.h"
 #include "include/time.h"
-#include "include/util.h"
+#include "include/compress.h"
+#include "include/gzip_handler.h"
+#include "include/bzip2_handler.h"
+#include "include/file.h"
+
+/*-----------*/
+/* Other source files (non exported symbols) */
+
+#include "../util/util.c"
+#include "file.c"
+#include "time.c"
+#include "compress.c"
+#include "gzip_handler.c"
+#include "bzip2_handler.c"
 
 /*----------------------------------------------*/
 
@@ -125,6 +153,7 @@ static void _remove_pid_file(LOGMANAGER *mp);
 static void _open_active_file(LOGMANAGER *mp);
 static void _close_active_file(LOGMANAGER *mp);
 static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t);
+static void _run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t);
 static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add);
 static void _remove_oldest_backup(LOGMANAGER *mp);
 static void _get_status_from_file(LOGMANAGER *mp);
@@ -150,8 +179,8 @@ static char *_pid_path(LOGMANAGER *mp)
 char *p;
 int len;
 
-p=allocate(NULL,len=(strlen(mp->root_path)+5));
-snprintf(p,len,"%s.pid",mp->root_path);
+p=allocate(NULL,len=(strlen(mp->base_path)+5));
+snprintf(p,len,"%s.pid",mp->base_path);
 
 return p;
 }
@@ -164,8 +193,8 @@ static char *_status_path(LOGMANAGER *mp)
 char *p;
 int len;
 
-p=allocate(NULL,len=(strlen(mp->root_path)+8));
-snprintf(p,len,"%s.status",mp->root_path);
+p=allocate(NULL,len=(strlen(mp->base_path)+8));
+snprintf(p,len,"%s.status",mp->base_path);
 
 return p;
 }
@@ -185,7 +214,7 @@ DEBUG1(mp,2,"PPID=%lu",(unsigned long)getppid());
 fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
 
 (void)snprintf(buf,sizeof(buf),"%lu",pid);
-file_write_string_nl(fp, buf);
+file_write_string_nl(fp,buf,YES);
 
 (void)file_close(fp);
 }
@@ -249,8 +278,8 @@ mp->last_time=t;
 
 /*-- Root, PID, Status paths */
 
-mp->root_path=duplicate(opts->root_path);
-mp->root_dir=_dirname(mp->root_path);
+mp->base_path=duplicate(opts->base_path);
+mp->root_dir=_dirname(mp->base_path);
 mp->status_path=_status_path(mp);
 mp->pid_path=_pid_path(mp);
 
@@ -307,6 +336,10 @@ if (opts->debug_file)
 	mp->debug.fp=file_open_for_append(opts->debug_file,(apr_int32_t)PIDFILE_MODE);
 	mp->debug.level=opts->debug_level;
 	}
+
+/* Rotate command */
+
+mp->rotate_cmd=duplicate(opts->rotate_cmd);
 
 /*--*/
 
@@ -388,7 +421,7 @@ if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 
 /* Free paths */
 
-(void)allocate(mp->root_path,0);
+(void)allocate(mp->base_path,0);
 (void)allocate(mp->root_dir,0);
 (void)allocate(mp->status_path,0);
 (void)allocate(mp->pid_path,0);
@@ -405,8 +438,8 @@ static char *_link_name(LOGMANAGER *mp, int num)
 int len;
 char buf[32],*p;
 
-p=allocate(NULL,len=strlen(mp->root_path)+1);
-strcpy(p,mp->root_path);
+p=allocate(NULL,len=strlen(mp->base_path)+1);
+strcpy(p,mp->base_path);
 
 if (num)
 	{
@@ -415,7 +448,7 @@ if (num)
 	strcat(p,buf);
 	}
 
-if (mp->compress.handler->suffix)
+if (mp->compress.handler->suffix[0])
 	{
 	p=allocate(p,len += (strlen(mp->compress.handler->suffix)+1));
 	strcat(p,".");
@@ -608,13 +641,13 @@ INCR_STAT_COUNT(new_active_file);
 
 lp=mp->active.file=NEW_LOGFILE();
 
-len=strlen(mp->root_path)+12;
+len=strlen(mp->base_path)+12;
 if (mp->compress.handler->suffix) len+=(strlen(mp->compress.handler->suffix)+1);
 
 for (ti=t,path=NULL;;ti++)
 	{
-	path=allocate(path,len=(strlen(mp->root_path)+11));
-	(void)snprintf(path,len,"%s._%08lX",mp->root_path,ti);
+	path=allocate(path,len=(strlen(mp->base_path)+11));
+	(void)snprintf(path,len,"%s._%08lX",mp->base_path,ti);
 	if (mp->compress.handler->suffix)
 		{
 		path=allocate(path,len += (strlen(mp->compress.handler->suffix)+1));
@@ -629,15 +662,51 @@ lp->start=lp->end=t;
 }
 
 /*----------------------------------------------*/
+/* Run a command in background */
+
+static void _run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t)
+{
+char buf[32];
+DECLARE_TPOOL
+
+DEBUG1(mp,1,"Running rotate command : %s",cmd);
+
+if (fork())		/* Parent returns */
+	{
+	FREE_TPOOL();
+	return;
+	}
+
+/* Set environment variables */
+
+(void)apr_env_set("LOGMANAGER_FILE_PATH",file->path,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_BASE_PATH",mp->base_path,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_ROOT_DIR",mp->root_dir,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_COMPRESSION"
+	,mp->compress.handler->suffix,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_VERSION",LOGMANAGER_VERSION,CHECK_TPOOL());
+
+(void)snprintf(buf,sizeof(buf),"%lu",t);
+(void)apr_env_set("LOGMANAGER_TIME",buf,CHECK_TPOOL());
+
+/* Run command through shell */
+
+(void)system(cmd);
+
+exit(0);
+}
+
+/*----------------------------------------------*/
 
 void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t)
 {
 int i;
+LOGFILE *previous_log;
 
 CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
-DEBUG1(mp,1,"Starting rotation (%s)",mp->root_path);
+DEBUG1(mp,1,"Starting rotation (%s)",mp->base_path);
 INCR_STAT_COUNT(rotate);
 
 if (IS_OPEN(mp)) _close_active_file(mp);
@@ -653,8 +722,10 @@ if (mp->backup.count)	/* Shift */
 	}
 
 mp->backup.count++;
-mp->backup.files[0]=mp->active.file;
+previous_log=mp->backup.files[0]=mp->active.file;
 mp->active.file=(LOGFILE *)0;
+
+_run_bg_cmd(mp,mp->rotate_cmd,previous_log,t);
 
 _purge_backup_files(mp,0);
 _refresh_backup_links(mp);
@@ -879,9 +950,9 @@ if (file_exists(mp->status_path))
 				break;
 
 			case 'C':
-				if (strcmp(val,compression_name(mp->compress.handler)))
+				if (strcmp(val,mp->compress.handler->suffix))
 					FATAL_ERROR2("Cannot continue from another compression engine (previous: %s ; new: %s)"
-						,val,compression_name(mp->compress.handler));
+						,val,mp->compress.handler->suffix);
 				break;
 
 			case 's':
@@ -911,18 +982,18 @@ if (file_exists(mp->status_path))
 #define DUMP_FILE(_lp,_type)	{ \
 	if (_lp) \
 		{ \
-		file_write_string(fp,_type " ");	/* Path */ \
-		file_write_string_nl(fp,_basename((_lp)->path)); \
-		file_write_string(fp,"s ");			/* Start */ \
+		file_write_string(fp,_type " ",YES);	/* Path */ \
+		file_write_string_nl(fp,_basename((_lp)->path),YES); \
+		file_write_string(fp,"s ",YES);			/* Start */ \
 		(void)snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
-		file_write_string_nl(fp,buf); \
-		file_write_string(fp,"e ");			/* End */ \
+		file_write_string_nl(fp,buf,YES); \
+		file_write_string(fp,"e ",YES);			/* End */ \
 		(void)snprintf(buf,sizeof(buf),"%lu",(_lp)->end); \
-		file_write_string_nl(fp,buf); \
+		file_write_string_nl(fp,buf,YES); \
 		if ((_lp)->link) \
 			{ \
-			file_write_string(fp,"L ");	/* Link */ \
-			file_write_string_nl(fp,_basename((_lp)->link)); \
+			file_write_string(fp,"L ",YES);	/* Link */ \
+			file_write_string_nl(fp,_basename((_lp)->link),YES); \
 			} \
 		} \
 	}
@@ -938,20 +1009,20 @@ INCR_STAT_COUNT(dump);
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 
-file_write_string_nl(fp,"I === Managelogs status data ===");
+file_write_string_nl(fp,"I === Managelogs status data ===",YES);
 
-file_write_string(fp,"A ");
+file_write_string(fp,"A ",YES);
 (void)snprintf(buf,sizeof(buf),"%d",LOGMANAGER_API_VERSION);
-file_write_string_nl(fp,buf);
+file_write_string_nl(fp,buf,YES);
 
-file_write_string_nl(fp,"V " LOGMANAGER_VERSION);
+file_write_string_nl(fp,"V " LOGMANAGER_VERSION,YES);
 
-file_write_string(fp,"D ");
+file_write_string(fp,"D ",YES);
 (void)snprintf(buf,sizeof(buf),"%lu",t);
-file_write_string_nl(fp,buf);
+file_write_string_nl(fp,buf,YES);
 
-file_write_string(fp,"C "); /* Compression type */
-file_write_string_nl(fp,compression_name(mp->compress.handler));
+file_write_string(fp,"C ",YES); /* Compression type */
+file_write_string_nl(fp,mp->compress.handler->suffix,YES);
 
 DUMP_FILE(mp->active.file,"a");
 
@@ -1019,9 +1090,9 @@ return duplicate(LOGMANAGER_VERSION);
 /*----------------------------------------------*/
 
 #define DISPLAY_COUNT(_item)	{ \
-	file_write_string(fp,#_item " count : "); \
+	file_write_string(fp,"    " #_item " : ",YES); \
 	snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_item)); \
-	file_write_string_nl(fp,buf); \
+	file_write_string_nl(fp,buf,YES); \
 	}
 
 void logmanager_display_stats(LOGMANAGER *mp)
@@ -1031,10 +1102,11 @@ char buf[32];
 
 fp=(mp->debug.fp ? mp->debug.fp : file_open_for_append("stdout",0));
 
-file_write_string_nl(fp,"================== logmanager statistics ==================");
+file_write_string_nl(fp,"================== logmanager statistics ==================",YES);
 
-file_write_string(fp,"Root path : ");
-file_write_string_nl(fp,mp->root_path);
+file_write_string(fp,"Base path : ",YES);
+file_write_string_nl(fp,mp->base_path,YES);
+file_write_string(fp,"\nCounts :\n",YES);
 
 DISPLAY_COUNT(write);
 DISPLAY_COUNT(write2);
@@ -1048,8 +1120,7 @@ DISPLAY_COUNT(remove_oldest);
 DISPLAY_COUNT(dump);
 DISPLAY_COUNT(sync);
 
-file_write_string_nl(fp,"===========================================================");
-
+file_write_string_nl(fp,"===========================================================",YES);
 
 if (!mp->debug.fp) file_close(fp);
 }

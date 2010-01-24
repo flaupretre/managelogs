@@ -15,52 +15,20 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __TIME_H
+#define __TIME_H
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#ifndef NOW
+typedef unsigned long TIMESTAMP;
 
-#include <apr.h>
-
-#if APR_HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if APR_HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#if APR_HAVE_STRING_H
-#include <string.h>
-#endif
-
-#if APR_HAVE_STRINGS_H
-#include <strings.h>
+#define NOW	(TIMESTAMP)0
 #endif
 
 /*----------------------------------------------*/
 
-#ifndef _WIN32
-#define SYMLINK_SUPPORT
-#endif
-
-#define BUFSIZE 65536
-
-/* Size limits. We refuse sizes lower than these ones.
- Special case: the value '1' means 'lower limit' */
-
-#define GLOBAL_LOWER_LIMIT	(2*1024)
-
-#define FILE_LOWER_LIMIT	(1024)
-
-/* Default permissions */
-/* Warning : APR flags are not the same as Unix perms. APR flags are set on
-4 bits instead of 3, so we read the value as an hex value */
-
-#define PIDFILE_MODE	0x0644
-
-#define STATUSFILE_MODE	0x0644
+LIB_INTERNAL TIMESTAMP time_now(void);
+LIB_INTERNAL TIMESTAMP strval_to_time(const char *val);
 
 /*----------------------------------------------*/
-#endif	/* __CONFIG_H */
+#endif	/* __TIME_H */
+

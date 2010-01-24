@@ -15,33 +15,35 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __COMPRESS_H
-#define __COMPRESS_H
+#ifndef __FILE_H
+#define __FILE_H
 
 #include <apr.h>
-
-#include "file.h"
 
 /*----------------------------------------------*/
 
 typedef struct
 	{
-	char *suffix;
-	void (*init_v1)(void *sp, const char *level);
-	void (*destroy)(void *sp);
-	void (*start)(void *sp);
-	void (*end)(void *sp);
-	apr_size_t (*predict_size)(void *sp, apr_size_t size);
-	void (*compress_and_write)(void *sp, const char *buf
-		,apr_size_t size);
-	void (*flush)(void *sp);
-	} COMPRESS_HANDLER;
+	apr_pool_t *pool;
+	apr_file_t *fd;
+	const char *path;
+	apr_size_t size;
+	} OFILE;
 
 /*----------------------------------------------*/
 
-extern char *compress_handler_list(void);
-extern void init_compress_handler_from_string(void *sp, char *arg);
-extern char *compression_name(COMPRESS_HANDLER *cp);
+LIB_INTERNAL BOOL file_exists(const char *path);
+LIB_INTERNAL BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal);
+LIB_INTERNAL BOOL file_delete(const char *path, BOOL fatal);
+LIB_INTERNAL OFILE *file_create(const char *path, apr_int32_t mode);
+LIB_INTERNAL apr_size_t file_size(const char *path);
+LIB_INTERNAL OFILE *file_open_for_append(const char *path, apr_int32_t mode);
+LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_size_t size, BOOL no_space_fatal);
+LIB_INTERNAL void file_write_string(OFILE *fp, const char *buf, BOOL no_space_fatal);
+LIB_INTERNAL void file_write_string_nl(OFILE *fp, const char *buf, BOOL no_space_fatal);
+LIB_INTERNAL OFILE *file_close(OFILE *fp);
+LIB_INTERNAL char *file_get_contents(const char *path, apr_off_t *sizep);
 
 /*----------------------------------------------*/
-#endif	/* __COMPRESS_H */
+#endif	/* __FILE_H */
+
