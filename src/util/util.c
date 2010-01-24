@@ -37,19 +37,16 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <stdio.h>
 #endif
 
-#include "include/util.h"
+#include "util.h"
 
 /*----------------------------------------------*/
 
-PRIVATE_POOL
-
-/*----------------------------------------------*/
-
-void fatal_error_2(const char *msg, const char *arg1, const char *arg2)
+LIB_INTERNAL void fatal_error_2(const char *msg, const char *arg1, const char *arg2)
 {
 apr_file_t *fd;
+DECLARE_TPOOL
 
-(void)apr_file_open_stderr(&fd,_POOL);
+(void)apr_file_open_stderr(&fd,CHECK_TPOOL());
 
 (void)apr_file_printf(fd,"*** Fatal Error : ");
 (void)apr_file_printf(fd,msg,arg1,arg2);
@@ -57,12 +54,13 @@ apr_file_t *fd;
 
 (void)apr_file_close(fd);
 
+FREE_TPOOL();
 exit(1);
 }
 
 /*----------------------------------------------*/
 
-void *allocate(const void *p, size_t size)
+LIB_INTERNAL void *allocate(const void *p, size_t size)
 {
 void *p2;
 
@@ -96,14 +94,16 @@ return p2;
 
 /*----------------------------------------------*/
 
-void *duplicate(const char *string)
+LIB_INTERNAL void *duplicate(const char *string)
 {
+if (!string) return NULL; /* Test before calling strlen() */
+
 return duplicate_mem(string,(apr_size_t)(strlen(string)+1));
 }
 
 /*----------------------------------------------*/
 
-void *duplicate_mem(const void *source,apr_size_t size)
+LIB_INTERNAL void *duplicate_mem(const void *source,apr_size_t size)
 {
 void *p;
 
@@ -116,7 +116,7 @@ return p;
 
 /*----------------------------------------------*/
 
-unsigned long strval_to_ulong(const char *val)
+LIB_INTERNAL unsigned long strval_to_ulong(const char *val)
 {
 unsigned long l;
 

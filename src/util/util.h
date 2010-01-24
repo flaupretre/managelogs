@@ -21,8 +21,15 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_file_io.h>
 
-
 /*----------------------------------------------*/
+
+#ifdef IN_LMGR_LIB
+#define LIB_INTERNAL static
+#else
+#define LIB_INTERNAL extern
+#endif
+
+/*-------------*/
 
 #define FATAL_ERROR(_msg)		{ \
 								fatal_error_2(_msg,NULL,NULL); \
@@ -59,14 +66,29 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*-------------*/
 
-#ifdef _POOL
-#undef _POOL
-#endif
+#define POOL	apr_pool_t *
 
-#define PRIVATE_POOL	static apr_pool_t *_private_pool=(apr_pool_t *)0;
+#define NULL_POOL	(POOL)0
 
-#define _POOL (_private_pool ? _private_pool \
-	: ((void)apr_pool_create(&_private_pool, NULL), _private_pool))
+#define DECLARE_POOL(_p)	POOL _p=NULL_POOL
+
+#define NEW_POOL(_p)	((void)apr_pool_create(&_p, NULL), _p)
+
+#define CHECK_POOL(_p) (_p ? _p : NEW_POOL(_p))
+
+#define FREE_POOL(_p)	{ \
+	if (_p) \
+		{ \
+		(void)apr_pool_destroy(_p); \
+		_p=NULL_POOL; \
+		} \
+	}
+
+#define DECLARE_TPOOL	DECLARE_POOL(_tmp_pool);
+
+#define CHECK_TPOOL() CHECK_POOL(_tmp_pool)
+
+#define FREE_TPOOL()	FREE_POOL(_tmp_pool)
 
 /*-------------*/
 
@@ -78,11 +100,11 @@ typedef enum { NO, YES } BOOL;
 
 /*----------------------------------------------*/
 
-extern void *allocate(/*@null@*/ const void *p, size_t size);
-extern void *duplicate(const char *string);
-extern void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
-extern unsigned long strval_to_ulong(const char *val);
-extern void *duplicate_mem(const void *,apr_size_t size);
+LIB_INTERNAL void *allocate(/*@null@*/ const void *p, size_t size);
+LIB_INTERNAL void *duplicate(const char *string);
+LIB_INTERNAL void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
+LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
+LIB_INTERNAL void *duplicate_mem(const void *,apr_size_t size);
 
 /*----------------------------------------------*/
 #endif	/* __UTIL_H */
