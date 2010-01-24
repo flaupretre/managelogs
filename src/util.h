@@ -29,12 +29,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 								}
 
 #define FATAL_ERROR1(_msg,_arg) { \
-								fatal_error_2(_msg,(const char *)_arg,NULL); \
+								fatal_error_2(_msg,(const char *)(_arg),NULL); \
 								}
 
 #define FATAL_ERROR2(_msg,_arg1,_arg2) { \
-								fatal_error_2(_msg,(const char *)_arg1 \
-									,(const char *)_arg2); \
+								fatal_error_2(_msg,(const char *)(_arg1) \
+									,(const char *)(_arg2)); \
 								}
 
 /*-------------*/

@@ -98,7 +98,7 @@ BOOL file_delete(const char *path, BOOL fatal)
 apr_status_t status;
 
 status=apr_file_remove(path,_POOL);
-if (fatal && (!(APR_STATUS_IS_SUCCESS(status) || APR_STATUS_IS_ENOENT(status))))
+if (fatal && (status!=APR_SUCCESS) && (status!=APR_ENOENT))
 	FATAL_ERROR1("Cannot delete file (%s)",path);
 
 return status;

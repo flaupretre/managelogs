@@ -30,4 +30,10 @@ lib:
 prog:
 	cd src && $(MAKE)
 
+install-man:
+	cp doc/managelogs.8 $(APACHE)/man/man8
+
+install-sys-man:
+	cp doc/managelogs.8 /usr/share/man/man8
+
 #--------------------------------------------------------------------

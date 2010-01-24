@@ -30,7 +30,7 @@ install: $(TARGETS)
 
 managelogs: $(MANAGELOGS_LOBJS)
 	$(LINK_PROG) $(MANAGELOGS_LOBJS) -L../lib -llogmanager \
-		-rpath $(APACHE)/lib
+		-rpath $(APACHE)/lib$(LIB_SUFFIX)
 
 .c.lo:
 	$(LT_COMPILE_STATIC)

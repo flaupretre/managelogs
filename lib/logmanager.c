@@ -740,7 +740,7 @@ if (mp->eol_buffer.buf)
 		{
 		if (buf[i]=='\n')
 			{
-			DEBUG1(mp,2,"Flushing %lu bytes from eol buffer",mp->eol_buffer.len);
+			DEBUG1(mp,2,"Flushing %lu bytes from eol buffer",(unsigned long)(mp->eol_buffer.len));
 			_write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,flags,t);
 			mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
 			_write_level2(mp,buf,i+1,flags|LMGRW_CANNOT_ROTATE,t);
@@ -751,7 +751,7 @@ if (mp->eol_buffer.buf)
 		}
 	if (mp->eol_buffer.buf) /* if not found, append to eol_buffer.buf */
 		{
-		DEBUG1(mp,2,"Appending %lu bytes to eol buffer",size);
+		DEBUG1(mp,2,"Appending %lu bytes to eol buffer",(unsigned long)size);
 		mp->eol_buffer.buf=allocate(mp->eol_buffer.buf
 			,mp->eol_buffer.len+size);
 		memcpy(&(mp->eol_buffer.buf[mp->eol_buffer.len]),buf,size);
@@ -774,7 +774,7 @@ for (i=size-1;;i--)
 		mp->eol_buffer.len=(size-i-1);
 		if (mp->eol_buffer.len)
 			{
-			DEBUG1(mp,2,"Storing %lu bytes in eol buffer",mp->eol_buffer.len);
+			DEBUG1(mp,2,"Storing %lu bytes in eol buffer",(unsigned long)(mp->eol_buffer.len));
 			size=i+1;
 			mp->eol_buffer.buf=duplicate_mem(&(buf[size]),mp->eol_buffer.len);
 			}

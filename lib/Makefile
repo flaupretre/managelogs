@@ -30,13 +30,13 @@ clean:
 install: install-lib install-include
 
 install-lib: $(TARGET_LIB)
-	$(LIBTOOL) --mode=install cp $(TARGET_LIB) $(APACHE)/lib
+	$(LIBTOOL) --mode=install cp $(TARGET_LIB) $(APACHE)/lib$(LIB_SUFFIX)
 
 install-include:
 	$(LIBTOOL) --mode=install cp ../include/logmanager.h $(APACHE)/include
 
 $(TARGET_LIB): $(LOBJS)
-	$(LINK_LIB) $(LOBJS) -rpath $(APACHE)/lib
+	$(LINK_LIB) $(LOBJS) -rpath $(APACHE)/lib$(LIB_SUFFIX)
 	
 .c.lo:
 	$(LT_COMPILE)

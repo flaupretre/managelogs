@@ -1,0 +1,458 @@
+Content-type: text/html
+
+<HTML><HEAD><TITLE>Manpage of MANAGELOGS</TITLE>
+</HEAD><BODY>
+<H1>MANAGELOGS</H1>
+Section: managelogs (8)<BR>Updated: March 2009<BR><A HREF="#index">Index</A>
+<A HREF="http://localhost/cgi-bin/man/man2html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+managelogs - Piped logging program to rotate/purge Apache logs
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>managelogs</B>
+
+ [ <I>options1</I> ] <I>&lt;base-path1&gt;</I> [[ <I>options2</I> ] <I>&lt;base-path2&gt;</I> ...]
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<P>
+
+managelogs is a log processing program to be used in conjunction with Apache's
+piped logfile feature. It automatically rotates and purges log files based
+on a set of user-defined options.
+<P>
+The primary purpose is to solve the 'log file system full' issue in a
+way different from the quite-unreliable cron-based solutions one
+typically uses to solve it. The approach is different, here, because the purge
+is not delegated to an external program. This way, even if the file system is
+limited in free space, the size limits you define will never be exceeded, even
+temporarily.
+<P>
+
+Main features :
+<DL COMPACT>
+<DT><DD>
+- File rotation based on individual file size or on a signal,
+<BR>
+
+- File purge based on a global size limit, a maximum number of files,
+or a combination of both,
+<BR>
+
+- Optional on-the-fly compression,
+<BR>
+
+- Can maintain symbolic links on log files (active and backup),
+<BR>
+
+- Can switch to a given (non-root) uid/gid,
+<BR>
+
+- Ensures that rotations occur on line boundaries,
+<BR>
+
+- Maintains its state across stop/starts/restarts
+</DL>
+<P>
+
+A managelogs process continuously reads data from its standard input and
+sends it to its
+<I>log manager(s).</I>
+
+Log managers should be considered as independant output channels. Each log 
+manager is defined
+on the command line by a set of options followed by a path we call the
+<I>base path</I>
+
+, as this path is used as the base every file names are computed from. Each set
+of '[ <I>options</I> ] <I>&lt;base-path&gt;</I>' arguments on the command line
+defines a log manager.
+<P>
+
+There is no limit to the number of log managers a
+process can handle. They all receive a copy of the data read from
+the process' standard input and each one processes it according to its
+configuration.
+<P>
+
+Note: In most cases, and especially
+during your first steps with managelogs, you will define only one log
+manager and you won't make the difference between it and the process
+it belongs to.
+<P>
+
+A log manager manages an
+<I>active</I>
+
+log file (the file it is currently writing into) and a set of
+<I>backup</I>
+
+log files.
+<I>Backup</I>
+
+files are previous log files which have been closed during a file
+<I>rotation.</I>
+
+Every time the global limits
+are exceeded, a
+<I>purge</I>
+
+occurs, meaning that the oldest backup file is deleted.
+<P>
+
+Each log manager also maintains a
+<I>status file</I>
+
+which, among other information, contains the names of the active and backup log
+files. Thanks to this file, managelogs processes can be stopped and restarted
+without loosing their state. So, when a process is started, each log manager
+recovers the state it was in when the previous process was stopped. It means,
+among others, that it will reopen the log file it was writing into when it was
+stopped.
+As a consequence, note that, unlike other log managemenent programs like
+rotatelogs, (re)starting the Apache server does not cause managelogs to
+switch to a new log file. In order to force a file rotation, you must send
+a SIGUSR1 signal to the process (see SIGNALS).
+<P>
+Another difference with other log management programs is that you cannot
+share an active log file between several processes. In the managelogs world,
+each
+<I>base path</I>
+
+is privately owned and managed by only one log manager. If another program
+writes to the active log file, the result is undefined. The rule is less strict
+for backup log files : writing into them is forbidden, but they can be deleted
+by an external program (before actually performing a purge, the log manager
+checks the presence of each backup file and recomputes the global size).
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<P>
+
+---- Global options (apply to the process) :
+<DL COMPACT>
+<DT><B>-h</B>|<B>--help</B>
+
+<DD>
+Display the list of available options
+<DT><B>-u</B>|<B>--user</B> <B></B><I>&lt;id&gt;</I>
+
+<DD>
+run with this user ID (possible only when the program is started by the root 
+user).
+<BR>
+
+<I>&lt;id&gt;</I> = <I>&lt;uid&gt;[:&lt;gid&gt;]</I>, where <I>&lt;uid&gt;</I> and <I>&lt;gid&gt;</I> are 
+user/group names or numeric ids.
+<DT><B>-V</B>|<B>--version</B>
+
+<DD>
+Print version and exit.
+<DT><B>-I</B>|<B>--stats</B>
+
+<DD>
+Display internal statistics before exiting (used for troubleshooting, debugging, or
+performance tests)
+<DT><B>-R</B>|<B>--refresh-only</B>
+
+<DD>
+Just refresh/purge files and exit
+</DL>
+<P>
+
+---- Log manager options (apply to the following <I>&lt;base-path&gt;</I> only) :
+<DL COMPACT>
+<DT><B>-v</B>|<B>--verbose</B>
+
+<DD>
+Increment debug level (can be set more than once).
+<DT><B>-d</B>|<B>--debug</B> <B></B><I>&lt;path&gt;</I>
+
+<DD>
+Write debug messages to <I>&lt;path&gt;</I>.
+<BR>
+
+<I>&lt;path&gt;</I> can be 'stdout' or 'stderr'.
+<BR>
+
+Default : stderr.
+<DT><B>-c</B>|<B>--compress</B> <B></B><I>&lt;comp&gt;[:&lt;level&gt;]</I>
+
+<DD>
+Activate compression and append the corresponding suffix to the log file names.
+<BR>
+
+<I>&lt;comp&gt;</I> is <B>gz</B> or <B>bz2</B> (this is also the value of the appended
+suffix).
+<BR>
+
+<I>&lt;level&gt;</I> is one of {1|2|3|4|5|6|7|8|9|best|fast}
+<BR>
+
+The default compression level depends on the compression engine.
+<BR>
+
+If this option is not present, the output flow is not compressed.
+<DT><B>-s</B>|<B>--size</B> <B></B><I>&lt;size&gt;</I>
+
+<DD>
+Sets the log file size at which rotation occurs.
+<BR>
+
+<I>&lt;size&gt;</I> is a numeric value
+optionnally followed by 'k|K' (Kilobytes), 'm|M' (Megabytes), or 'g|G'
+(Gigabytes).
+<BR>
+
+Default: no size limit
+<DT><B>-S</B>|<B>--global-size</B> <B></B><I>&lt;size&gt;</I>
+
+<DD>
+Sets the maximum size that the managed log files (active + backup) can take .
+When this size is reached, a purge occurs (the oldest backup file is removed).
+<BR>
+
+Argument: same format as '--size'. If this argument is set and the '--size'
+argument is not, the individual file limit is implicitely set to a value of
+one half of the global size (so that the directory always contains one backup
+file).
+<BR>
+
+Default : no global size limit.
+<DT><B>-m</B>|<B>--mode</B> <B></B><I>&lt;mode&gt;</I>
+
+<DD>
+File permissions to apply to newly-created log files.
+<BR>
+
+<I>&lt;mode&gt;</I> is a numeric Unix-style file permission (see chmod for more).
+<BR>
+
+Default mode: 644
+<DT><B>-k</B>|<B>--keep</B> <B></B><I>&lt;n&gt;</I>
+
+<DD>
+Only keep <I>&lt;n&gt;</I> log files (the active one + <I>&lt;n-1&gt;</I> backups). This
+option is an alternative to the '--global-size' option, but it can also be
+used in conjunction, especially if you use signals to trigger some rotations
+before the sizes reach their limits. When this argument is set along with a
+global size limit, the first limit to be reached triggers the purge operation. 
+<DT><B>-l</B>|<B>--link</B>
+
+<DD>
+Maintain a link file (named <I>&lt;base-path&gt;</I>) to the active log file. The '-H'
+option allows to choose between hard or symbolic links.
+<DT><B>-L</B>|<B>--backup-links</B>
+
+<DD>
+Also maintain links to the backup log files (backup links are named
+<I>&lt;base-path&gt;.{1,2,...}</I>, most recent first)
+<DT><B>-H</B>|<B>--hardlink</B>
+
+<DD>
+Create hard links instead of symbolic links.
+<DT><B>-e</B>|<B>--ignore-eol</B>
+
+<DD>
+By default, managelogs ensures that log file rotation occurs on line boundaries,
+so that log files contain entire lines. This option disables this mechanism.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>FILES</H2>
+
+Each log manager maintains its own set of files. The files are named after the
+manager's base path. They all lie in the same directory (the directory part of
+the base path).
+<P>
+
+Here are the files that a log manager may create and maintain :
+<DL COMPACT>
+<DT>&lt;base-path&gt;.pid<DD>
+This file is present when a process is currently managing this path. It contains
+the pid of the managelogs process. This is the file to read if you want to send
+signals. When the process exits, the pid file is removed.
+<DT>&lt;base-path&gt;.status<DD>
+The status file. As described above, this file allows a log manager to recover
+its previous state at start time. This way, the memory of active and backup
+files is kept.
+<DT>&lt;base-path&gt;._<I>&lt;xxxxxxxx&gt;</I>.log[.gz|.bz2]<DD>
+A log file. The <I>&lt;xxxxxxxx&gt;</I> part of the name is a unique identifier
+computed
+by the log manager when the file is created. When several log files are present,
+their alphabetical order always corresponds to their creation time chronological
+order. So, when you list a directory in
+alphabetical order (ls -l), the oldest backup
+log file comes first, and the active log
+file comes last. And a command like 'cat &lt;base-path&gt;._*.log' displays the
+whole log data in chronological order.
+<BR>
+
+When compression is turned on, the log manager automatically appends the
+compression type to the file name.
+<DT>&lt;base-path&gt;<DD>
+If the '--link' option is set for this log manager, it maintains a link
+from &lt;base-path&gt; to the active log file. By default, it is a symbolic link,
+but the '--hardlink' option allows to use hard links.
+<DT>&lt;base-path&gt;.{1,2,...}<DD>
+These are also links, but to the backup log files. They are created and
+maintained only if the '--backup-links' option was set. The files are numbered
+in reverse chhronological order : &lt;base-path&gt;.1 is the most recent backup,
+&lt;base-path&gt;.2 is the previous one...
+</DL>
+<A NAME="lbAG">&nbsp;</A>
+<H2>SIGNALS</H2>
+
+<DL COMPACT>
+<DT>SIGUSR1<DD>
+This signal triggers an immediate rotation on every log managers attached to
+the managelogs process. Note that, if the '--keep' option is set, and if the
+maximum number of log files is exceeded, a purge will occur. 
+<DT>SIGUSR2<DD>
+This signal causes every log managers to flush to disk the data they may
+have in memory. This is useful only for compressed streams, as compressed files
+cannot be read before such a flush operation is done. This is due to the fact
+that a compressed file must contain a trailer block to be valid. As long
+as the compression engine processes the data, this trailer block is not
+written and, if you try to read the compressed data from the file, it is
+considered as invalid. When you send a SIGUSR2 to the process, the compression
+engine flushes the data it currently has in memory, writes the corresponding
+trailer data to the file, and starts a new block. Then, you can uncompress
+the data from the compreessed file. Note that this flush operation adds about
+16 bytes to the log file, so it shouldn't be done too often.
+</DL>
+<A NAME="lbAH">&nbsp;</A>
+<H2>EXAMPLES</H2>
+
+<P>
+
+Say we want to keep the last 3 Mbytes of access_log data in &lt;apache-dir&gt;/logs,
+each log file will take at most 1 Mbytes, and we want to maintain a symbolic
+link to the active and backup log files.
+<P>
+
+The corresponding configuration line looks like :
+<P>
+
+CustomLog &quot;| &lt;apache_dir&gt;/bin/managelogs --size 1M --global-size 3M --link --backup-links &lt;apache_dir&gt;/logs/access_log&quot; combined
+<P>
+
+Here is a typical list of files present in the &lt;apache-dir&gt;/logs directory with
+such a configuration :
+<PRE>
+# ls -l $apache_dir/logs/access_log*
+...
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log -&gt; access_log._49BFB0A2
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.1 -&gt; access_log._49BF8366
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.2 -&gt; access_log._49BF2522
+-rw-r--r-- 1 root root 1048564 Mar  5 12:34 access_log._49BF2522
+-rw-r--r-- 1 root root 1048543 Mar 17 15:16 access_log._49BF8366
+-rw-r--r-- 1 root root  483328 Mar 19 07:05 access_log._49BFB0A2
+-rw-r--r-- 1 root root       6 Feb 22 08:30 access_log.pid
+-rw-r--r-- 1 root root     321 Mar 17 15:16 access_log.status
+</PRE>
+
+<DL COMPACT>
+<DT>In this list you can see (in alphabetical order) :<DD>
+- The symbolic link to the active log file
+<BR>
+
+- The 2 symbolic links to the 2 backup log files
+<BR>
+
+- The 2 backup log files (in chronological order)
+<BR>
+
+- The active log file
+<BR>
+
+- The pid file
+<BR>
+
+- The status file
+</DL>
+<P>
+
+Now, something more complex : we want to keep 3 Mbytes of uncompressed log
+data
+to be used by the 1st-level support team, as in the previous example, and we
+also need to archive a bigger amount of data for 2nd-level analysis,
+security, compliance, or any other need. This archived data will be compressed,
+as it allows to save a lot of space (about 95 %).
+<P>
+
+The corresponding directive looks like :
+<P>
+
+CustomLog &quot;| &lt;apache_dir&gt;/bin/managelogs --size 1M --global-size 3M --link --backup-links &lt;apache_dir&gt;/logs/access_log --size 100M --global-size 1G --compression bz2:best /archives/logs/access_log&quot; combined
+<P>
+
+With such a configuration, the files in the &lt;apache_dir&gt;/logs directory will
+be the same  as in the previous example, but it will also maintain the most
+recent 1 Gbytes of compressed access_log data in /archives/logs (in
+chunks of 100 Mbytes). This way, we have two levels of access to the log
+data : the most recent data is easily accessible and, when we need to examine
+something older, it is less easy, but the retention size is much bigger.
+<P>
+
+Now, if we want to force an immediate rotation of these log files, whatever
+reason we may have for this, the command to use is :
+<P>
+
+kill -USR1 `cat &lt;apache_dir&gt;/logs/access_log.pid`
+<P>
+
+Note that we could also have used '/archives/logs/access_log.pid', as both pid
+files contain the same. This signal will trigger a rotation in both directories.
+<A NAME="lbAI">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<P>
+
+managelogs web site : <A HREF="http://managelogs.tekwire.net">http://managelogs.tekwire.net</A>
+<A NAME="lbAJ">&nbsp;</A>
+<H2>LICENSE</H2>
+
+<P>
+
+Apache license, Version 2.0 &lt;<A HREF="http://www.apache.org/licenses/">http://www.apache.org/licenses/</A>&gt;
+<A NAME="lbAK">&nbsp;</A>
+<H2>BUGS</H2>
+
+<P>
+
+Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;
+<A NAME="lbAL">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<P>
+
+Francois Laupretre &lt;<A HREF="mailto:francois@tekwire.net">francois@tekwire.net</A>&gt;
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">FILES</A><DD>
+<DT><A HREF="#lbAG">SIGNALS</A><DD>
+<DT><A HREF="#lbAH">EXAMPLES</A><DD>
+<DT><A HREF="#lbAI">SEE ALSO</A><DD>
+<DT><A HREF="#lbAJ">LICENSE</A><DD>
+<DT><A HREF="#lbAK">BUGS</A><DD>
+<DT><A HREF="#lbAL">AUTHOR</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 17:43:19 GMT, March 17, 2009
+</BODY>
+</HTML>

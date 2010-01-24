@@ -96,8 +96,6 @@ fprintf(fd,"\
 \n\
  -V|--version        Print version and exit\n\
 \n\
- -v|--verbose        Increment debug level\n\
-\n\
  -I|--stats          Display internal stats before exiting (for\n\
                      troubleshooting, debugging, and performance tests)\n\
 \n\
@@ -105,8 +103,10 @@ fprintf(fd,"\
 \n\
 *---- Manager options (these options apply to the next <root-path> only) :\n\
 \n\
- -d|--debug <path>   Set path to debug file and increment debug level\n\
-                     Can also be 'stdout' or 'stderr'\n\
+ -v|--verbose        Increment debug level\n\
+\n\
+ -d|--debug <path>   Write debug messages to <path>\n\
+                     <path> can be 'stdout' or 'stderr'. Default: stderr\n\
 \n\
  -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
                      corresponding suffix to the log file names.\n\
@@ -185,7 +185,8 @@ while (1)
 			case 'd':
 				if (op->debug_file) op->debug_file=allocate(op->debug_file,0);
 				op->debug_file=duplicate(opt_arg);
-				/* no break here */
+				break;
+
 			case 'v':
 				if (!op->debug_file) op->debug_file=duplicate("stderr");
 				op->debug_level++;
