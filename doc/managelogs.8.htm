@@ -1,9 +1,12 @@
+Content-type: text/html
 
-<head>
-<TITLE>Manpage of MANAGELOGS</TITLE>
-</head>
+<HTML><HEAD><TITLE>Manpage of MANAGELOGS</TITLE>
+</HEAD><BODY>
+<H1>MANAGELOGS</H1>
+Section: managelogs (8)<BR>Updated: May 2009<BR><A HREF="#index">Index</A>
+<A HREF="http://localhost/cgi-bin/man/man2html">Return to Main Contents</A><HR>
 
-<HTML><BODY>
+<A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
 managelogs - Piped logging program to rotate/purge Apache logs
@@ -24,17 +27,17 @@ piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 <P>
 
-The first idea is to provide an efficient protection
-against 'file system full' failures. Several log rotation programs exist in the
+The primary idea behind managelogs was to provide an efficient protection
+against 'log file system full' failures. Several log rotation programs exist in the
 Apache world but, as  far as I know, none of them features an automatic purge
-of obsolete log files. The usual solution is to complement the log rotation
+of old log files. An usual solution is to complement the log rotation
 mechanism with cron-based purge operations. This approach is prone to a lot of
 errors such as inadvertent inactivation of the cron job, inconsistencies between
-the script shell and the Apache configuration (different directory paths), bugs
-in the shell code, and others, most of them remaining undetected.
-It also requires the Apache administrator to write some code (shell,  perl...)
-and cannot ensure that the file system will not fill up between two consecutive
-cron invocations.
+the script and the Apache configuration (different paths...), errors
+in the shell code, and others, most of them remaining undetected until a file
+system full error causses an Apache crash. Such solutions also cannot ensure
+that the file system does not fill up between two consecutive
+purge operations.
 <P>
 
 managelogs implements a different approach, as it includes both the rotation
@@ -459,7 +462,8 @@ CustomLog &quot;| &lt;apache_dir&gt;/bin/managelogs --size 1M --global-size 3M -
 
 Here is a typical list of files present in the &lt;apache-dir&gt;/logs directory with
 such a configuration :
-<PRE># ls -l $apache_dir/logs/access_log*
+<PRE>
+# ls -l $apache_dir/logs/access_log*
 ...
 lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log -&gt; access_log._49BFB0A2
 lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.1 -&gt; access_log._49BF8366
@@ -564,4 +568,29 @@ Apache license, Version 2.0 &lt;<A HREF="http://www.apache.org/licenses/">http:/
 
 <P>
 
-Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;</BODY></HTML>
+Please send bug reports to &lt;<A HREF="mailto:managelogs-bugs@tekwire.net">managelogs-bugs@tekwire.net</A>&gt;
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">FILES</A><DD>
+<DT><A HREF="#lbAG">SIGNALS</A><DD>
+<DT><A HREF="#lbAH">ROTATE COMMAND</A><DD>
+<DT><A HREF="#lbAI">EXAMPLES</A><DD>
+<DT><A HREF="#lbAJ">SEE ALSO</A><DD>
+<DT><A HREF="#lbAK">AUTHOR</A><DD>
+<DT><A HREF="#lbAL">LICENSE</A><DD>
+<DT><A HREF="#lbAM">BUGS</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 16:26:03 GMT, January 25, 2010
+</BODY>
+</HTML>

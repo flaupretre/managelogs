@@ -79,8 +79,9 @@ char *clist;
 fd=((rc>0) ? stderr : stdout);
 clist=logmanager_compression_list();
 
-fprintf(fd,"%s\n\
-Usage: managelogs [options...] <root-path1> [[options...] <root-path2> ...] \n",MANAGELOGS_BANNER);
+fprintf(fd,MANAGELOGS_BANNER,MANAGELOGS_VERSION);
+fprintf(fd,"\n\
+Usage: managelogs [options...] <base-path1> [[options...] <base-path2> ...] \n");
 
 fprintf(fd,"\
 \n\
@@ -99,7 +100,7 @@ fprintf(fd,"\
 \n\
  -R|--refresh-only   Just refresh/purge files and exit\n\
 \n\
-*---- Manager options (these options apply to the next <root-path> only) :\n\
+*---- Manager options (these options apply to the next <base-path> only) :\n\
 \n\
  -v|--verbose        Increment debug level\n\
 \n\
@@ -132,7 +133,7 @@ fprintf(fd,"\
                      (See '-H' to choose between hard/symbolic links)\n\
 \n\
  -L|--backup-links   Maintain links to the active and backup log files\n\
-                     (backup links are named <root-path>.<1,2,...>, most\n\
+                     (backup links are named <base-path>.<1,2,...>, most\n\
                      recent first)\n\
 \n\
  -H|--hardlink       Create hard links instead of symbolic links\n\

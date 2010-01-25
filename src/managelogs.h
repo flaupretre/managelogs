@@ -20,15 +20,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define MANAGELOGS_VERSION	"1.1.0"
-
 #define MANAGELOGS_BANNER	"\
 *============================================================================*\n\
-|                           managelogs V 1.1.0                               |\n\
+|                           managelogs V %s                               |\n\
 |                                                                            |\n\
 | http://managelogs.tekwire.net                                              |\n\
 |                                                                            |\n\
-| Copyright (C) 2009 by Francois Laupretre <francois@tekwire.net>            |\n\
+| Copyright (C) 2008-2010 by Francois Laupretre <francois@tekwire.net>       |\n\
 *============================================================================*\n\
 "
 

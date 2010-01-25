@@ -10,17 +10,17 @@ managelogs is a log processing program to be used in conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 .PP
-The first idea is to provide an efficient protection
-against 'file system full' failures. Several log rotation programs exist in the
+The primary idea behind managelogs was to provide an efficient protection
+against 'log file system full' failures. Several log rotation programs exist in the
 Apache world but, as  far as I know, none of them features an automatic purge
-of obsolete log files. The usual solution is to complement the log rotation
+of old log files. An usual solution is to complement the log rotation
 mechanism with cron-based purge operations. This approach is prone to a lot of
 errors such as inadvertent inactivation of the cron job, inconsistencies between
-the script shell and the Apache configuration (different directory paths), bugs
-in the shell code, and others, most of them remaining undetected.
-It also requires the Apache administrator to write some code (shell,  perl...)
-and cannot ensure that the file system will not fill up between two consecutive
-cron invocations.
+the script and the Apache configuration (different paths...), errors
+in the shell code, and others, most of them remaining undetected until a file
+system full error causses an Apache crash. Such solutions also cannot ensure
+that the file system does not fill up between two consecutive
+purge operations.
 .PP
 managelogs implements a different approach, as it includes both the rotation
 and purge mechanisms, providing a simpler and more reliable solution. Among

@@ -15,9 +15,9 @@
   freed, this pool grew (not fast, but) indefinitely. We now use temporary
   pools where it is possible (when the alloc/free is local to a function), and
   persistent pools are created to store apr_file_t structures for open files.
-  Each file has its own a private pool, so that it can be freed.
+  Each file has its own private pool, so that it can be freed.
 
-* Set lib directory under src
+* Move lib directory under src
 
 * Improved Makefiles
 

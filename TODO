@@ -6,11 +6,11 @@
 
 * Convert the build system to autoconf
 
-* Some features are still Unix-specific (like setuid/setgid). Generally, this
-  is done this way because the corresponding feature does not exist in APR.
+* Some features are still Unix-specific (like setuid/setgid), generally because
+  the corresponding feature is not available in the APR library.
   The code should be more more portable, especially on Windows. Either the
   Unix-specific features have a Windows alternative, or they must be
-  inhibited on Windows.
+  disabled on Windows.
 
 * create directories when needed. Automatically destroy directories when
   backup files are purged.

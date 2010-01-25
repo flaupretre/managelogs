@@ -17,8 +17,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define IN_LMGR_LIB
 
-#define LOGMANAGER_VERSION	"1.1.0"
-
 #include <apr.h>
 #include <apr_signal.h>
 #include <apr_time.h>
@@ -306,14 +304,14 @@ mp->global_maxsize=opts->global_maxsize;
 if (mp->file_maxsize == 1) mp->file_maxsize=FILE_LOWER_LIMIT;
 if (mp->file_maxsize && (mp->file_maxsize < FILE_LOWER_LIMIT))
 	FATAL_ERROR2("File limit cannot be less than %d (is %d)"
-		,FILE_LOWER_LIMIT,mp->file_maxsize);
+		,FILE_LOWER_LIMIT,(int)(mp->file_maxsize));
 
 if (mp->global_maxsize)
 	{
 	if (mp->global_maxsize == 1) mp->global_maxsize=GLOBAL_LOWER_LIMIT;
 	if (mp->global_maxsize < GLOBAL_LOWER_LIMIT)
 		FATAL_ERROR2("Global limit cannot be less than %d (is %d)"
-			,GLOBAL_LOWER_LIMIT,mp->global_maxsize);
+			,GLOBAL_LOWER_LIMIT,(int)(mp->global_maxsize));
 	if (! mp->file_maxsize) mp->file_maxsize=mp->global_maxsize/2;
 	if (mp->global_maxsize < mp->file_maxsize)
 		FATAL_ERROR("Global limit cannot be less than file limit");
