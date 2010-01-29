@@ -91,7 +91,7 @@ static int _gzip_get_comp_level(const char *clevel)
 {
 char c;
 
-if (!clevel) return Z_DEFAULT_COMPRESSION;
+if (!clevel) return Z_BEST_COMPRESSION;
 
 switch (c=(*clevel))
 	{
