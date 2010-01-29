@@ -60,6 +60,8 @@ static apr_getopt_option_t long_options[]=
 	{"stats",'I',0 },
 	{"refresh-only",'R',0 },
 	{"rotate-cmd",'C',1 },
+	{"rotate-delay",'r',1 },
+	{"purge-delay",'p',1 },
 	{"enospc-abort",'x',0 },
 	{"",'\0', 0 }
 	};
@@ -67,6 +69,7 @@ static apr_getopt_option_t long_options[]=
 /*----------------------------------------------*/
 
 static apr_off_t convert_size_string(const char *str);
+static TIMESTAMP convert_delay(const char *str);
 static void usage(int rc);
 
 /*----------------------------------------------*/
@@ -154,24 +157,24 @@ if (rc >= 0) exit(rc);
 /*----------------------------------------------*/
 /*-- Get options from command line */
 
-LOGMANAGER_OPTIONS_V1 **get_options(int argc, char **argv, int *countp)
+LOGMANAGER_OPTIONS_V2 **get_options(int argc, char **argv, int *countp)
 {
 apr_status_t status;
-LOGMANAGER_OPTIONS_V1 **opp, *op;
+LOGMANAGER_OPTIONS_V2 **opp, *op;
 int optch;
 const char *opt_arg;
 DECLARE_TPOOL
 
-opp=(LOGMANAGER_OPTIONS_V1 **)0;
+opp=(LOGMANAGER_OPTIONS_V2 **)0;
 (*countp)=0;
 
 while (1)
 	{
 	if (argc < 2) break;
 
-	op=NEW_STRUCT(LOGMANAGER_OPTIONS_V1);
+	op=NEW_STRUCT(LOGMANAGER_OPTIONS_V2);
 	op->create_mode=LOGFILE_MODE;
-	opp=allocate(opp,(++(*countp))*sizeof(LOGMANAGER_OPTIONS_V1 *));
+	opp=allocate(opp,(++(*countp))*sizeof(*opp));
 	opp[(*countp)-1]=op;
 
 	(void)apr_getopt_init(&opt_s,CHECK_TPOOL(),argc,(char const * const *)argv);
@@ -265,6 +268,14 @@ while (1)
 			case 'C':
 				op->rotate_cmd=duplicate(opt_arg);
 				break;
+
+			case 'r':
+				op->rotate_delay=convert_delay(opt_arg);
+				break;
+
+			case 'p':
+				op->purge_delay=convert_delay(opt_arg);
+				break;
 			}
 		}
 
@@ -279,6 +290,38 @@ while (1)
 if (!opp) usage(1);
 FREE_TPOOL();
 return opp;
+}
+
+/*----------------------------------------------*/
+
+static TIMESTAMP convert_delay(const char *str)
+{
+char c;
+TIMESTAMP delay,tdelay;
+
+delay=0;
+
+while ((c=(*(str++)))!='\0')
+	{
+	switch(c)
+		{
+		case 'd':
+		case 'D':
+			tdelay *= 24; /* No break here */
+		case 'h':
+		case 'H':
+			tdelay *= 60; /* No break here */
+		case 'm':
+		case 'M':
+			delay += (tdelay * 60);
+			tdelay=0;
+			break;
+		default:
+			tdelay = (tdelay*10)+(TIMESTAMP)(c-'0');
+		}
+	}
+			
+return delay;
 }
 
 /*----------------------------------------------*/
@@ -305,7 +348,7 @@ return result;
 
 /*----------------------------------------------*/
 
-void free_options(LOGMANAGER_OPTIONS_V1 **opp, int count)
+void free_options(LOGMANAGER_OPTIONS_V2 **opp, int count)
 {
 int i;
 

@@ -92,7 +92,7 @@ apr_file_t *f_stdin;
 apr_size_t nread,chunk_size,tmp_size;
 char buf[CHUNK_MAX];
 apr_status_t status;
-LOGMANAGER_OPTIONS_V1 **opp;
+LOGMANAGER_OPTIONS_V2 **opp;
 int i;
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
@@ -108,7 +108,7 @@ opp=get_options(argc,argv,&mgr_count);
 mpp=allocate(NULL,mgr_count*sizeof(LOGMANAGER *));
 for (i=0;i<mgr_count;i++)
 	{
-	mpp[i]=new_logmanager_v1(opp[i],timestamp);
+	mpp[i]=new_logmanager_v2(opp[i],timestamp);
 	logmanager_open(mpp[i],timestamp);
 	}
 

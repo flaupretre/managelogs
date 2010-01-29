@@ -59,7 +59,7 @@ typedef unsigned long TIMESTAMP;
 
 /*----------------------------------------------*/
 
-#define LOGMANAGER_API_VERSION	1
+#define LOGMANAGER_API_VERSION	2
 
 /*----------------------------------------------*/
 
@@ -71,11 +71,13 @@ typedef struct
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
+	TIMESTAMP rotate_delay;
+	TIMESTAMP purge_delay;
 	apr_fileperms_t create_mode;
 	char *debug_file;
 	int debug_level;
 	char *rotate_cmd;
-	} LOGMANAGER_OPTIONS_V1;
+	} LOGMANAGER_OPTIONS_V2;
 
 /*----------------------------------------------*/
 
@@ -119,6 +121,8 @@ typedef struct
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
+	TIMESTAMP rotate_delay;
+	TIMESTAMP purge_delay;
 	apr_fileperms_t create_mode;
 	TIMESTAMP last_time;
 	char *rotate_cmd;
@@ -155,7 +159,7 @@ typedef void LOGMANAGER; /* Opaque to client */
 /*----------------------------------------------*/
 /* Functions */
 
-extern LOGMANAGER *new_logmanager_v1(LOGMANAGER_OPTIONS_V1 *opts,TIMESTAMP t);
+extern LOGMANAGER *new_logmanager_v2(LOGMANAGER_OPTIONS_V2 *opts,TIMESTAMP t);
 extern void logmanager_destroy(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_open(LOGMANAGER *mp,TIMESTAMP t);
 extern void logmanager_close(LOGMANAGER *mp,TIMESTAMP t);

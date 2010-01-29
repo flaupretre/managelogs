@@ -117,20 +117,31 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define FUTURE_ACTIVE_SIZE(_mp,_add) \
 	(ACTIVE_SIZE(_mp) + (_mp)->eol_buffer.len + _add)
 
-#define SHOULD_ROTATE(_mp,_add)	((_mp)->file_maxsize \
-		&& (ACTIVE_SIZE(_mp)) \
-		&& (FUTURE_ACTIVE_SIZE(_mp,_add) > (_mp)->file_maxsize))
+#define SHOULD_ROTATE(_mp,_add,_t)	( \
+		((_mp)->file_maxsize \
+			&& (ACTIVE_SIZE(_mp)) \
+			&& (FUTURE_ACTIVE_SIZE(_mp,_add) > (_mp)->file_maxsize)) \
+	||	((_mp)->rotate_delay && (_mp)->active.file \
+			&& ((_mp)->active.file->start < ((_t)-(_mp)->rotate_delay))) \
+	)
 
-#define GLOBAL_CONDITIONS_EXCEEDED(_mp,_add)	((((_mp)->global_maxsize) \
-	&& ((_mp)->backup.count) \
-	&& ((FUTURE_ACTIVE_SIZE((_mp),_add)+(_mp)->backup.size) > (_mp)->global_maxsize)) \
-	|| (mp->keep_count && (mp->backup.count > (mp->keep_count - 1))))
+#define OLDEST_BACKUP_FILE(_mp)	((_mp)->backup.files[(_mp)->backup.count-1])
+
+#define GLOBAL_CONDITIONS_EXCEEDED(_mp,_add,_t)	(\
+		(((_mp)->global_maxsize) \
+			&& ((_mp)->backup.count) \
+			&& ((FUTURE_ACTIVE_SIZE((_mp),_add)+(_mp)->backup.size) \
+				> (_mp)->global_maxsize)) \
+	|| (_mp->keep_count && (_mp->backup.count > (_mp->keep_count - 1))) \
+	|| (_mp->purge_delay && _mp->backup.count \
+		&& (OLDEST_BACKUP_FILE(_mp)->end < ((_t)-(_mp)->purge_delay))) \
+	)
 
 #define CHECK_MP(_mp) { /* Security */ \
 	if (!(_mp)) FATAL_ERROR("Received null LOGMANAGER pointer"); \
 	}
 
-#define NORMALIZE_TIMESTAMP(_t)	{ if (!t) t=time_now(); }
+#define NORMALIZE_TIMESTAMP(_t)	{ if (!(_t)) (_t)=time_now(); }
 
 #define CHECK_TIME(_mp,_t)	{ \
 	NORMALIZE_TIMESTAMP(t); \
@@ -152,7 +163,7 @@ static void _open_active_file(LOGMANAGER *mp);
 static void _close_active_file(LOGMANAGER *mp);
 static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t);
 static void _run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t);
-static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add);
+static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
 static void _remove_oldest_backup(LOGMANAGER *mp);
 static void _get_status_from_file(LOGMANAGER *mp);
 static void _dump_status_to_file(LOGMANAGER *mp,TIMESTAMP t);
@@ -263,7 +274,7 @@ C_HANDLER(mp,flush);
 * for analysis (modifications can start when the manager is open()ed).
 */
 
-LOGMANAGER *new_logmanager_v1(LOGMANAGER_OPTIONS_V1 *opts,TIMESTAMP t)
+LOGMANAGER *new_logmanager_v2(LOGMANAGER_OPTIONS_V2 *opts,TIMESTAMP t)
 {
 LOGMANAGER *mp;
 
@@ -300,6 +311,8 @@ _get_status_from_file(mp);
 mp->keep_count=opts->keep_count;
 mp->file_maxsize=opts->file_maxsize;
 mp->global_maxsize=opts->global_maxsize;
+mp->rotate_delay=opts->rotate_delay;
+mp->purge_delay=opts->purge_delay;
 
 if (mp->file_maxsize == 1) mp->file_maxsize=FILE_LOWER_LIMIT;
 if (mp->file_maxsize && (mp->file_maxsize < FILE_LOWER_LIMIT))
@@ -371,10 +384,10 @@ _open_active_file(mp);
 
 /*-- If options have changed, we can have to rotate and/or purge backups */
 
-if (SHOULD_ROTATE(mp,0)) logmanager_rotate(mp,t);
+if (SHOULD_ROTATE(mp,0,t)) logmanager_rotate(mp,t);
 else
 	{
-	_purge_backup_files(mp,0);
+	_purge_backup_files(mp,0,t);
 	_refresh_backup_links(mp);
 	}
 }
@@ -621,7 +634,7 @@ DEBUG(mp,1,"Closing logmanager");
 
 _write_end(mp,t);
 _close_active_file(mp);
-_purge_backup_files(mp,0);
+_purge_backup_files(mp,0,t);
 
 _dump_status_to_file(mp,t);
 }
@@ -725,7 +738,7 @@ mp->active.file=(LOGFILE *)0;
 
 _run_bg_cmd(mp,mp->rotate_cmd,previous_log,t);
 
-_purge_backup_files(mp,0);
+_purge_backup_files(mp,0,t);
 _refresh_backup_links(mp);
 
 _new_active_file(mp,t);
@@ -739,13 +752,13 @@ _dump_status_to_file(mp,t);
 to confirm actual sizes. If a backup file has been deleted by an external
 action, maybe we don't actually exceed the limits */
 
-static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add)
+static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t)
 {
-if (GLOBAL_CONDITIONS_EXCEEDED(mp,add))
+if (GLOBAL_CONDITIONS_EXCEEDED(mp,add,t))
 	{
 	_sync_logfiles_from_disk(mp);	/* Confirm that limits are REALLY exceeded */
 
-	while (GLOBAL_CONDITIONS_EXCEEDED(mp,add)) _remove_oldest_backup(mp);
+	while (GLOBAL_CONDITIONS_EXCEEDED(mp,add,t)) _remove_oldest_backup(mp);
 	}
 }
 
@@ -755,16 +768,14 @@ static void _remove_oldest_backup(LOGMANAGER *mp)
 {
 if (! mp->backup.count) return; /* Should never happen */
 
-DEBUG1(mp,1,"Removing oldest backup file (%s)"
-	,mp->backup.files[mp->backup.count-1]->path);
+DEBUG1(mp,1,"Removing oldest backup file (%s)",OLDEST_BACKUP_FILE(mp)->path);
 INCR_STAT_COUNT(remove_oldest);
 
-mp->backup.count--;
-mp->backup.size -= mp->backup.files[mp->backup.count]->size;
+mp->backup.size -= OLDEST_BACKUP_FILE(mp)->size;
 
-DELETE_LOGFILE(mp->backup.files[mp->backup.count]);
+DELETE_LOGFILE(OLDEST_BACKUP_FILE(mp));
 
-mp->backup.files=allocate(mp->backup.files,mp->backup.count*sizeof(LOGFILE *));
+mp->backup.files=allocate(mp->backup.files,(-- mp->backup.count)*sizeof(LOGFILE *));
 }
 
 /*----------------------------------------------*/
@@ -872,11 +883,11 @@ if (!csize) csize=size;
 
 /*-- rotate/purge ? (before writing) */
 
-if ((!(flags & LMGRW_CANNOT_ROTATE)) && SHOULD_ROTATE(mp,csize))
+if ((!(flags & LMGRW_CANNOT_ROTATE)) && SHOULD_ROTATE(mp,csize,t))
 	{
 	logmanager_rotate(mp,t); /* includes a purge */
 	}
-else _purge_backup_files(mp,csize);
+else _purge_backup_files(mp,csize,t);
 
 /*-- Write data */
 
@@ -939,7 +950,7 @@ if (file_exists(mp->status_path))
 				lp->path=_absolute_path(mp,val);
 				mp->backup.files=allocate(mp->backup.files
 					,(++mp->backup.count)*sizeof(LOGFILE *));
-				mp->backup.files[mp->backup.count-1]=lp;
+				OLDEST_BACKUP_FILE(mp)=lp;
 				break;
 
 			case 'L':
