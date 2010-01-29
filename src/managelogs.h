@@ -21,14 +21,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 
 #define MANAGELOGS_BANNER	"\
-*============================================================================*\n\
-|                           managelogs V %s                               |\n\
-|                                                                            |\n\
-| http://managelogs.tekwire.net                                              |\n\
-|                                                                            |\n\
-| Copyright (C) 2008-2010 by Francois Laupretre <francois@tekwire.net>       |\n\
-*============================================================================*\n\
-"
+managelogs V %s\n\
+(C) 2008-2010 - Francois Laupretre <francois@tekwire.net>\n\
+For more info, please consult http://managelogs.tekwire.net\n"
 
 #define LOGFILE_MODE	0x644
 
