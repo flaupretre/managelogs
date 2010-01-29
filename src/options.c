@@ -96,55 +96,62 @@ fprintf(fd,"\
                        <id> = <uid>[:<gid>]\n\
                        <uid> and <gid> are user/group names or numeric ids\n\
 \n\
- -V|--version        Print version and exit\n\
+ -V|--version        Print version banner and exit\n\
 \n\
  -I|--stats          Display internal stats before exiting (for\n\
                      troubleshooting, debugging, and performance tests)\n\
 \n\
- -R|--refresh-only   Just refresh/purge files and exit\n\
+ -R|--refresh-only   Just refresh/purge files, then exit\n\
 \n\
-*---- Manager options (these options apply to the next <base-path> only) :\n\
+*---- per-manager options (these options apply to the next <base-path> only) :\n\
 \n\
  -v|--verbose        Increment debug level\n\
 \n\
  -d|--debug <path>   Write debug messages to <path>\n\
-                     <path> can be 'stdout' or 'stderr'. Default: stderr\n\
+                       <path> can be a file path, 'stdout', or 'stderr'.\n\
+					   Default: stderr\n\
 \n\
  -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
                      corresponding suffix to the log file names.\n\
-                       <comp> is one of : %s\n\
-                       <level> is one of {123456789bf} (f=fast, b=best)\n\
-                       Default level depends on the compression engine\n\
+                       <comp> must be one of : %s\n\
+                       <level> is one of [123456789bf] (f=fast, b=best)\n\
+                       Default level: best\n\
 \n\
- -s|--size <size>    Set the maximum size at which rotation occurs\n\
+ -s|--size <size>    Set the maximum file size at which rotation occurs\n\
                        <size> is a numeric value optionnally followed\n\
-                       by 'K' (Kilo), 'M' (Mega), or 'G' (Giga). <size>\n\
-                       can also be set to 'min' (minimum value)\n\
+                       by 'K' (Kilo), 'M' (Mega), or 'G' (Giga).\n\
                        Default: no limit\n\
 \n\
- -S|--global-size    Set the maximum size log files can take on disk (active\n\
-                     log + backups). Argument: see '--size'\n\
+ -r|--rotate-delay <delay>  Set the maximum delay between the creation of a new\n\
+                       log file and the next rotation.\n\
+                       <delay> is a suite of patterns in the form '[0-9]+[dhm]'\n\
+                       (d=days, h=hours, m=minutes)\n\
+                       Example : 1d12h = 1 day and 12 hours (same as '36h')\n\
+ \n\
+ -p|--purge-delay <delay>  Remove backup log files older than <delay>\n\
+                         Argument: same format as for '--rotate-delay'\n\
+\n\
+ -S|--global-size <size>  Set the maximum size the whole set of log files can\n\
+                     take on disk (active log + backups).\n\
+                       Argument: same as for '--size'\n\
 \n\
  -m|--mode <mode>    Permissions to set when creating a new log file\n\
-                       <mode> is a numeric Unix-style file permission\n\
-                       (man chmod(2) for more). Default mode: %x\n\
+                       <mode> is an octal Unix-style file permission\n\
+                       (see man chmod(2) for more). Default mode: %x\n\
 \n\
  -k|--keep <n>       Only keep <n> log files (the active one + <n-1>\n\
                      backups)\n\
 \n\
  -l|--link           Maintain a link to the active log file\n\
-                     (See '-H' to choose between hard/symbolic links)\n\
 \n\
  -L|--backup-links   Maintain links to the active and backup log files\n\
-                     (backup links are named <base-path>.<1,2,...>, most\n\
-                     recent first)\n\
 \n\
  -H|--hardlink       Create hard links instead of symbolic links\n\
 \n\
- -e|--ignore-eol     By default, a mechanism ensures that log files are rotated\n\
-                     on line boundaries. This flag disables this mechanism.\n\
+ -e|--ignore-eol     Disables the internal mechanism ensuring that log files\n\
+                     are rotated on line boundaries\n\
 \n\
- -C|--rotate-cmd <cmd>    Run <cmd> on every rotation\n\
+ -C|--rotate-cmd <cmd>    Execute <cmd> on every rotation\n\
 \n\
  -x|--enospc-abort   Abort on 'no more space' write error (default: ignore)\n\
 \n",clist,LOGFILE_MODE);
@@ -218,7 +225,7 @@ while (1)
 				break;
 
 			case 'V':
-				printf(MANAGELOGS_VERSION "\n");
+				printf(MANAGELOGS_BANNER,MANAGELOGS_VERSION);
 				exit(0);
 
 			case 'm':
