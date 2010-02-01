@@ -17,13 +17,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 #include <apr_user.h>
+#include <apr_lib.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-
-#if APR_HAVE_CTYPE_H
-#include <ctype.h>
 #endif
 
 #if APR_HAVE_SYS_TYPES_H
@@ -51,7 +48,7 @@ strcpy(buf,string);
 gid_set=NO;
 if ((group=strchr(buf,':'))!=NULL) *(group++)='\0';
 
-if (isdigit(*buf))
+if (apr_isdigit(*buf))
 	{
 	if (sscanf(buf,"%d",&uid)!=1) FATAL_ERROR1("Invalid uid (%s)",buf);
 	}
@@ -64,7 +61,7 @@ else
 
 if (group)
 	{
-	if (isdigit(*group))
+	if (apr_isdigit(*group))
 		{
 		if (sscanf(group,"%d",&gid)!=1)	FATAL_ERROR1("Invalid gid (%s)",group);
 		}
