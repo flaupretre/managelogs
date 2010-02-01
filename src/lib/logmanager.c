@@ -24,7 +24,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr_env.h>
 #include <apr_errno.h>
 
+#if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
 #include <sys/stat.h>
 
 #if APR_HAVE_UNISTD_H

@@ -15,18 +15,22 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include <apr.h>
 #include <apr_errno.h>
+#include <apr_file_io.h>
+#include <apr_file_info.h>
+
+#if APR_HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+/* Don't use APR_HAVE_SYS_STAT_H (not always correctly defined) */
+
+#include <sys/stat.h>
 
 #if APR_HAVE_STRING_H
 #include <string.h>
 #endif
-
-#include <apr_file_io.h>
-#include <apr_file_info.h>
 
 /*----------------------------------------------*/
 

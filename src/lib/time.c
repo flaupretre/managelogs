@@ -16,12 +16,11 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 =============================================================================*/
 
 #include <apr.h>
+#include <apr_time.h>
 
 #if APR_HAVE_STDIO_H
 #include <stdio.h>
 #endif
-
-#include <apr_time.h>
 
 /*----------------------------------------------*/
 

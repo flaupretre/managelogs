@@ -15,15 +15,20 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#include <unistd.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <pwd.h>
-#include <grp.h>
-#include <sys/types.h>
-
 #include <apr.h>
 #include <apr_file_io.h>
+
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if APR_HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+
+#if APR_HAVE_SYS_TYPE_H
+#include <sys/types.h>
+#endif
 
 #if APR_HAVE_STRING_H
 #include <string.h>

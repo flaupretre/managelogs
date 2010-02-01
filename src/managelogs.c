@@ -16,6 +16,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 =============================================================================*/
 
 #include <apr.h>
+#include <apr_signal.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
@@ -33,7 +34,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <strings.h>
 #endif
 
-#include <apr_signal.h>
+/*---------*/
 
 #include <logmanager.h>
 
