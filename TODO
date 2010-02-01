@@ -31,7 +31,4 @@
 * Another external script to be executed when managelogs gets a 'file system
   full' error (as it now survives it).
 
-* Add a 'purge-delay' option. Tells a maximum time for log data to remain
-  in the files. Adds a new purge condition.
-
 =============================================================================
