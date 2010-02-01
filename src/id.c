@@ -15,27 +15,34 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#include <unistd.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <pwd.h>
-#include <grp.h>
-#include <sys/types.h>
-
 #include <apr.h>
+#include <apr_user.h>
+
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if APR_HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+
+#if APR_HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 #include "util/util.h"
+
+#if APR_HAS_USER
 
 /*----------------------------------------------*/
 
 void change_id(const char *string)
 {
 char buf[64],*group;
-uid_t uid;
-gid_t gid;
+apr_uid_t uid;
+apr_gid_t gid;
 BOOL gid_set;
-struct passwd *pp;
-struct group *gp;
+DECLARE_TPOOL
 
 if (strlen(string) >= sizeof(buf))
 	FATAL_ERROR1("ID string too long (%s)",string);
@@ -50,10 +57,8 @@ if (isdigit(*buf))
 	}
 else
 	{
-	if ((pp=getpwnam(buf))==NULL)
+	if (apr_uid_get(&uid,&gid,buf,CHECK_TPOOL()) != APR_SUCCESS)
 		FATAL_ERROR1("Cannot convert username to uid (%s)",buf);
-	uid=pp->pw_uid;
-	gid=pp->pw_gid;
 	gid_set=YES;
 	}
 
@@ -61,24 +66,26 @@ if (group)
 	{
 	if (isdigit(*group))
 		{
-		if (sscanf(group,"%d",&gid)!=1)
-			FATAL_ERROR1("Invalid gid (%s)",group);
+		if (sscanf(group,"%d",&gid)!=1)	FATAL_ERROR1("Invalid gid (%s)",group);
 		}
 	else
 		{
-		if ((gp=getgrnam(group))==NULL)
+		if (apr_gid_get(&gid,group,CHECK_TPOOL()) != APR_SUCCESS)
 			FATAL_ERROR1("Cannot convert group name to gid (%s)",group);
-		gid=gp->gr_gid;
 		}
 	gid_set=YES;
 	}
 
 if (gid_set)
 	{
-	if (setgid(gid))
+	if (setgid((gid_t)gid))
 		FATAL_ERROR1("Cannot change effective group ID to %d",(char *)gid);
 	}
 
-if (setuid(uid)) FATAL_ERROR1("Cannot change effective user ID to %d",(char *)uid);
+if (setuid((uid_t)uid)) FATAL_ERROR1("Cannot change effective user ID to %d",(char *)uid);
+
+FREE_TPOOL();
 }
+
+#endif
 
