@@ -306,7 +306,7 @@ static TIMESTAMP convert_delay(const char *str)
 char c;
 TIMESTAMP delay,tdelay;
 
-delay=0;
+delay=tdelay=0;
 
 while ((c=(*(str++)))!='\0')
 	{
