@@ -22,10 +22,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <unistd.h>
 #endif
 
-#if APR_HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
