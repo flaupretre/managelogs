@@ -61,7 +61,7 @@ exit(1);
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void *allocate(const void *p, size_t size)
+LIB_INTERNAL void *allocate(const void *p, apr_size_t size)
 {
 void *p2;
 
@@ -71,7 +71,7 @@ if (p2)
 	{
 	if (size)
 		{
-		p2=realloc(p2,size);
+		p2=realloc(p2,(size_t)size);
 		if (!p2) FATAL_ERROR("realloc error");
 		}
 	else
@@ -84,7 +84,7 @@ else
 	{
 	if (size)
 		{
-		p2=malloc(size);
+		p2=malloc((size_t)size);
 		if (!p2) FATAL_ERROR("malloc error");
 		memset(p2,0,size);
 		}

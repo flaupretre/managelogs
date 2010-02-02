@@ -100,7 +100,7 @@ typedef enum { NO, YES } BOOL;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void *allocate(/*@null@*/ const void *p, size_t size);
+LIB_INTERNAL void *allocate(/*@null@*/ const void *p, apr_size_t size);
 LIB_INTERNAL void *duplicate(const char *string);
 LIB_INTERNAL void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
 LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
