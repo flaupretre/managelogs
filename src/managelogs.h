@@ -32,7 +32,7 @@ For more info, please consult http://managelogs.tekwire.net\n"
 extern TIMESTAMP timestamp;
 extern int stats_toggle;
 extern int refresh_only;
-extern LOGMANAGER **mpp;
+extern LOGMANAGER *mpp;
 extern int mgr_count;
 
 /*----------------------------------------------*/

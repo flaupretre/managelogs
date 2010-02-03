@@ -164,22 +164,22 @@ if (rc >= 0) exit(rc);
 /*----------------------------------------------*/
 /*-- Get options from command line */
 
-LOGMANAGER_OPTIONS_V2 **get_options(int argc, char **argv, int *countp)
+LOGMANAGER_OPTIONS **get_options(int argc, char **argv, int *countp)
 {
 apr_status_t status;
-LOGMANAGER_OPTIONS_V2 **opp, *op;
+LOGMANAGER_OPTIONS **opp, *op;
 int optch;
 const char *opt_arg;
 DECLARE_TPOOL
 
-opp=(LOGMANAGER_OPTIONS_V2 **)0;
+opp=(LOGMANAGER_OPTIONS **)0;
 (*countp)=0;
 
 while (1)
 	{
 	if (argc < 2) break;
 
-	op=NEW_STRUCT(LOGMANAGER_OPTIONS_V2);
+	op=NEW_STRUCT(LOGMANAGER_OPTIONS);
 	op->create_mode=LOGFILE_MODE;
 	opp=allocate(opp,(++(*countp))*sizeof(*opp));
 	opp[(*countp)-1]=op;
@@ -355,7 +355,7 @@ return result;
 
 /*----------------------------------------------*/
 
-void free_options(LOGMANAGER_OPTIONS_V2 **opp, int count)
+void free_options(LOGMANAGER_OPTIONS **opp, int count)
 {
 int i;
 

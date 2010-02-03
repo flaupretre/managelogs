@@ -46,9 +46,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 				}
 
 #define GZ_INIT_POINTERS() \
-	LOGMANAGER *mp; \
+	LOGMANAGER mp; \
 	GZIP_DATA *zp; \
-	zp=(GZIP_DATA *)((mp=(LOGMANAGER *)sp)->compress.private); \
+	zp=(GZIP_DATA *)((mp=(LOGMANAGER )sp)->compress.private); \
 
 /*----------------------------------------------*/
 

@@ -50,9 +50,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 				}
 
 #define BZ2_INIT_POINTERS() \
-	LOGMANAGER *mp; \
+	LOGMANAGER mp; \
 	BZIP2_DATA *zp; \
-	zp=(BZIP2_DATA *)((mp=(LOGMANAGER *)sp)->compress.private); \
+	zp=(BZIP2_DATA *)((mp=(LOGMANAGER )sp)->compress.private); \
 
 /*----------------------------------------------*/
 

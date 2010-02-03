@@ -31,7 +31,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define PLAIN_INIT_POINTERS() LOGMANAGER *mp=(LOGMANAGER *)sp;
+#define PLAIN_INIT_POINTERS() LOGMANAGER mp=(LOGMANAGER )sp;
 
 /*----------------------------------------------*/
 
@@ -66,7 +66,7 @@ static void plain_write(void *sp, const char *buf, apr_size_t size)
 {
 PLAIN_INIT_POINTERS();
 
-file_write(((LOGMANAGER *)sp)->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
+file_write(((LOGMANAGER )sp)->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
 }
 
 /*----------------------------------------------*/
@@ -96,7 +96,7 @@ LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg)
 {
 COMPRESS_HANDLER **chpp;
 char buf[LMGR_COMPRESS_STRING_SIZE],*level;
-LOGMANAGER *mp=(LOGMANAGER *)sp;
+LOGMANAGER mp=(LOGMANAGER )sp;
 
 if ((strlen(arg)+1) >= sizeof(buf)) FATAL_ERROR("compression arg too long");
 strcpy(buf,arg);

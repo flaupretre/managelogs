@@ -24,8 +24,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-extern LOGMANAGER_OPTIONS_V2 **get_options(int argc, char **argv, int *countp);
-extern void free_options(LOGMANAGER_OPTIONS_V2 **opp , int count);
+extern LOGMANAGER_OPTIONS **get_options(int argc, char **argv, int *countp);
+extern void free_options(LOGMANAGER_OPTIONS **opp , int count);
 
 /*----------------------------------------------*/
 #endif	/* __OPTIONS_H */

@@ -65,19 +65,21 @@ typedef unsigned long TIMESTAMP;
 
 typedef struct
 	{
+	unsigned int api_version;
 	char *base_path;
 	unsigned int flags;
 	char compress_string[LMGR_COMPRESS_STRING_SIZE];
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
-	TIMESTAMP rotate_delay;
-	TIMESTAMP purge_delay;
 	apr_fileperms_t create_mode;
 	char *debug_file;
 	int debug_level;
 	char *rotate_cmd;
-	} LOGMANAGER_OPTIONS_V2;
+	/* API version 1 stops here */
+	TIMESTAMP rotate_delay;
+	TIMESTAMP purge_delay;
+	} LOGMANAGER_OPTIONS;
 
 /*----------------------------------------------*/
 
@@ -150,26 +152,28 @@ typedef struct
 		int dump_count;
 		int sync_count;
 		} stats;
-	} LOGMANAGER;
+	} _LOGMANAGER_STRUCT;
+
+typedef _LOGMANAGER_STRUCT * LOGMANAGER;
 
 #else
-typedef void LOGMANAGER; /* Opaque to client */
+typedef void * LOGMANAGER; /* Opaque to client */
 #endif
 
 /*----------------------------------------------*/
 /* Functions */
 
-extern LOGMANAGER *new_logmanager_v2(LOGMANAGER_OPTIONS_V2 *opts,TIMESTAMP t);
-extern void logmanager_destroy(LOGMANAGER *mp,TIMESTAMP t);
-extern void logmanager_open(LOGMANAGER *mp,TIMESTAMP t);
-extern void logmanager_close(LOGMANAGER *mp,TIMESTAMP t);
-extern void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
+extern LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts,TIMESTAMP t);
+extern void logmanager_destroy(LOGMANAGER mp,TIMESTAMP t);
+extern void logmanager_open(LOGMANAGER mp,TIMESTAMP t);
+extern void logmanager_close(LOGMANAGER mp,TIMESTAMP t);
+extern void logmanager_write(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
-extern void logmanager_flush(LOGMANAGER *mp,TIMESTAMP t);
-extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);
+extern void logmanager_flush(LOGMANAGER mp,TIMESTAMP t);
+extern void logmanager_rotate(LOGMANAGER mp,TIMESTAMP t);
 extern char *logmanager_compression_list(void);
 extern char *logmanager_version(void);
-extern void logmanager_display_stats(LOGMANAGER *mp);
+extern void logmanager_display_stats(LOGMANAGER mp);
 
 /*----------------------------------------------*/
 #endif	/* __LOGMANAGER_H */

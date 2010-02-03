@@ -50,7 +50,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LOGMANAGER **mpp=(LOGMANAGER **)0;
+LOGMANAGER *mpp=(LOGMANAGER *)0;
 int mgr_count;
 
 TIMESTAMP timestamp=NOW;
@@ -93,7 +93,7 @@ apr_file_t *f_stdin;
 apr_size_t nread,chunk_size,tmp_size;
 char buf[CHUNK_MAX];
 apr_status_t status;
-LOGMANAGER_OPTIONS_V2 **opp;
+LOGMANAGER_OPTIONS **opp;
 int i;
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
@@ -106,10 +106,10 @@ opp=get_options(argc,argv,&mgr_count);
 
 /* Create and open the log managers */
 
-mpp=allocate(NULL,mgr_count*sizeof(LOGMANAGER *));
+mpp=allocate(NULL,mgr_count*sizeof(*mpp));
 for (i=0;i<mgr_count;i++)
 	{
-	mpp[i]=new_logmanager_v2(opp[i],timestamp);
+	mpp[i]=new_logmanager(opp[i],timestamp);
 	logmanager_open(mpp[i],timestamp);
 	}
 

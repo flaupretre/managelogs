@@ -157,36 +157,36 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-static char *_pid_path(LOGMANAGER *mp);
-static char *_status_path(LOGMANAGER *mp);
-static void _create_pid_file(LOGMANAGER *mp);
-static BOOL _pid_file_is_overwritten(LOGMANAGER *mp);
-static void _remove_pid_file(LOGMANAGER *mp);
-static void _open_active_file(LOGMANAGER *mp);
-static void _close_active_file(LOGMANAGER *mp);
-static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t);
-static void _run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t);
-static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
-static void _remove_oldest_backup(LOGMANAGER *mp);
-static void _get_status_from_file(LOGMANAGER *mp);
-static void _dump_status_to_file(LOGMANAGER *mp,TIMESTAMP t);
-static void _sync_logfiles_from_disk(LOGMANAGER *mp);
-static char *_link_name(LOGMANAGER *mp, int num);
-static void _refresh_backup_links(LOGMANAGER *mp);
-static void _refresh_active_link(LOGMANAGER *mp);
-static void _clear_logfile_link(LOGMANAGER *mp, LOGFILE *lp);
-static void _create_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num);
-static void _write_end(LOGMANAGER *mp, TIMESTAMP t);
-static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
+static char *_pid_path(LOGMANAGER mp);
+static char *_status_path(LOGMANAGER mp);
+static void _create_pid_file(LOGMANAGER mp);
+static BOOL _pid_file_is_overwritten(LOGMANAGER mp);
+static void _remove_pid_file(LOGMANAGER mp);
+static void _open_active_file(LOGMANAGER mp);
+static void _close_active_file(LOGMANAGER mp);
+static void _new_active_file(LOGMANAGER mp,TIMESTAMP t);
+static void _run_bg_cmd(LOGMANAGER mp,char *cmd, LOGFILE *file,TIMESTAMP t);
+static void _purge_backup_files(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
+static void _remove_oldest_backup(LOGMANAGER mp);
+static void _get_status_from_file(LOGMANAGER mp);
+static void _dump_status_to_file(LOGMANAGER mp,TIMESTAMP t);
+static void _sync_logfiles_from_disk(LOGMANAGER mp);
+static char *_link_name(LOGMANAGER mp, int num);
+static void _refresh_backup_links(LOGMANAGER mp);
+static void _refresh_active_link(LOGMANAGER mp);
+static void _clear_logfile_link(LOGMANAGER mp, LOGFILE *lp);
+static void _create_logfile_link(LOGMANAGER mp, LOGFILE *lp,int num);
+static void _write_end(LOGMANAGER mp, TIMESTAMP t);
+static void _write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
-static char *_absolute_path(LOGMANAGER *mp, const char *str);
+static char *_absolute_path(LOGMANAGER mp, const char *str);
 static char *_dirname(const char *path);
 static const char *_basename(const char *path);
 
 /*----------------------------------------------*/
 /* Return absolute path of PID file */
 
-static char *_pid_path(LOGMANAGER *mp)
+static char *_pid_path(LOGMANAGER mp)
 {
 char *p;
 int len;
@@ -200,7 +200,7 @@ return p;
 /*----------------------------------------------*/
 /* Return absolute path of status file */
 
-static char *_status_path(LOGMANAGER *mp)
+static char *_status_path(LOGMANAGER mp)
 {
 char *p;
 int len;
@@ -213,7 +213,7 @@ return p;
 
 /*----------------------------------------------*/
 
-static void _create_pid_file(LOGMANAGER *mp)
+static void _create_pid_file(LOGMANAGER mp)
 {
 OFILE *fp;
 char buf[32];
@@ -233,7 +233,7 @@ file_write_string_nl(fp,buf,YES);
 
 /*----------------------------------------------*/
 
-static BOOL _pid_file_is_overwritten(LOGMANAGER *mp)
+static BOOL _pid_file_is_overwritten(LOGMANAGER mp)
 {
 char *buf;
 unsigned long pid;
@@ -250,7 +250,7 @@ return (pid != (unsigned long)getpid());
 
 /*----------------------------------------------*/
 
-static void _remove_pid_file(LOGMANAGER *mp)
+static void _remove_pid_file(LOGMANAGER mp)
 {
 DEBUG1(mp,1,"Removing PID file(%s)",mp->pid_path);
 
@@ -259,7 +259,7 @@ DEBUG1(mp,1,"Removing PID file(%s)",mp->pid_path);
 
 /*----------------------------------------------*/
 
-void logmanager_flush(LOGMANAGER *mp,TIMESTAMP t)
+void logmanager_flush(LOGMANAGER mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
 
@@ -277,11 +277,11 @@ C_HANDLER(mp,flush);
 * for analysis (modifications can start when the manager is open()ed).
 */
 
-LOGMANAGER *new_logmanager_v2(LOGMANAGER_OPTIONS_V2 *opts,TIMESTAMP t)
+LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts,TIMESTAMP t)
 {
-LOGMANAGER *mp;
+LOGMANAGER mp;
 
-mp=(LOGMANAGER *)allocate(NULL,sizeof(LOGMANAGER));
+mp=(LOGMANAGER )allocate(NULL,sizeof(*mp));
 
 /*-- Initial timestamp */
 
@@ -314,8 +314,6 @@ _get_status_from_file(mp);
 mp->keep_count=opts->keep_count;
 mp->file_maxsize=opts->file_maxsize;
 mp->global_maxsize=opts->global_maxsize;
-mp->rotate_delay=opts->rotate_delay;
-mp->purge_delay=opts->purge_delay;
 
 if (mp->file_maxsize == 1) mp->file_maxsize=FILE_LOWER_LIMIT;
 if (mp->file_maxsize && (mp->file_maxsize < FILE_LOWER_LIMIT))
@@ -355,6 +353,14 @@ if (opts->debug_file)
 
 mp->rotate_cmd=duplicate(opts->rotate_cmd);
 
+/* V 2+ specific options */
+
+if (opts->api_version >= 2)
+	{
+	mp->rotate_delay=opts->rotate_delay;
+	mp->purge_delay=opts->purge_delay;
+	}
+
 /*--*/
 
 return mp;
@@ -362,7 +368,7 @@ return mp;
 
 /*----------------------------------------------*/
 
-void logmanager_open(LOGMANAGER *mp,TIMESTAMP t)
+void logmanager_open(LOGMANAGER mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
 CHECK_TIME(mp,t);
@@ -399,7 +405,7 @@ else
 /* Note: Don't remove the pid file if it has been overwritten by another 
 log manager (happens with error_log when apache starts) */
 
-void logmanager_destroy(LOGMANAGER *mp,TIMESTAMP t)
+void logmanager_destroy(LOGMANAGER mp,TIMESTAMP t)
 {
 int i;
 
@@ -447,7 +453,7 @@ if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 
 /*----------------------------------------------*/
 
-static char *_link_name(LOGMANAGER *mp, int num)
+static char *_link_name(LOGMANAGER mp, int num)
 {
 int len;
 char buf[32],*p;
@@ -474,7 +480,7 @@ return p;
 
 /*----------------------------------------------*/
 
-static void _clear_logfile_link(LOGMANAGER *mp, LOGFILE *lp)
+static void _clear_logfile_link(LOGMANAGER mp, LOGFILE *lp)
 {
 if (lp && lp->link)
 	{
@@ -529,7 +535,7 @@ for (i=strlen(path)-1;;i--)
 
 /*----------------------------------------------*/
 
-static void _create_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num)
+static void _create_logfile_link(LOGMANAGER mp, LOGFILE *lp,int num)
 {
 char *lname;
 
@@ -567,7 +573,7 @@ else
 * If we don't do that, clear can destroy new links
 */
 
-static void _refresh_backup_links(LOGMANAGER *mp)
+static void _refresh_backup_links(LOGMANAGER mp)
 {
 int i;
 
@@ -590,7 +596,7 @@ if (mp->backup.count)
 
 /*----------------------------------------------*/
 
-static void _refresh_active_link(LOGMANAGER *mp)
+static void _refresh_active_link(LOGMANAGER mp)
 {
 DEBUG(mp,1,"Refreshing active link");
 INCR_STAT_COUNT(refresh_active_link);
@@ -601,7 +607,7 @@ _create_logfile_link(mp,mp->active.file,0);
 
 /*----------------------------------------------*/
 
-static void _open_active_file(LOGMANAGER *mp)
+static void _open_active_file(LOGMANAGER mp)
 {
 if (IS_OPEN(mp)) return;
 
@@ -616,7 +622,7 @@ C_HANDLER(mp,start);
 
 /*----------------------------------------------*/
 
-static void _close_active_file(LOGMANAGER *mp)
+static void _close_active_file(LOGMANAGER mp)
 {
 if (!IS_OPEN(mp)) return;
 
@@ -628,7 +634,7 @@ mp->active.fp=file_close(mp->active.fp);
 
 /*----------------------------------------------*/
 
-void logmanager_close(LOGMANAGER *mp,TIMESTAMP t)
+void logmanager_close(LOGMANAGER mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
 CHECK_TIME(mp,t);
@@ -644,7 +650,7 @@ _dump_status_to_file(mp,t);
 
 /*----------------------------------------------*/
 
-static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t)
+static void _new_active_file(LOGMANAGER mp,TIMESTAMP t)
 {
 LOGFILE *lp;
 int len;
@@ -678,7 +684,7 @@ lp->start=lp->end=t;
 /*----------------------------------------------*/
 /* Run a command in background */
 
-static void _run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t)
+static void _run_bg_cmd(LOGMANAGER mp,char *cmd, LOGFILE *file,TIMESTAMP t)
 {
 char buf[32];
 DECLARE_TPOOL
@@ -712,7 +718,7 @@ exit(0);
 
 /*----------------------------------------------*/
 
-void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t)
+void logmanager_rotate(LOGMANAGER mp,TIMESTAMP t)
 {
 int i;
 LOGFILE *previous_log;
@@ -755,7 +761,7 @@ _dump_status_to_file(mp,t);
 to confirm actual sizes. If a backup file has been deleted by an external
 action, maybe we don't actually exceed the limits */
 
-static void _purge_backup_files(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t)
+static void _purge_backup_files(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
 {
 if (GLOBAL_CONDITIONS_EXCEEDED(mp,add,t))
 	{
@@ -767,7 +773,7 @@ if (GLOBAL_CONDITIONS_EXCEEDED(mp,add,t))
 
 /*----------------------------------------------*/
 
-static void _remove_oldest_backup(LOGMANAGER *mp)
+static void _remove_oldest_backup(LOGMANAGER mp)
 {
 if (! mp->backup.count) return; /* Should never happen */
 
@@ -785,7 +791,7 @@ mp->backup.files=allocate(mp->backup.files,(-- mp->backup.count)*sizeof(LOGFILE 
 /* Called when the manager is closed. Even if we don't have an EOL, we
 * must write the buffer */
 
-static void _write_end(LOGMANAGER *mp, TIMESTAMP t)
+static void _write_end(LOGMANAGER mp, TIMESTAMP t)
 {
 _write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,0,t);
 mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
@@ -794,7 +800,7 @@ mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
 /*----------------------------------------------*/
 /* Buffer output so that the files are cut on line boundaries ('\n' char) */
 
-void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
+void logmanager_write(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
 int i;
@@ -872,7 +878,7 @@ if (size) _write_level2(mp,buf,size,flags,t);
 
 /*----------------------------------------------*/
 
-static void _write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
+static void _write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
 apr_off_t csize;
@@ -903,7 +909,7 @@ mp->active.file->end=t;
 
 /*----------------------------------------------*/
 
-static char *_absolute_path(LOGMANAGER *mp, const char *str)
+static char *_absolute_path(LOGMANAGER mp, const char *str)
 {
 char *p;
 int len;
@@ -918,7 +924,7 @@ return p;
 /*----------------------------------------------*/
 /* NB: the order of backup files must be preserved from file to mem */
 
-static void _get_status_from_file(LOGMANAGER *mp)
+static void _get_status_from_file(LOGMANAGER mp)
 {
 char *buf,*p,*p2,*val;
 LOGFILE *lp;
@@ -1010,7 +1016,7 @@ if (file_exists(mp->status_path))
 		} \
 	}
 
-static void _dump_status_to_file(LOGMANAGER *mp, TIMESTAMP t)
+static void _dump_status_to_file(LOGMANAGER mp, TIMESTAMP t)
 {
 OFILE *fp;
 char buf[32];
@@ -1052,7 +1058,7 @@ if (mp->backup.count)
 * NB: Don't check active file if it is open.
 */
 
-static void _sync_logfiles_from_disk(LOGMANAGER *mp)
+static void _sync_logfiles_from_disk(LOGMANAGER mp)
 {
 int i,offset;
 LOGFILE **lpp;
@@ -1107,7 +1113,7 @@ return duplicate(LOGMANAGER_VERSION);
 	file_write_string_nl(fp,buf,YES); \
 	}
 
-void logmanager_display_stats(LOGMANAGER *mp)
+void logmanager_display_stats(LOGMANAGER mp)
 {
 OFILE *fp;
 char buf[32];
