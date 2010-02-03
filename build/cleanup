@@ -1,0 +1,16 @@
+
+set -x
+
+if [ -f Makefile ] ; then
+	make distclean
+fi
+
+/bin/rm -rf \
+	aclocal.m4 \
+	autom4te.cache \
+	config.h.in \
+	config.h.in~ \
+	configure \
+	`find . -name 'Makefile.in'` \
+	*.tar.gz
+
