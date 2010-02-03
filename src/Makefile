@@ -11,40 +11,33 @@ LOBJS = managelogs.lo \
 	options.lo \
 	id.lo
 
-INCLUDES = -Ilib/ext_include
+INCLUDES = -I../lib/ext_include
 
 #--------------------------------------------------------------------
 
-.PHONY: all clean install clean-prog lib clean-lib install-lib install-prog prog
+.PHONY: all clean install
 .SUFFIXES: .c .lo
 
-all: lib prog
-
-clean: clean-lib clean-prog
+all: $(TARGETS)
 
 install: install-lib install-prog
 
-clean-prog:
+clean:
 	$(LIBTOOL) --mode=clean /bin/rm -f $(TARGETS) $(LOBJS)
 
-lib clean-lib install-lib:
-	cd lib && $(MAKE) $@
-
-install-prog: prog
+install: all
 	@echo Installing program...
 	@test -d $(APACHE)/bin || $(MKINSTALLDIRS) $(APACHE)/bin
 	$(LIBTOOL) --mode=install cp $(TARGETS) $(APACHE)/bin
 
-prog: $(TARGETS)
-
 managelogs: $(LOBJS)
-	$(LINK_PROG) $(LOBJS) -L./lib -llogmanager \
+	$(LINK_PROG) $(LOBJS) -L../lib -llogmanager \
 		-rpath $(APACHE)/lib$(LIB_SUFFIX)
 
 check:
 	@echo '<TODO>'
 
 .c.lo:
-	$(LT_COMPILE_STATIC)
+	$(LT_COMPILE)
 
 #--------------------------------------------------------------------

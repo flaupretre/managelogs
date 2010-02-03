@@ -5,15 +5,13 @@ include ./make.vars
 
 #--------------------------------------------------------------------
 
-.PHONY: all lib prog install install-lib install-prog clean clean-lib clean-prog html-man install-man install-sys-man check release
+.PHONY: all install clean html-man install-man install-sys-man check
 
-all lib prog install install-lib install-prog clean clean-lib clean-prog check:
+all install clean check:
+	cd lib && $(MAKE) $@
 	cd src && $(MAKE) $@
 
 html-man install-man install-sys-man:
 	cd doc && $(MAKE) $@
-
-release: clean
-	util/mk_release `pwd` $(PROJECT) $(PROJECT_VERSION)
 
 #--------------------------------------------------------------------

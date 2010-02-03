@@ -1,7 +1,7 @@
 
 #--- No modifiable parameter in this file
 
-include ../../make.vars
+include ../make.vars
 
 #--------------------------------------------------------------------
 
@@ -19,27 +19,21 @@ INCLUDES = -I../util -I./ext_include
 
 #--------------------------------------------------------------------
 
-.PHONY: all clean install clean-lib install-lib lib
+.PHONY: all clean install
 .SUFFIXES: .c .lo
 
-all: lib
+all: $(TARGETS)
 
-clean: clean-lib
-
-clean-lib:
+clean:
 	$(LIBTOOL) --mode=clean /bin/rm -f $(TARGETS) $(LOBJS)
 
-install: install-lib
-
-install-lib: lib
+install: all
 	@echo Installing library...
 	@test -d $(LIB_INSTALL_DIR) || $(MKINSTALLDIRS) $(LIB_INSTALL_DIR)
 	$(LIBTOOL) --mode=install cp $(LIB_TARGETS) $(LIB_INSTALL_DIR)
 	@echo Installing header files...
 	@test -d $(APACHE)/include || $(MKINSTALLDIRS) $(APACHE)/include
 	$(LIBTOOL) --mode=install cp $(HEADER_FILES) $(APACHE)/include
-
-lib: $(TARGETS)
 
 $(TARGETS): $(LOBJS)
 	$(LINK_LIB) $(LOBJS) -rpath $(LIB_INSTALL_DIR)
