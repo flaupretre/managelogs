@@ -50,8 +50,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <stdio.h>
 #endif
 
+#include "../config.h"
+
 #include "../util/util.h"
-#include "ext_include/logmanager.h"
+#include "inst_include/logmanager.h"
 #include "include/config.h"
 #include "include/time.h"
 #include "include/compress.h"
@@ -704,7 +706,7 @@ if (fork())		/* Parent returns */
 (void)apr_env_set("LOGMANAGER_ROOT_DIR",mp->root_dir,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_COMPRESSION"
 	,mp->compress.handler->suffix,CHECK_TPOOL());
-(void)apr_env_set("LOGMANAGER_VERSION",LOGMANAGER_VERSION,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_VERSION",PACKAGE_VERSION,CHECK_TPOOL());
 
 (void)snprintf(buf,sizeof(buf),"%lu",t);
 (void)apr_env_set("LOGMANAGER_TIME",buf,CHECK_TPOOL());
@@ -1033,7 +1035,7 @@ file_write_string(fp,"A ",YES);
 (void)snprintf(buf,sizeof(buf),"%d",LOGMANAGER_API_VERSION);
 file_write_string_nl(fp,buf,YES);
 
-file_write_string_nl(fp,"V " LOGMANAGER_VERSION,YES);
+file_write_string_nl(fp,"V " PACKAGE_VERSION,YES);
 
 file_write_string(fp,"D ",YES);
 (void)snprintf(buf,sizeof(buf),"%lu",t);
@@ -1102,7 +1104,7 @@ return compress_handler_list();
 
 char *logmanager_version()
 {
-return duplicate(LOGMANAGER_VERSION);
+return duplicate(PACKAGE_VERSION);
 }
 
 /*----------------------------------------------*/

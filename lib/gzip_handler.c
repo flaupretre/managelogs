@@ -15,7 +15,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef DISABLE_GZIP
+#ifdef HAVE_ZLIB
 /*----------------------------------------------*/
 
 #include <apr.h>
@@ -204,4 +204,4 @@ gzip_start(sp);
 }
 
 /*----------------------------------------------*/
-#endif /* DISABLE_GZIP */
+#endif /* HAVE_ZLIB */

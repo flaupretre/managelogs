@@ -15,7 +15,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef DISABLE_BZIP2
+#ifdef HAVE_BZ2
 /*----------------------------------------------*/
 
 #include <apr.h>
@@ -209,4 +209,4 @@ bzip2_start(sp);
 }
 
 /*----------------------------------------------*/
-#endif /* DISABLE_BZIP2 */
+#endif /* HAVE_BZ2 */

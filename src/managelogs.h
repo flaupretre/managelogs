@@ -18,12 +18,15 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __MANAGELOGS_H
 #define __MANAGELOGS_H
 
+#include "../config.h"
+
 /*----------------------------------------------*/
 
 #define MANAGELOGS_BANNER	"\
-managelogs V %s\n\
+" PACKAGE_STRING "\n\
 (C) 2008-2010 - Francois Laupretre <francois@tekwire.net>\n\
-For more info, please consult http://managelogs.tekwire.net\n"
+For more info: http://managelogs.tekwire.net\n\
+Please report bugs to " PACKAGE_BUGREPORT "\n"
 
 #define LOGFILE_MODE	0x644
 

@@ -18,6 +18,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __ID_H
 #define __ID_H
 
+#include "../config.h"
+
 /*----------------------------------------------*/
 
 extern void change_id(const char *string);

@@ -18,7 +18,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __BZIP2_HANDLER_H
 #define __BZIP2_HANDLER_H
 
-#ifndef DISABLE_BZIP2
+#ifdef HAVE_BZ2
 
 /*----------------------------------------------*/
 
@@ -27,4 +27,4 @@ LIB_INTERNAL COMPRESS_HANDLER bzip2_handler;
 /*----------------------------------------------*/
 #endif
 /*----------------------------------------------*/
-#endif /* DISABLE_BZIP2 */
+#endif /* HAVE_BZ2 */

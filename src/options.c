@@ -82,8 +82,7 @@ char *clist;
 fd=((rc>0) ? stderr : stdout);
 clist=logmanager_compression_list();
 
-fprintf(fd,MANAGELOGS_BANNER,MANAGELOGS_VERSION);
-fprintf(fd,"\n\
+fprintf(fd,MANAGELOGS_BANNER "\n\
 Usage: managelogs [options...] <base-path1> [[options...] <base-path2> ...] \n");
 
 fprintf(fd,"\
@@ -109,14 +108,21 @@ fprintf(fd,"\
 \n\
  -d|--debug <path>   Write debug messages to <path>\n\
                        <path> can be a file path, 'stdout', or 'stderr'.\n\
-					   Default: stderr\n\
-\n\
+                       Default: stderr\n\
+\n");
+
+if (clist[0]) /* If at least one compression scheme is supported */
+	{
+	fprintf(fd,"\
  -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
                      corresponding suffix to the log file names.\n\
                        <comp> must be one of : %s\n\
                        <level> is one of [123456789bf] (f=fast, b=best)\n\
                        Default level: best\n\
-\n\
+\n",clist);
+	}
+
+fprintf(fd,"\
  -s|--size <size>    Set the maximum file size at which rotation occurs\n\
                        <size> is a numeric value optionnally followed\n\
                        by 'K' (Kilo), 'M' (Mega), or 'G' (Giga).\n\
@@ -124,9 +130,9 @@ fprintf(fd,"\
 \n\
  -r|--rotate-delay <delay>  Set the maximum delay between the creation of a new\n\
                        log file and the next rotation.\n\
-                       <delay> is a suite of patterns in the form '[0-9]+[dhm]'\n\
-                       (d=days, h=hours, m=minutes)\n\
-                       Example : 1d12h = 1 day and 12 hours (same as '36h')\n\
+                         <delay> is a suite of patterns in the form\n\
+                         '[0-9]+[dhm]' (d=days, h=hours, m=minutes)\n\
+                         Example : 1d12h = 1 day and 12 hours (same as '36h')\n\
  \n\
  -p|--purge-delay <delay>  Remove backup log files older than <delay>\n\
                          Argument: same format as for '--rotate-delay'\n\
@@ -154,7 +160,7 @@ fprintf(fd,"\
  -C|--rotate-cmd <cmd>    Execute <cmd> on every rotation\n\
 \n\
  -x|--enospc-abort   Abort on 'no more space' write error (default: ignore)\n\
-\n",clist,LOGFILE_MODE);
+\n",LOGFILE_MODE);
 
 (void)allocate(clist,0);
 
@@ -225,7 +231,7 @@ while (1)
 				break;
 
 			case 'V':
-				printf(MANAGELOGS_BANNER,MANAGELOGS_VERSION);
+				printf(MANAGELOGS_BANNER);
 				exit(0);
 
 			case 'm':

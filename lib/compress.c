@@ -52,10 +52,10 @@ static COMPRESS_HANDLER plain_handler=
 
 static COMPRESS_HANDLER *compress_handlers[]={
 	&plain_handler,
-#ifndef DISABLE_GZIP
+#ifdef HAVE_ZLIB
 	&gzip_handler,
 #endif
-#ifndef DISABLE_BZIP2
+#ifdef HAVE_BZ2
 	&bzip2_handler,
 #endif
 	NULL };

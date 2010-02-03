@@ -20,6 +20,8 @@ Copyright F. Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 
+#include "../config.h"
+
 #include <logmanager.h>
 
 /*----------------------------------------------*/

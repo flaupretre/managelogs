@@ -18,12 +18,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __GZIP_HANDLER_H
 #define __GZIP_HANDLER_H
 
-#ifndef DISABLE_GZIP
+#ifdef HAVE_ZLIB
 /*----------------------------------------------*/
 
 LIB_INTERNAL COMPRESS_HANDLER gzip_handler;
 
 /*----------------------------------------------*/
-#endif
+#endif /* HAVE_ZLIB */
 /*----------------------------------------------*/
-#endif /* DISABLE_GZIP */
+#endif

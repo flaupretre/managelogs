@@ -1,0 +1,26 @@
+
+lib_LTLIBRARIES = liblogmanager.la
+
+liblogmanager_la_SOURCES = logmanager.c
+
+AM_CPPFLAGS = $(APR_INCLUDES) $(APR_CPPFLAGS)
+AM_CFLAGS = $(APR_CFLAGS) $(Z_CFLAGS) $(BZ2_CFLAGS)
+
+include_HEADERS = inst_include/logmanager.h
+
+noinst_HEADERS = include/bzip2_handler.h \
+	include/compress.h \
+	include/config.h \
+	include/file.h \
+	include/gzip_handler.h \
+	include/time.h \
+	bzip2_handler.c \
+	compress.c \
+	file.c \
+	gzip_handler.c \
+	logmanager.c \
+	time.c \
+	$(top_srcdir)/util/util.c \
+	$(top_srcdir)/util/util.h
+
+liblogmanager_la_LIBADD = $(APR_LIBS) $(Z_LIBS) $(BZ2_LIBS)
