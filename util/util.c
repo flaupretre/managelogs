@@ -42,25 +42,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void fatal_error_2(const char *msg, const char *arg1, const char *arg2)
-{
-apr_file_t *fd;
-DECLARE_TPOOL
-
-(void)apr_file_open_stderr(&fd,CHECK_TPOOL());
-
-(void)apr_file_printf(fd,"*** Fatal Error : ");
-(void)apr_file_printf(fd,msg,arg1,arg2);
-(void)apr_file_printf(fd,"\n");
-
-(void)apr_file_close(fd);
-
-FREE_TPOOL();
-exit(1);
-}
-
-/*----------------------------------------------*/
-
 LIB_INTERNAL void *allocate(const void *p, apr_size_t size)
 {
 void *p2;

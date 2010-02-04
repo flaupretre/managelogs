@@ -21,6 +21,14 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_file_io.h>
 
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if APR_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 /*----------------------------------------------*/
 
 #ifdef IN_LMGR_LIB
@@ -30,19 +38,37 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #endif
 
 /*-------------*/
+/* Set to pure macro expansion because of cast problems on 64-bit */
 
-#define FATAL_ERROR(_msg)		{ \
-								fatal_error_2(_msg,NULL,NULL); \
-								}
+#define FATAL_ERROR_STEP1	apr_file_t *__fd; \
+							DECLARE_POOL(_my_tmp_pool) \
+							(void)apr_file_open_stderr(&__fd \
+								,CHECK_POOL(_my_tmp_pool));
 
-#define FATAL_ERROR1(_msg,_arg) { \
-								fatal_error_2(_msg,(const char *)(_arg),NULL); \
-								}
 
-#define FATAL_ERROR2(_msg,_arg1,_arg2) { \
-								fatal_error_2(_msg,(const char *)(_arg1) \
-									,(const char *)(_arg2)); \
-								}
+#define FATAL_ERROR_STEP2	(void)apr_file_printf(__fd,"\n"); \
+							(void)apr_file_close(__fd); \
+							FREE_POOL(_my_tmp_pool); \
+							exit(1);
+
+
+#define FATAL_ERROR(_msg)	{ \
+							FATAL_ERROR_STEP1 \
+							(void)apr_file_printf(__fd,_msg); \
+							FATAL_ERROR_STEP2 \
+							}
+
+#define FATAL_ERROR1(_msg,_arg1)	{ \
+							FATAL_ERROR_STEP1 \
+							(void)apr_file_printf(__fd,_msg,_arg1); \
+							FATAL_ERROR_STEP2 \
+							}
+
+#define FATAL_ERROR2(_msg,_arg1,_arg2)	{ \
+							FATAL_ERROR_STEP1 \
+							(void)apr_file_printf(__fd,_msg,_arg1,_arg2); \
+							FATAL_ERROR_STEP2 \
+							}
 
 /*-------------*/
 
@@ -70,7 +96,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define NULL_POOL	(POOL)0
 
-#define DECLARE_POOL(_p)	POOL _p=NULL_POOL
+#define DECLARE_POOL(_p)	POOL _p=NULL_POOL;
 
 #define NEW_POOL(_p)	((void)apr_pool_create(&_p, NULL), _p)
 
@@ -84,7 +110,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 		} \
 	}
 
-#define DECLARE_TPOOL	DECLARE_POOL(_tmp_pool);
+#define DECLARE_TPOOL	DECLARE_POOL(_tmp_pool)
 
 #define CHECK_TPOOL() CHECK_POOL(_tmp_pool)
 
@@ -102,7 +128,6 @@ typedef enum { NO, YES } BOOL;
 
 LIB_INTERNAL void *allocate(/*@null@*/ const void *p, apr_size_t size);
 LIB_INTERNAL void *duplicate(const char *string);
-LIB_INTERNAL void fatal_error_2(const char *msg,/*@null@*/ const char *arg1,/*@null@*/ const char *arg2);
 LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
 LIB_INTERNAL void *duplicate_mem(const void *,apr_size_t size);
 

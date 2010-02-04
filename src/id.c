@@ -76,10 +76,12 @@ if (group)
 if (gid_set)
 	{
 	if (setgid((gid_t)gid))
-		FATAL_ERROR1("Cannot change effective group ID to %d",(char *)gid);
+		FATAL_ERROR1("Cannot change effective group ID to %lu"
+			,(unsigned long)gid);
 	}
 
-if (setuid((uid_t)uid)) FATAL_ERROR1("Cannot change effective user ID to %d",(char *)uid);
+if (setuid((uid_t)uid)) FATAL_ERROR1("Cannot change effective user ID to %lu"
+	,(unsigned long)uid);
 
 FREE_TPOOL();
 }
