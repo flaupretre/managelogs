@@ -26,3 +26,9 @@ noinst_HEADERS = include/bzip2_handler.h \
 
 liblogmanager_la_LIBADD = $(APR_LIBS) $(Z_LIBS) $(BZ2_LIBS)
 liblogmanager_la_LDFLAGS = -version-info $(LIB_LT_VERSION):$(LIB_LT_REVISION):$(LIB_LT_AGE)
+
+#------------------------------------------------------------------------
+
+splint:
+	splint -DPATH_MAX=128 $(CFLAGS) $(INCLUDES) -warnposix \
+	-booltype  BOOL -boolfalse NO -booltrue YES -nullpass logmanager.c
