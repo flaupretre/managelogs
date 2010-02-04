@@ -1,1 +1,6 @@
 ^configure
+^autom4te
+^config.h.in
+^config.h
+^aclocal.m4
+Makefile.in

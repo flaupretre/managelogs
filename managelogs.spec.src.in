@@ -1,0 +1,27 @@
+# @configure_input@
+#
+Name: @PACKAGE_NAME@
+Summary: managelogs log management software
+Group: Applications/Internet
+Version: @PACKAGE_VERSION@
+Release: 0
+ExclusiveOs: @RPM_OS@
+License: Apache license 2.0
+Source: none
+URL: http://managelogs.tekwire.net/
+Packager: Francois Laupretre <francois@tekwire.net>
+AutoReqProv: no
+Requires: @RPM_DEPS@
+provides: @PACKAGE_NAME@
+%description
+managelogs is a log management program for Apache.
+It rotates and purges the Apache log files based on different size
+limits and includes a lot of useful features.
+%files
+---bindir---/managelogs
+---libdir---/liblogmanager.la
+---libdir---/liblogmanager.so
+---libdir---/liblogmanager.so.@LIB_LT_VERSION@
+---libdir---/liblogmanager.so.@LIB_LT_VERSION@.@LIB_LT_REVISION@.@LIB_LT_AGE@
+---includedir---/logmanager.h
+---mandir---/man8/managelogs.8
