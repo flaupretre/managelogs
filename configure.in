@@ -2,7 +2,25 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(managelogs, 1.2.0, managelogs-bugs@tekwire.net)
+
+#--- Versions are set here
+
+AC_INIT(managelogs, 2.0.0, managelogs-bugs@tekwire.net)
+
+LIB_LT_VERSION="2"
+AC_SUBST(LIB_LT_VERSION)
+
+LIB_LT_REVISION="0"
+AC_SUBST(LIB_LT_REVISION)
+
+LIB_LT_AGE="0"
+AC_SUBST(LIB_LT_AGE)
+
+RELEASE_NUMBER="1"
+AC_SUBST(RELEASE_NUMBER)
+
+#------------------------
+
 
 AC_CONFIG_SRCDIR([src/managelogs.c])
 AM_CONFIG_HEADER(config.h)
@@ -12,8 +30,6 @@ AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 AM_AUX_DIR_EXPAND
 AM_PROG_INSTALL_SH
-
-sinclude(build/find_apr.m4)
 
 # Checks for programs.
 
@@ -31,7 +47,10 @@ AC_PROG_INSTALL
 # Checks for header files.
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([stdlib.h string.h strings.h unistd.h])
+
+# Check this as it is not always set by APR
+
+AC_CHECK_HEADERS([sys/stat.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
@@ -40,11 +59,20 @@ AC_TYPE_UID_T
 AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
 
-# Checks for libraries.
+#----------------------------------------------------------------------
+# RPM stuff
+
+RPM_DEPS=""
+AC_SUBST(RPM_DEPS)
+
+RPM_OS=`uname -s`
+AC_SUBST(RPM_OS)
 
 #----------------------------------------------------------------------
 # Checks for APR library
 # uses the find_apr.m4 script to locate APR. sets apr_found and apr_config
+
+sinclude(build/find_apr.m4)
 
 APR_FIND_APR(,,1,[0 1])
 if test "$apr_found" = "no"; then
@@ -52,17 +80,27 @@ if test "$apr_found" = "no"; then
 fi
 
 APR_INCLUDES="`$apr_config --includes`"
-APR_LIBS="`$apr_config --link-libtool --libs`"
-APR_SO_EXT="`$apr_config --apr-so-ext`"
-APR_LIB_TARGET="`$apr_config --apr-lib-target`"
-APR_CFLAGS="`$apr_config --cflags`"
-APR_CPPFLAGS="`$apr_config --cppflags`"
-
 AC_SUBST(APR_INCLUDES)
+
+APR_LIBS="`$apr_config --link-libtool --ldflags --libs`"
 AC_SUBST(APR_LIBS)
+
+APR_SO_EXT="`$apr_config --apr-so-ext`"
+AC_SUBST(APR_SO_EXT)
+
+APR_LIB_TARGET="`$apr_config --apr-lib-target`"
 AC_SUBST(APR_LIB_TARGET)
+
+APR_CFLAGS="`$apr_config --cflags`"
 AC_SUBST(APR_CFLAGS)
+
+APR_CPPFLAGS="`$apr_config --cppflags`"
 AC_SUBST(APR_CPPFLAGS)
+
+APR_LDFLAGS="`$apr_config --ldflags`"
+AC_SUBST(APR_LDFLAGS)
+
+RPM_DEPS="$RPM_DEPS apr-libs"
 
 #----------------------------------------------------------------------
 # Checks for compression libraries
@@ -75,9 +113,13 @@ sinclude(build/find_bz2.m4)
 
 AC_FUNC_FORK
 
-AC_CHECK_FUNCS([atexit memset strchr])
+# Don't use AC_FUNC_MALLOC nor AC_FUNC_REALLOC because we don't care about
+# so-called 'GNU compatibility' of these functions
+
+AC_CHECK_FUNCS([malloc realloc atexit memset strchr])
 
 AC_CONFIG_FILES([Makefile
+				managelogs.spec.src
 				lib/Makefile
 				src/Makefile
 				doc/Makefile])

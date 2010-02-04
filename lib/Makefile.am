@@ -5,6 +5,7 @@ liblogmanager_la_SOURCES = logmanager.c
 
 AM_CPPFLAGS = $(APR_INCLUDES) $(APR_CPPFLAGS)
 AM_CFLAGS = $(APR_CFLAGS) $(Z_CFLAGS) $(BZ2_CFLAGS)
+AM_LDFLAGS = $(APR_LDFLAGS)
 
 include_HEADERS = inst_include/logmanager.h
 
@@ -24,3 +25,4 @@ noinst_HEADERS = include/bzip2_handler.h \
 	$(top_srcdir)/util/util.h
 
 liblogmanager_la_LIBADD = $(APR_LIBS) $(Z_LIBS) $(BZ2_LIBS)
+liblogmanager_la_LDFLAGS = -version-info $(LIB_LT_VERSION):$(LIB_LT_REVISION):$(LIB_LT_AGE)

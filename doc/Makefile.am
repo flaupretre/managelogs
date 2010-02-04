@@ -1,11 +1,6 @@
 
 dist_man_MANS = managelogs.8
 
-EXTRA_DIST = managelogs.8.htm
+# To generate html man pages, use man2html and clean the result manually
 
-html-man:
-	@for i in $(MANS); \
-		do \
-		echo "Generating $$i.htm ..."; \
-		man2html <$$i >$$i.htm ; \
-	done
+EXTRA_DIST = managelogs.8.htm
