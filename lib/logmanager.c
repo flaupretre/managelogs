@@ -28,7 +28,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <sys/types.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>

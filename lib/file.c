@@ -26,7 +26,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /* Don't use APR_HAVE_SYS_STAT_H (not always correctly defined) */
 
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
 
 #if APR_HAVE_STRING_H
 #include <string.h>
