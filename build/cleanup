@@ -12,5 +12,6 @@ fi
 	config.h.in~ \
 	configure \
 	`find . -name 'Makefile.in'` \
+	`find . -name '.deps'` \
 	*.tar.gz
 
