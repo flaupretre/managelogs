@@ -4,7 +4,7 @@ Name: @PACKAGE_NAME@
 Summary: managelogs log management software
 Group: Applications/Internet
 Version: @PACKAGE_VERSION@
-Release: 0
+Release: @RELEASE_NUMBER@
 ExclusiveOs: @RPM_OS@
 License: Apache license 2.0
 Source: none
