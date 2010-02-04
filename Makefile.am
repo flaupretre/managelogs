@@ -1,6 +1,8 @@
 
 SUBDIRS = lib src doc
 
+EXTRA_DIST = ACKNOWLEDGEMENTS NOTICE build/cleanup build/reconfigure
+
 #---------------------------------------------------------------------------
 # Building managelogs.spec
 # Cannot be done by configure since variables 'xxxdir' are expanded by make
