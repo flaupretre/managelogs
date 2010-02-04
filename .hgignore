@@ -1,6 +1,21 @@
-^configure
-^autom4te
-^config.h.in
-^config.h
-^aclocal.m4
+syntax: glob
+
+configure
+autom4te.cache
+config.h.in
+config.h
+aclocal.m4
 Makefile.in
+Makefile
+config.log
+config.status
+.deps
+.libs
+*.la
+*.lo
+*.o
+libtool
+managelogs.spec
+managelogs.spec.src
+stamp-h1
+src/managelogs
