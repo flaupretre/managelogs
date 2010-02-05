@@ -87,6 +87,7 @@ typedef struct
 
 #include "../include/compress.h"
 #include "../include/file.h"
+#include "../include/array.h"
 
 typedef struct
 	{
@@ -116,8 +117,7 @@ typedef struct
 		} active;
 	struct
 		{
-		LOGFILE **files;
-		unsigned int count;
+		ARRAY(LOGFILE) files;
 		apr_off_t size;
 		} backup;
 	apr_off_t file_maxsize;
