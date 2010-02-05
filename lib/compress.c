@@ -71,7 +71,7 @@ file_write(((LOGMANAGER )sp)->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL char *compress_handler_list()
+char *logmanager_compression_list()
 {
 COMPRESS_HANDLER **chpp;
 char *result,*suffix;
@@ -116,3 +116,4 @@ if (!(*chpp)) FATAL_ERROR1("Invalid compression : %s",buf);
 }
 
 /*----------------------------------------------*/
+

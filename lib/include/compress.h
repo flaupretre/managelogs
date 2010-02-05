@@ -33,9 +33,22 @@ typedef struct
 	void (*flush)(void *sp);
 	} COMPRESS_HANDLER;
 
+/*-------------*/
+
+#define C_HANDLER(_mp,_action) \
+	(((_mp)->compress.handler->_action) \
+		? (_mp)->compress.handler->_action(_mp) : 0)
+
+#define C_HANDLER1(_mp,_action,_arg1) \
+	(((_mp)->compress.handler->_action) \
+		? (_mp)->compress.handler->_action((_mp),_arg1) : 0)
+
+#define C_HANDLER2(_mp,_action,_arg1,_arg2) \
+	(((_mp)->compress.handler->_action) \
+		? (_mp)->compress.handler->_action((_mp),_arg1,_arg2) : 0)
+
 /*----------------------------------------------*/
 
-LIB_INTERNAL char *compress_handler_list(void);
 LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg);
 
 /*----------------------------------------------*/
