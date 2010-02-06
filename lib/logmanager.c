@@ -447,25 +447,26 @@ static void _new_active_file(LOGMANAGER mp,TIMESTAMP t)
 {
 LOGFILE *lp;
 int len;
-char *path;
-TIMESTAMP ti;
+char *path,*ep;
+int i;
 
 INCR_STAT_COUNT(new_active_file);
 
 lp=mp->active.file=NEW_LOGFILE();
 
-len=strlen(mp->base_path)+12;
-if (mp->compress.handler->suffix) len+=(strlen(mp->compress.handler->suffix)+1);
+len =64; /* should be enough for any suffix  (compression + number) */
 
-for (ti=t,path=NULL;;ti++)
+len += strlen(mp->base_path)+11
+path=allocate(NULL,len);
+(void)snprintf(path,len,"%s._%08lX",mp->base_path,t);
+
+for (i=0,ep=path+strlen(path);;i++)
 	{
-	path=allocate(path,len=(strlen(mp->base_path)+11));
-	(void)snprintf(path,len,"%s._%08lX",mp->base_path,ti);
+	if (i) sprintf(ep,((i < 1000) ? ".%03d" : ".%d"),i);
 	if (mp->compress.handler->suffix)
 		{
-		path=allocate(path,len += (strlen(mp->compress.handler->suffix)+1));
-		strcat(path,".");
-		strcat(path,mp->compress.handler->suffix);
+		strcat(ep,".");
+		strcat(ep,mp->compress.handler->suffix);
 		}
 	if (!file_exists(path)) break;
 	}
