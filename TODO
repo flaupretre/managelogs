@@ -1,32 +1,3 @@
-=============================================================================
+The managelogs TODO list is maintained at :
 
-     If somebody can help on these or has other ideas, he's welcome !
-
-=============================================================================
-
-* Some features are still Unix-specific (like setuid/setgid), generally because
-  the corresponding feature is not available in the APR library.
-  The code should be more more portable, especially on Windows. Either the
-  Unix-specific features have a Windows alternative, or they must be
-  disabled on Windows.
-
-* create directories when needed. Automatically destroy directories when
-  backup files are purged.
-
-* Integrate the same time-related features as cronolog (with a new 
-  'storage (absolute/relative) path' argument), automatic rotation
-  on pattern. Remember: cannot chdir() because of multiple output support.
-
-* An option to display in readable form information about
-  a log manager current state (mostly extracted from the status file).
-
-* Use a more robust mutex-based mechanism for signals.
-
-* An optional command to be launched when the program aborts on a fatal
-  error. This command would receive the information on the error, and could
-  connect with a monitoring system, send a trap...
-
-* Another external script to be executed when managelogs gets a 'file system
-  full' error (as it now survives it).
-
-=============================================================================
+http://managelogs.tekwire.net/todo
