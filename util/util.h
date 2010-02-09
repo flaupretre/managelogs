@@ -90,6 +90,11 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1,_a2);\
 	}
 
+#define DEBUG3(_mp,_level,_fmt,_a1,_a2,_a3)		{\
+	if (DBG_PASS_LEVEL(_mp,_level))\
+		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1,_a2,_a3);\
+	}
+
 /*-------------*/
 
 #define POOL	apr_pool_t *
