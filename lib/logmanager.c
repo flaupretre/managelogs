@@ -456,7 +456,7 @@ lp=mp->active.file=NEW_LOGFILE();
 
 len =64; /* should be enough for any suffix  (compression + number) */
 
-len += strlen(mp->base_path)+11
+len += strlen(mp->base_path)+11;
 path=allocate(NULL,len);
 (void)snprintf(path,len,"%s._%08lX",mp->base_path,t);
 
