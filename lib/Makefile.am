@@ -9,18 +9,21 @@ AM_LDFLAGS = $(APR_LDFLAGS)
 
 include_HEADERS = inst_include/logmanager.h
 
-noinst_HEADERS = include/bzip2_handler.h \
-	include/compress.h \
-	include/config.h \
-	include/file.h \
-	include/gzip_handler.h \
-	include/time.h \
-	bzip2_handler.c \
-	compress.c \
-	file.c \
-	gzip_handler.c \
+noinst_HEADERS = include/config.h \
+	include/bzip2_handler.h bzip2_handler.c \
+	include/compress.h      compress.c \
+	include/file.h          file.c \
+	include/gzip_handler.h  gzip_handler.c \
+	include/time.h          time.c \
+	include/backup.h        backup.c \
+	include/cmd.h           cmd.c \
+	include/link.h          link.c \
+	include/pid.h           pid.c \
+	include/stats.h         stats.c \
+	include/status.h        status.c \
+	include/write.h         write.c \
+	include/array.h \
 	logmanager.c \
-	time.c \
 	$(top_srcdir)/util/util.c \
 	$(top_srcdir)/util/util.h
 
