@@ -138,15 +138,15 @@ return fp;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL apr_size_t file_size(const char *path)
+LIB_INTERNAL apr_off_t file_size(const char *path)
 {
 apr_finfo_t finfo;
-apr_size_t size;
+apr_off_t size;
 DECLARE_TPOOL
 
 if (apr_stat(&finfo,path,APR_FINFO_SIZE,CHECK_TPOOL())!=APR_SUCCESS)
 	FATAL_ERROR1("Cannot get file size (%s)\n",path);
-size=(apr_size_t)(finfo.size);
+size=(apr_off_t)(finfo.size);
 
 FREE_TPOOL();
 return size;
@@ -187,7 +187,7 @@ else
 			FATAL_ERROR1("Cannot get file size (%s)\n",path);
 			}
 
-		fp->size=(apr_size_t)finfo.size;
+		fp->size=(apr_off_t)finfo.size;
 		}
 	}
 
@@ -196,7 +196,7 @@ return fp;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_size_t size
+LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_off_t size
 	,BOOL no_space_fatal)
 {
 apr_status_t status;
@@ -221,7 +221,7 @@ fp->size += size;
 LIB_INTERNAL void file_write_string(OFILE *fp, const char *buf
 	,BOOL no_space_fatal)
 {
-file_write(fp,buf,(apr_size_t)strlen(buf),no_space_fatal);
+file_write(fp,buf,(apr_off_t)strlen(buf),no_space_fatal);
 }
 
 /*----------------------------------------------*/
@@ -268,7 +268,7 @@ if (apr_file_info_get(&finfo,APR_FINFO_SIZE,fd)!=APR_SUCCESS)
 
 p=allocate(NULL,finfo.size+1);
 p[finfo.size]='\0';
-if (sizep) (*sizep)=finfo.size;
+if (sizep) (*sizep)=(apr_off_t)(finfo.size);
 
 if (finfo.size)
 	{

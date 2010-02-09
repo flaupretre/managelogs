@@ -27,7 +27,7 @@ typedef struct
 	apr_pool_t *pool;
 	apr_file_t *fd;
 	const char *path;
-	apr_size_t size;
+	apr_off_t size;
 	} OFILE;
 
 /*----------------------------------------------*/
@@ -36,9 +36,9 @@ LIB_INTERNAL BOOL file_exists(const char *path);
 LIB_INTERNAL BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal);
 LIB_INTERNAL BOOL file_delete(const char *path, BOOL fatal);
 LIB_INTERNAL OFILE *file_create(const char *path, apr_int32_t mode);
-LIB_INTERNAL apr_size_t file_size(const char *path);
+LIB_INTERNAL apr_off_t file_size(const char *path);
 LIB_INTERNAL OFILE *file_open_for_append(const char *path, apr_int32_t mode);
-LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_size_t size, BOOL no_space_fatal);
+LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_off_t size, BOOL no_space_fatal);
 LIB_INTERNAL void file_write_string(OFILE *fp, const char *buf, BOOL no_space_fatal);
 LIB_INTERNAL void file_write_string_nl(OFILE *fp, const char *buf, BOOL no_space_fatal);
 LIB_INTERNAL OFILE *file_close(OFILE *fp);
