@@ -23,6 +23,8 @@ LIB_INTERNAL void run_bg_cmd(LOGMANAGER mp,char *cmd, LOGFILE *file,TIMESTAMP t)
 char buf[32];
 DECLARE_TPOOL
 
+if (!cmd) return; /* Should not happen, but... */
+
 DEBUG1(mp,1,"Running rotate command : %s",cmd);
 
 if (fork())		/* Parent returns */
