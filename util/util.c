@@ -38,6 +38,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <stdio.h>
 #endif
 
+#if WITH_DMALLOC
+#include <dmalloc.h>
+#endif
+
 #include "util.h"
 
 /*----------------------------------------------*/
