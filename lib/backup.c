@@ -48,11 +48,11 @@ action, maybe we don't actually exceed the limits */
 
 LIB_INTERNAL void purge_backup_files(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
 {
-if (GLOBAL_CONDITIONS_EXCEEDED(mp,add,t))
+if (global_conditions_exceeded(mp,add,t))
 	{
 	_sync_logfiles_from_disk(mp);	/* Confirm that limits are REALLY exceeded */
 
-	while (GLOBAL_CONDITIONS_EXCEEDED(mp,add,t)) remove_oldest_backup(mp);
+	while (global_conditions_exceeded(mp,add,t)) remove_oldest_backup(mp);
 	}
 }
 

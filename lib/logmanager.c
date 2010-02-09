@@ -107,25 +107,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	((_mp)->active.fp ? (_mp)->active.fp->size : \
 		((_mp)->active.file ? (_mp)->active.file->size : 0))
 
-#define SHOULD_ROTATE(_mp,_add,_t)	( \
-		((_mp)->file_maxsize \
-			&& (ACTIVE_SIZE(_mp)) \
-			&& (FUTURE_ACTIVE_SIZE(_mp,_add) > (_mp)->file_maxsize)) \
-	||	((_mp)->rotate_delay && (_mp)->active.file \
-			&& ((_mp)->active.file->start < ((_t)-(_mp)->rotate_delay))) \
-	)
-
-#define GLOBAL_CONDITIONS_EXCEEDED(_mp,_add,_t)	(\
-		(((_mp)->global_maxsize) \
-			&& (BACKUP_COUNT(_mp)) \
-			&& ((FUTURE_ACTIVE_SIZE((_mp),_add) + BACKUP_SIZE(_mp)) \
-				> (_mp)->global_maxsize)) \
-	|| (_mp->keep_count \
-		&& (BACKUP_COUNT(_mp) > (_mp->keep_count - 1))) \
-	|| (_mp->purge_delay && BACKUP_COUNT(_mp) \
-		&& (OLDEST_BACKUP_FILE(_mp)->end < ((_t)-(_mp)->purge_delay))) \
-	)
-
 /* For added security */
 
 #define CHECK_MP(_mp) {  \
@@ -134,6 +115,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
+static BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
+static BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
 static void _open_active_file(LOGMANAGER mp);
 static void _close_active_file(LOGMANAGER mp);
 static void _new_active_file(LOGMANAGER mp,TIMESTAMP t);
@@ -159,6 +142,69 @@ static const char *_basename(const char *path);
 #include "pid.c"
 #include "link.c"
 #include "cmd.c"
+
+/*----------------------------------------------*/
+
+static BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+{
+apr_off_t future_size;
+
+if (mp->file_maxsize && ACTIVE_SIZE(mp))
+	{
+	future_size=FUTURE_ACTIVE_SIZE(mp,add);
+	if (future_size > mp->file_maxsize)
+		{
+		DEBUG3(mp,1,"Should rotate on size (add=%llu,future=%llu, limit=%llu)"
+			,add,future_size,mp->file_maxsize);
+		DEBUG1(mp,1,"Additional info : current=%llu"
+			,ACTIVE_SIZE(mp));
+		return YES;
+		}
+	}
+
+if  (mp->rotate_delay
+	&& mp->active.file
+	&& (mp->active.file->start < (t - mp->rotate_delay)))
+	{
+	DEBUG(mp,1,"Should rotate on delay");
+	}
+
+return NO;
+}
+
+/*----------------------------------------------*/
+
+static BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+{
+apr_off_t future_size;
+
+if ((mp->global_maxsize) && BACKUP_COUNT(mp))
+	{
+	future_size=FUTURE_ACTIVE_SIZE(mp,add) + BACKUP_SIZE(mp);
+	if (future_size > mp->global_maxsize)
+		{
+		/* Purge on global size */
+		DEBUG3(mp,1,"Global size conditions exceeded (add=%llu,future=%llu, limit=%llu)"
+			,add,future_size,mp->global_maxsize);
+		return YES;
+		}
+	}
+
+if (mp->keep_count && (BACKUP_COUNT(mp) > (mp->keep_count - 1)))
+	{
+	DEBUG1(mp,1,"Global keep count exceeded (%d)",mp->keep_count);
+	return YES;
+	}
+
+if (mp->purge_delay && BACKUP_COUNT(mp)
+	&& (OLDEST_BACKUP_FILE(mp)->end < (t - mp->purge_delay)))
+	{
+	DEBUG(mp,1,"Purge delay exceeded");
+	return YES;
+	}
+
+return NO;
+}
 
 /*----------------------------------------------*/
 
@@ -296,7 +342,7 @@ _open_active_file(mp);
 
 /*-- If options have changed, we can have to rotate and/or purge backups */
 
-if (SHOULD_ROTATE(mp,0,t)) logmanager_rotate(mp,t);
+if (should_rotate(mp,0,t)) logmanager_rotate(mp,t);
 else
 	{
 	purge_backup_files(mp,0,t);
@@ -463,7 +509,7 @@ path=allocate(NULL,len);
 for (i=0,ep=path+strlen(path);;i++)
 	{
 	if (i) sprintf(ep,((i < 1000) ? ".%03d" : ".%d"),i);
-	if (mp->compress.handler->suffix)
+	if (mp->compress.handler->suffix[0])
 		{
 		strcat(ep,".");
 		strcat(ep,mp->compress.handler->suffix);
@@ -494,7 +540,7 @@ BACKUP_FILES(mp)[0]=mp->active.file;	/* Fill first slot */
 mp->backup.size += ACTIVE_SIZE(mp);		/* Add size to backup size */
 mp->active.file=(LOGFILE *)0;			/* Clear active file */
 
-run_bg_cmd(mp,mp->rotate_cmd,BACKUP_FILES(mp)[0],t);
+if (mp->rotate_cmd) run_bg_cmd(mp,mp->rotate_cmd,BACKUP_FILES(mp)[0],t);
 
 purge_backup_files(mp,0,t);
 refresh_backup_links(mp);
