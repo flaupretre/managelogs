@@ -1,2 +1,77 @@
-automake requires this file but I don't have anything to put inside...
-For more information about managelogs : http://managelogs.tekwire.net
+-------------------------------------------------------------------------------
+2.0.0 :
+
+* Switch build system to GNU autotools
+
+* Switch library version-info to 2:0:0
+
+* Set sources under Mercurial VCS. Reference repository hosted by sourceforge
+
+* Add --rotate-delay and --purge-delay options
+
+* Set util and lib directores at top level
+
+* Change default compression level to 'best'
+
+-------------------------------------------------------------------------------
+1.1.0 :
+
+* Added a '--rotate-cmd' option (a command to be launched in background when
+  a rotation occurs). Used primarily to gather statistics.
+  
+* Additional protection against file system full errors (E_NOSPC). When such an
+  error occurs during a data write operation, it is ignored, except if
+  the '--enospc-abort' option is set. Ensures that a file system overflow
+  does not cause Apache to abort.
+
+* Modified the way memory pools are used. In the previous versions, only one
+  global pool was used and, as the pool mechanism does not allow a block to be
+  freed, this pool grew (not fast, but) indefinitely. We now use temporary
+  pools where it is possible (when the alloc/free is local to a function), and
+  persistent pools are created to store apr_file_t structures for open files.
+  Each file has its own private pool, so that it can be freed.
+
+* Move lib directory under src
+
+* Improved Makefiles
+
+* Replace 'root_path' with 'base_path' everywhere in the code
+
+-------------------------------------------------------------------------------
+1.0.1:
+
+* Cosmetic changes
+
+* Add man page
+
+-------------------------------------------------------------------------------
+1.0:
+
+* Fix problem with error_log when starting Apache : httpd starts a managelogs
+  process, then forks and the forked process starts another managelogs. Then,
+  the first process exits. So, by default, the pid file is overwritten and
+  deleted by the first managelogs. And, as the status file does not exist
+  when the second one starts, a new active file is created.
+  Fixes :
+    - In logmanager_destroy(), don't remove the pid file if it has been
+      overwritten (if it does not contain our pid).
+    - In logmanager_open(), dump status if the active file
+      did not exist. So, when the second process gets in, it finds a status
+      file and reopens the same active file.
+
+* In file_get_contents(), the sizep argument was not returned. Also, make
+  it optional (can be NULL).
+
+* Add pid_path element in LOGMANAGER structure, so that it is not recomputed
+  each time we need it.
+
+* Replace APR_STATUS_IS_SUCCESS() macro as it is not defined in apr version 1.
+
+* Cosmetic changes to suppress warnings in '-Wall' mode.
+
+-------------------------------------------------------------------------------
+1.0rc1:
+
+* First public release
+
+===============================================================================
