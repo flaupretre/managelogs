@@ -36,7 +36,7 @@ int i;
 CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
-/*DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",size);*/
+DEBUG1(mp,2,"Starting logmanager_write (size=%llu)",size);
 INCR_STAT_COUNT(write);
 
 if ((!buf) || (!size)) return;
@@ -46,6 +46,22 @@ if (mp->flags & LMGR_IGNORE_EOL)
 	write_level2(mp,buf,size,flags,t);
 	return;
 	}
+
+#define APPEND_TO_EOL_BUF(_buf,_size) { \
+	DEBUG1(mp,3,"Appending %llu bytes to eol buffer",_size); \
+	mp->eol_buffer.buf=allocate(mp->eol_buffer.buf \
+		,mp->eol_buffer.len+_size); \
+	memcpy(&(mp->eol_buffer.buf[mp->eol_buffer.len]),_buf,_size); \
+	mp->eol_buffer.len += _size; \
+	}
+
+#define WRITE_EOL_BUF() { \
+	write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,flags,t); \
+	FREE_EOL_BUF(); \
+	}
+
+#define FREE_EOL_BUF() \
+	mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
 
 /* 1. If eol_buffer contains some data from a previous write, search a '\n'
 from the beginning. If found, output the buffer and input data up to \n,
@@ -57,24 +73,21 @@ if (mp->eol_buffer.buf)
 		{
 		if (buf[i]=='\n')
 			{
-			DEBUG1(mp,2,"Flushing %lu bytes from eol buffer",(unsigned long)(mp->eol_buffer.len));
-			write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,flags,t);
-			mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
-			write_level2(mp,buf,i+1,flags|LMGRW_CANNOT_ROTATE,t);
+			/* Append to eol buf first, so that the whole line is sent to write_level2 in only one call */
+			/* So, rotation can occur. If we did it with 2 calls, we should disable rotation for the */
+			/* second call, and file size could be exceeded */
+			APPEND_TO_EOL_BUF(buf,i+1);
 			buf += (i+1);
 			size -= (i+1);
+			WRITE_EOL_BUF();
 			break;
 			}
 		}
+
 	if (mp->eol_buffer.buf) /* if not found, append to eol_buffer.buf */
 		{
-		DEBUG1(mp,2,"Appending %lu bytes to eol buffer",(unsigned long)size);
-		mp->eol_buffer.buf=allocate(mp->eol_buffer.buf
-			,mp->eol_buffer.len+size);
-		memcpy(&(mp->eol_buffer.buf[mp->eol_buffer.len]),buf,size);
-		mp->eol_buffer.len += size;
-		buf += size;
-		size=0;
+		APPEND_TO_EOL_BUF(buf,size);
+		return;
 		}
 	}
 
@@ -91,7 +104,7 @@ for (i=size-1;;i--)
 		mp->eol_buffer.len=(size-i-1);
 		if (mp->eol_buffer.len)
 			{
-			DEBUG1(mp,2,"Storing %lu bytes in eol buffer",(unsigned long)(mp->eol_buffer.len));
+			DEBUG1(mp,3,"Storing %lu bytes in eol buffer",(unsigned long)(mp->eol_buffer.len));
 			size=i+1;
 			mp->eol_buffer.buf=duplicate_mem(&(buf[size]),mp->eol_buffer.len);
 			}
@@ -111,16 +124,16 @@ LIB_INTERNAL void write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 {
 apr_off_t csize;
 
+DEBUG1(mp,2,"Starting write_level2 (size=%llu)",size);
 INCR_STAT_COUNT(write2);
 
 if ((!buf) || (size==0) || (!IS_OPEN(mp))) return;
 
 csize=C_HANDLER1(mp,predict_size,size);
-if (!csize) csize=size;
 
 /*-- rotate/purge ? (before writing) */
 
-if ((!(flags & LMGRW_CANNOT_ROTATE)) && SHOULD_ROTATE(mp,csize,t))
+if ((!(flags & LMGRW_CANNOT_ROTATE)) && should_rotate(mp,csize,t))
 	{
 	logmanager_rotate(mp,t); /* includes a purge */
 	}
