@@ -61,11 +61,7 @@ DECLARE_POOL(main_pool);
 
 /*----------------------------------------------*/
 
-static void shutdown_proc(void);
-
-/*----------------------------------------------*/
-
-static void shutdown_proc()
+void exit_proc(int status)
 {
 int i;
 
@@ -83,6 +79,8 @@ if (mpp)
 mpp=allocate(mpp,0);
 
 apr_terminate();	/* Includes main_pool free */
+
+exit(status);
 }
 
 /*----------------------------------------------*/
@@ -98,7 +96,6 @@ int i;
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
 intr_on();
-(void)atexit(shutdown_proc);
 
 /*-- Get options */
 
@@ -113,7 +110,7 @@ for (i=0;i<mgr_count;i++)
 	logmanager_open(mpp[i],timestamp);
 	}
 
-if (refresh_only) exit(0); /* calls shutdown_proc() */
+if (refresh_only) exit_proc(0);
 
 signal_init();
 
@@ -137,14 +134,14 @@ for (i=0;i<mgr_count;i++)
 
 free_options(opp,mgr_count);
 
-/* Loop forever */
+/* Main loop */
 
 for (;;)
 	{
 	nread=chunk_size;
 	status=apr_file_read(f_stdin, buf, &nread);
 	if (status==APR_EOF) do_action(TERMINATE_ACTION);
-	if (status != APR_SUCCESS) exit(3);
+	if (status != APR_SUCCESS) exit_proc(3);
 
 	NOINTR_START();
 	for (i=0;i<mgr_count;i++) logmanager_write(mpp[i],buf,nread,0,timestamp);

@@ -39,4 +39,8 @@ extern LOGMANAGER *mpp;
 extern int mgr_count;
 
 /*----------------------------------------------*/
+
+void exit_proc(int status);
+
+/*----------------------------------------------*/
 #endif	/* __MANAGELOGS_H */

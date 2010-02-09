@@ -219,7 +219,7 @@ switch(action)
 		break;
 
 	case TERMINATE_ACTION:
-		exit(0);
+		exit_proc(0);
 		break;
 	}
 }

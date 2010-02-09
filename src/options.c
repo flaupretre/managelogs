@@ -164,7 +164,7 @@ fprintf(fd,"\
 
 (void)allocate(clist,0);
 
-if (rc >= 0) exit(rc);
+if (rc >= 0) exit_proc(rc);
 }
 
 /*----------------------------------------------*/
@@ -232,7 +232,7 @@ while (1)
 
 			case 'V':
 				printf(MANAGELOGS_BANNER);
-				exit(0);
+				exit_proc(0);
 
 			case 'm':
 				if (sscanf(opt_arg,"%x",&(op->create_mode))!=1)
