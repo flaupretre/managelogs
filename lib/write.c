@@ -36,7 +36,7 @@ int i;
 CHECK_MP(mp);
 CHECK_TIME(mp,t);
 
-DEBUG1(mp,2,"Starting logmanager_write (size=%llu)",size);
+DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",(unsigned long)size);
 INCR_STAT_COUNT(write);
 
 if ((!buf) || (!size)) return;
@@ -48,7 +48,7 @@ if (mp->flags & LMGR_IGNORE_EOL)
 	}
 
 #define APPEND_TO_EOL_BUF(_buf,_size) { \
-	DEBUG1(mp,3,"Appending %llu bytes to eol buffer",_size); \
+	DEBUG1(mp,3,"Appending %lu bytes to eol buffer",(unsigned long)(_size)); \
 	mp->eol_buffer.buf=allocate(mp->eol_buffer.buf \
 		,mp->eol_buffer.len+_size); \
 	memcpy(&(mp->eol_buffer.buf[mp->eol_buffer.len]),_buf,_size); \
@@ -124,7 +124,7 @@ LIB_INTERNAL void write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 {
 apr_off_t csize;
 
-DEBUG1(mp,2,"Starting write_level2 (size=%llu)",size);
+DEBUG1(mp,2,"Starting write_level2 (size=%lu)",(unsigned long)size);
 INCR_STAT_COUNT(write2);
 
 if ((!buf) || (size==0) || (!IS_OPEN(mp))) return;
@@ -141,7 +141,7 @@ else purge_backup_files(mp,csize,t);
 
 /*-- Write data */
 
-C_HANDLER2(mp,compress_and_write,buf,size);
+C_VOID_HANDLER2(mp,compress_and_write,buf,size);
 
 /*-- Update end timestamp */
 

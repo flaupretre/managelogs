@@ -22,7 +22,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 LIB_INTERNAL void refresh_backup_links(LOGMANAGER mp)
 {
-int i;
+unsigned int i;
 
 DEBUG(mp,1,"Refreshing backup links");
 INCR_STAT_COUNT(refresh_backup_links);

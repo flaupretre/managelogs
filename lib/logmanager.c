@@ -60,6 +60,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/time.h"
 #include "include/status.h"
 #include "include/compress.h"
+#include "include/plain_handler.h"
 #include "include/gzip_handler.h"
 #include "include/bzip2_handler.h"
 #include "include/file.h"
@@ -133,9 +134,10 @@ static const char *_basename(const char *path);
 #include "../util/util.c"
 #include "file.c"
 #include "time.c"
-#include "compress.c"
 #include "gzip_handler.c"
+#include "plain_handler.c"
 #include "bzip2_handler.c"
+#include "compress.c"
 #include "status.c"
 #include "backup.c"
 #include "stats.c"
@@ -156,10 +158,11 @@ if (mp->file_maxsize && ACTIVE_SIZE(mp))
 	future_size=FUTURE_ACTIVE_SIZE(mp,add);
 	if (future_size > mp->file_maxsize)
 		{
-		DEBUG3(mp,1,"Should rotate on size (add=%llu,future=%llu, limit=%llu)"
-			,add,future_size,mp->file_maxsize);
-		DEBUG1(mp,1,"Additional info : current=%llu"
-			,ACTIVE_SIZE(mp));
+		DEBUG3(mp,1,"Should rotate on size (add=%lu,future=%lu, limit=%lu)"
+			,(unsigned long)add,(unsigned long)future_size
+			,(unsigned long)(mp->file_maxsize));
+		DEBUG1(mp,1,"Additional info : current=%lu"
+			,(unsigned long)(ACTIVE_SIZE(mp)));
 		return YES;
 		}
 	}
@@ -186,8 +189,9 @@ if ((mp->global_maxsize) && BACKUP_COUNT(mp))
 	if (future_size > mp->global_maxsize)
 		{
 		/* Purge on global size */
-		DEBUG3(mp,1,"Global size conditions exceeded (add=%llu,future=%llu, limit=%llu)"
-			,add,future_size,mp->global_maxsize);
+		DEBUG3(mp,1,"Global size conditions exceeded (add=%lu,future=%lu, limit=%lu)"
+			,(unsigned long)add,(unsigned long)future_size
+			,(unsigned long)(mp->global_maxsize));
 		return YES;
 		}
 	}
@@ -219,7 +223,7 @@ if (!IS_OPEN(mp)) return;
 DEBUG1(mp,1,"Flushing %s",mp->active.file->path);
 INCR_STAT_COUNT(flush);
 
-C_HANDLER(mp,flush);
+C_VOID_HANDLER(mp,flush);
 }
 	
 /*----------------------------------------------*/
@@ -355,7 +359,7 @@ log manager (happens with error_log when apache starts) */
 
 void logmanager_destroy(LOGMANAGER mp,TIMESTAMP t)
 {
-int i;
+unsigned int i;
 
 CHECK_MP(mp);
 
@@ -371,7 +375,7 @@ if (!pid_file_is_overwritten(mp)) remove_pid_file(mp);
 
 /*-- Destroy compress handler */
 
-C_HANDLER(mp,destroy);
+C_VOID_HANDLER(mp,destroy);
 
 /*-- Free the LOGFILE structs */
 
@@ -454,7 +458,7 @@ mp->active.fp=file_open_for_append(mp->active.file->path,mp->create_mode);
 
 refresh_active_link(mp);
 
-C_HANDLER(mp,start);
+C_VOID_HANDLER(mp,start);
 }
 
 /*----------------------------------------------*/
@@ -463,7 +467,7 @@ static void _close_active_file(LOGMANAGER mp)
 {
 if (!IS_OPEN(mp)) return;
 
-C_HANDLER(mp,end);
+C_VOID_HANDLER(mp,end);
 mp->active.file->size=mp->active.fp->size;
 
 mp->active.fp=file_close(mp->active.fp);
@@ -571,7 +575,7 @@ return p;
 
 static void _sync_logfiles_from_disk(LOGMANAGER mp)
 {
-int i;
+unsigned int i;
 LOGFILE **lpp;
 
 DEBUG(mp,1,"Syncing log files from disk");

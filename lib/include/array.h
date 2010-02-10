@@ -47,8 +47,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define ARRAY_SET_COUNT(_a,_count) \
 	{ \
 	unsigned int _c; \
-	_c=_count; \
-	if (_c < 0 ) _c=0; \
+	_c=((_count < 0) ? 0 : _count); \
 	ARRAY_ITEMS(_a)=allocate(ARRAY_ITEMS(_a) \
 		,_c * sizeof(*(ARRAY_ITEMS(_a)))); \
 	ARRAY_COUNT(_a)=_c; \
@@ -72,7 +71,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define ARRAY_PACK(_a) \
 	{ \
-	int _offset,_i; \
+	unsigned int _offset,_i; \
 	void **_ipp; \
  \
 	if (ARRAY_COUNT(_a)) \
