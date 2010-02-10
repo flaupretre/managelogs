@@ -78,7 +78,7 @@ if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 		{
 		file_delete(lname,NO);
 #ifdef SYMLINK_SUPPORT
-		(void)symlink(_basename(lp->path),lp->link=lname);
+		(void)symlink(ut_basename(lp->path),lp->link=lname);
 #endif
 		}
 	}

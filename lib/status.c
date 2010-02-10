@@ -57,20 +57,20 @@ if (file_exists(mp->status_path))
 			{
 			case 'a':
 				lp=NEW_LOGFILE();
-				lp->path=_absolute_path(mp,val);
+				lp->path=ut_absolute_path(mp->root_dir,val);
 				mp->active.file=lp;
 				break;
 
 			case 'b':
 				lp=NEW_LOGFILE();
-				lp->path=_absolute_path(mp,val);
+				lp->path=ut_absolute_path(mp->root_dir,val);
 				ARRAY_INCR_COUNT(mp->backup.files);
 				OLDEST_BACKUP_FILE(mp)=lp;
 				break;
 
 			case 'L':
 				if (!lp) break;	/* Security against invalid file */
-				lp->link=_absolute_path(mp,val);
+				lp->link=ut_absolute_path(mp->root_dir,val);
 				break;
 
 			case 'C':
@@ -107,7 +107,7 @@ if (file_exists(mp->status_path))
 	if (_lp) \
 		{ \
 		file_write_string(fp,_type " ",YES);	/* Path */ \
-		file_write_string_nl(fp,_basename((_lp)->path),YES); \
+		file_write_string_nl(fp,ut_basename((_lp)->path),YES); \
 		file_write_string(fp,"s ",YES);			/* Start */ \
 		(void)snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
 		file_write_string_nl(fp,buf,YES); \
@@ -117,12 +117,12 @@ if (file_exists(mp->status_path))
 		if ((_lp)->link) \
 			{ \
 			file_write_string(fp,"L ",YES);	/* Link */ \
-			file_write_string_nl(fp,_basename((_lp)->link),YES); \
+			file_write_string_nl(fp,ut_basename((_lp)->link),YES); \
 			} \
 		} \
 	}
 
-LIB_INTERNAL void dump_status_to_file(LOGMANAGER mp, TIMESTAMP t)
+LIB_INTERNAL void dump_status_to_file(LOGMANAGER mp)
 {
 OFILE *fp;
 char buf[32];
@@ -140,10 +140,6 @@ file_write_string(fp,"A ",YES);
 file_write_string_nl(fp,buf,YES);
 
 file_write_string_nl(fp,"V " PACKAGE_VERSION,YES);
-
-file_write_string(fp,"D ",YES);
-(void)snprintf(buf,sizeof(buf),"%lu",t);
-file_write_string_nl(fp,buf,YES);
 
 file_write_string(fp,"C ",YES); /* Compression type */
 file_write_string_nl(fp,mp->compress.handler->suffix,YES);

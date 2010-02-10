@@ -123,9 +123,6 @@ static void _open_active_file(LOGMANAGER mp);
 static void _close_active_file(LOGMANAGER mp);
 static void _new_active_file(LOGMANAGER mp,TIMESTAMP t);
 static void _sync_logfiles_from_disk(LOGMANAGER mp);
-static char *_absolute_path(LOGMANAGER mp, const char *str);
-static char *_dirname(const char *path);
-static const char *_basename(const char *path);
 
 /*-----------*/
 /* Other source files (non exported symbols) */
@@ -214,7 +211,7 @@ return NO;
 
 /*----------------------------------------------*/
 
-void logmanager_flush(LOGMANAGER mp,TIMESTAMP t)
+void logmanager_flush(LOGMANAGER mp)
 {
 CHECK_MP(mp);
 
@@ -232,21 +229,16 @@ C_VOID_HANDLER(mp,flush);
 * for analysis (modifications can start when the manager is open()ed).
 */
 
-LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts,TIMESTAMP t)
+LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts)
 {
 LOGMANAGER mp;
 
 mp=(LOGMANAGER )allocate(NULL,sizeof(*mp));
 
-/*-- Initial timestamp */
-
-NORMALIZE_TIMESTAMP(t);
-mp->last_time=t;
-
 /*-- Root, PID, Status paths */
 
 mp->base_path=duplicate(opts->base_path);
-mp->root_dir=_dirname(mp->base_path);
+mp->root_dir=ut_dirname(mp->base_path);
 mp->status_path=status_path(mp);
 mp->pid_path=pid_path(mp);
 
@@ -323,7 +315,7 @@ return mp;
 void logmanager_open(LOGMANAGER mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
-CHECK_TIME(mp,t);
+NORMALIZE_TIMESTAMP(t);
 
 if (IS_OPEN(mp)) return;
 
@@ -338,7 +330,7 @@ create_pid_file(mp);
 if (!mp->active.file)
 	{
 	_new_active_file(mp,t);
-	dump_status_to_file(mp,t);
+	dump_status_to_file(mp);
 	}
 
 _open_active_file(mp);
@@ -357,7 +349,7 @@ else
 /* Note: Don't remove the pid file if it has been overwritten by another 
 log manager (happens with error_log when apache starts) */
 
-void logmanager_destroy(LOGMANAGER mp,TIMESTAMP t)
+void logmanager_destroy(LOGMANAGER mp)
 {
 unsigned int i;
 
@@ -367,7 +359,7 @@ DEBUG(mp,1,"Destroying log manager");
 
 /*-- First, close the current log if not already done */
 
-if (IS_OPEN(mp)) logmanager_close(mp,t);
+if (IS_OPEN(mp)) logmanager_close(mp);
 
 /*-- Remove the PID file */
 
@@ -403,50 +395,6 @@ debug_close(mp);	/*-- Close debug file */
 }
 
 /*----------------------------------------------*/
-/* Return a pointer to the char after the last separator. If a separator
-is not found, return a pointer to the full string.
-Warning : the output is not duplicated : it is a pointer inside the input */
-
-static const char *_basename(const char *path)
-{
-const char *p;
-char c;
-int i;
-
-for (i=strlen(path);;i--)
-	{
-	if (!i) break;
-	c=(*(p=path+i));
-	if (!c) continue; /* First char of non-empty string */
-	if ((c=='/')||(c=='\\')) return (p+1);
-	}
-return path;
-}
-
-/*----------------------------------------------*/
-/* Return a duplicate of the dirname of a path (with the trailing separator) */
-/* An empty string and a string without separator return a null pointer */
-
-static char *_dirname(const char *path)
-{
-const char *p;
-char *p2,c;
-int i;
-
-for (i=strlen(path)-1;;i--)
-	{
-	if (i < 0) return NULL;
-	c=(*(p=&(path[i])));
-	if ((c=='/')||(c=='\\'))
-		{
-		p2=duplicate_mem(path,i+2);
-		p2[i+1]='\0';
-		return p2;
-		}
-	}
-}
-
-/*----------------------------------------------*/
 
 static void _open_active_file(LOGMANAGER mp)
 {
@@ -475,18 +423,16 @@ mp->active.fp=file_close(mp->active.fp);
 
 /*----------------------------------------------*/
 
-void logmanager_close(LOGMANAGER mp,TIMESTAMP t)
+void logmanager_close(LOGMANAGER mp)
 {
 CHECK_MP(mp);
-CHECK_TIME(mp,t);
 
 DEBUG(mp,1,"Closing logmanager");
 
-write_end(mp,t);
+write_end(mp);
 _close_active_file(mp);
-purge_backup_files(mp,0,t);
 
-dump_status_to_file(mp,t);
+dump_status_to_file(mp);
 }
 
 /*----------------------------------------------*/
@@ -528,7 +474,7 @@ lp->start=lp->end=t;
 void logmanager_rotate(LOGMANAGER mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
-CHECK_TIME(mp,t);
+NORMALIZE_TIMESTAMP(t);
 
 DEBUG1(mp,1,"Starting rotation (%s)",mp->base_path);
 INCR_STAT_COUNT(rotate);
@@ -550,21 +496,7 @@ refresh_backup_links(mp);
 _new_active_file(mp,t);
 _open_active_file(mp);
 
-dump_status_to_file(mp,t);
-}
-
-/*----------------------------------------------*/
-
-static char *_absolute_path(LOGMANAGER mp, const char *str)
-{
-char *p;
-int len;
-
-if (!mp->root_dir) return duplicate(str);
-
-p=allocate(NULL,len=strlen(mp->root_dir)+strlen(str)+2);
-snprintf(p,len,"%s%s",mp->root_dir,str);
-return p;
+dump_status_to_file(mp);
 }
 
 /*----------------------------------------------*/

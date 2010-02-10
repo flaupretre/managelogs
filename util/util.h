@@ -110,6 +110,9 @@ LIB_INTERNAL void *allocate(/*@null@*/ const void *p, apr_size_t size);
 LIB_INTERNAL void *duplicate(const char *string);
 LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
 LIB_INTERNAL void *duplicate_mem(const void *,apr_size_t size);
+LIB_INTERNAL char *ut_dirname(const char *path);
+LIB_INTERNAL const char *ut_basename(const char *path);
+LIB_INTERNAL char *ut_absolute_path(const char *root_dir, const char *str);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_UTIL_H */

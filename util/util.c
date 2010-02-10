@@ -113,3 +113,61 @@ return l;
 }
 
 /*----------------------------------------------*/
+/* Return a pointer to the char after the last separator. If a separator
+is not found, return a pointer to the full string.
+Warning : the output is not duplicated : it is a pointer inside the input */
+
+LIB_INTERNAL const char *ut_basename(const char *path)
+{
+const char *p;
+char c;
+int i;
+
+for (i=strlen(path);;i--)
+	{
+	if (!i) break;
+	c=(*(p=path+i));
+	if (!c) continue; /* First char of non-empty string */
+	if ((c=='/')||(c=='\\')) return (p+1);
+	}
+return path;
+}
+
+/*----------------------------------------------*/
+/* Return a duplicate of the dirname of a path (with the trailing separator) */
+/* An empty string and a string without separator return a null pointer */
+
+LIB_INTERNAL char *ut_dirname(const char *path)
+{
+const char *p;
+char *p2,c;
+int i;
+
+for (i=strlen(path)-1;;i--)
+	{
+	if (i < 0) return NULL;
+	c=(*(p=&(path[i])));
+	if ((c=='/')||(c=='\\'))
+		{
+		p2=duplicate_mem(path,i+2);
+		p2[i+1]='\0';
+		return p2;
+		}
+	}
+}
+
+/*----------------------------------------------*/
+
+LIB_INTERNAL char *ut_absolute_path(const char *root_dir, const char *str)
+{
+char *p;
+int len;
+
+if (!root_dir) return duplicate(str);
+
+p=allocate(NULL,len=strlen(root_dir)+strlen(str)+2);
+snprintf(p,len,"%s%s",root_dir,str);
+return p;
+}
+
+/*----------------------------------------------*/
