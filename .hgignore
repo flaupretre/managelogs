@@ -19,3 +19,4 @@ managelogs.spec
 managelogs.spec.src
 stamp-h1
 src/managelogs
+*.tar.gz
