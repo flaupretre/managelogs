@@ -63,7 +63,7 @@ typedef struct
 /*----------------------------------------------*/
 
 static int  _gzip_get_comp_level(const char *clevel);
-static void gzip_init_v1(void *sp, const char *level);
+static void gzip_init(void *sp, const char *level);
 static void gzip_destroy(void *sp);
 static void gzip_start(void *sp);
 static void gzip_end(void *sp);
@@ -75,14 +75,14 @@ static void gzip_flush(void *sp);
 
 LIB_INTERNAL COMPRESS_HANDLER gzip_handler=
 	{
-	"gz",							/* suffix */
-	gzip_init_v1,					/* init_v1 */
-	gzip_destroy,					/* destroy */
-	gzip_start,						/* start */
-	gzip_end,						/* end */
-	gzip_predict_size,				/* predict_size */
-	gzip_compress_and_write,		/* compress_and_write */
-	gzip_flush						/* flush */
+	"gz",						/* suffix */
+	gzip_init,					/* init */
+	gzip_destroy,				/* destroy */
+	gzip_start,					/* start */
+	gzip_end,					/* end */
+	gzip_predict_size,			/* predict_size */
+	gzip_compress_and_write,	/* compress_and_write */
+	gzip_flush					/* flush */
 	};
 
 /*----------------------------------------------*/
@@ -106,7 +106,7 @@ switch (c=(*clevel))
 
 /*----------------------------------------------*/
 
-static void gzip_init_v1(void *sp, const char *clevel)
+static void gzip_init(void *sp, const char *clevel)
 {
 GZ_INIT_POINTERS();
 

@@ -23,7 +23,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 typedef struct
 	{
 	char suffix[LMGR_COMPRESS_SIZE+1];	/* Uncompressed : empty string */
-	void (*init_v1)(void *sp, const char *level);
+	void (*init)(void *sp, const char *level);
 	void (*destroy)(void *sp);
 	void (*start)(void *sp);
 	void (*end)(void *sp);
@@ -46,6 +46,18 @@ typedef struct
 #define C_HANDLER2(_mp,_action,_arg1,_arg2) \
 	(((_mp)->compress.handler->_action) \
 		? (_mp)->compress.handler->_action((_mp),_arg1,_arg2) : 0)
+
+#define C_VOID_HANDLER(_mp,_action) \
+	if ((_mp)->compress.handler->_action) \
+		(_mp)->compress.handler->_action((_mp));
+
+#define C_VOID_HANDLER1(_mp,_action,_arg1) \
+	if ((_mp)->compress.handler->_action) \
+		(_mp)->compress.handler->_action((_mp),_arg1);
+
+#define C_VOID_HANDLER2(_mp,_action,_arg1,_arg2) \
+	if ((_mp)->compress.handler->_action) \
+		(_mp)->compress.handler->_action((_mp),_arg1,_arg2);
 
 /*----------------------------------------------*/
 

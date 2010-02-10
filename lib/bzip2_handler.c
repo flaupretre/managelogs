@@ -67,7 +67,7 @@ typedef struct
 /*----------------------------------------------*/
 
 static int  _bzip2_get_comp_level(const char *clevel);
-static void bzip2_init_v1(void *sp, const char *level);
+static void bzip2_init(void *sp, const char *level);
 static void bzip2_destroy(void *sp);
 static void bzip2_start(void *sp);
 static void bzip2_end(void *sp);
@@ -80,9 +80,9 @@ static void bzip2_flush(void *sp);
 LIB_INTERNAL COMPRESS_HANDLER bzip2_handler=
 	{
 	"bz2",							/* suffix */
-	bzip2_init_v1,					/* init_v1 */
+	bzip2_init,						/* init */
 	bzip2_destroy,					/* destroy */
-	bzip2_start,						/* start */
+	bzip2_start,					/* start */
 	bzip2_end,						/* end */
 	bzip2_predict_size,				/* predict_size */
 	bzip2_compress_and_write,		/* compress_and_write */
@@ -111,7 +111,7 @@ switch (c=(*clevel))
 
 /*----------------------------------------------*/
 
-static void bzip2_init_v1(void *sp, const char *clevel)
+static void bzip2_init(void *sp, const char *clevel)
 {
 BZ2_INIT_POINTERS();
 
