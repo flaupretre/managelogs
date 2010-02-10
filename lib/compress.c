@@ -31,26 +31,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define PLAIN_INIT_POINTERS() LOGMANAGER mp=(LOGMANAGER )sp;
-
-/*----------------------------------------------*/
-
-static void plain_write(void *sp, const char *buf, apr_size_t size);
-static apr_size_t plain_predict_size(void *sp, apr_size_t size);
-
-/*----------------------------------------------*/
-
-static COMPRESS_HANDLER plain_handler=
-	{
-	"",				/* suffix */
-	NULL,			/* init */
-	NULL,			/* destroy */
-	NULL,			/* start */
-	NULL,			/* end */
-	plain_predict_size,	/* predict_size */
-	plain_write		/* compress_and_write */
-	};
-
 static COMPRESS_HANDLER *compress_handlers[]={
 	&plain_handler,
 #ifdef HAVE_ZLIB
@@ -60,22 +40,6 @@ static COMPRESS_HANDLER *compress_handlers[]={
 	&bzip2_handler,
 #endif
 	NULL };
-
-/*----------------------------------------------*/
-
-static apr_size_t plain_predict_size(void *sp, apr_size_t size)
-{
-return size;
-}
-
-/*----------------------------------------------*/
-
-static void plain_write(void *sp, const char *buf, apr_size_t size)
-{
-PLAIN_INIT_POINTERS();
-
-file_write(mp->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
-}
 
 /*----------------------------------------------*/
 
@@ -116,7 +80,7 @@ for (chpp=compress_handlers;*chpp;chpp++)
 	if (!strcmp((*chpp)->suffix,buf))
 		{
 		mp->compress.handler=(*chpp);
-		if ((*chpp)->init_v1) (*chpp)->init_v1(sp,level);
+		if ((*chpp)->init) (*chpp)->init(sp,level);
 		break;
 		}
 	}
