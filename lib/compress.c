@@ -36,6 +36,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 
 static void plain_write(void *sp, const char *buf, apr_size_t size);
+static apr_size_t plain_predict_size(void *sp, apr_size_t size);
 
 /*----------------------------------------------*/
 
@@ -46,7 +47,7 @@ static COMPRESS_HANDLER plain_handler=
 	NULL,			/* destroy */
 	NULL,			/* start */
 	NULL,			/* end */
-	NULL,			/* predict_size */
+	plain_predict_size,	/* predict_size */
 	plain_write		/* compress_and_write */
 	};
 
@@ -62,11 +63,18 @@ static COMPRESS_HANDLER *compress_handlers[]={
 
 /*----------------------------------------------*/
 
+static apr_size_t plain_predict_size(void *sp, apr_size_t size)
+{
+return size;
+}
+
+/*----------------------------------------------*/
+
 static void plain_write(void *sp, const char *buf, apr_size_t size)
 {
 PLAIN_INIT_POINTERS();
 
-file_write(((LOGMANAGER )sp)->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
+file_write(mp->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
 }
 
 /*----------------------------------------------*/
