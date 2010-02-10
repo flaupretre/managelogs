@@ -211,7 +211,7 @@ int i;
 switch(action)
 	{
 	case FLUSH_ACTION:
-		for (i=0;i<mgr_count;i++) logmanager_flush(mpp[i],timestamp);
+		for (i=0;i<mgr_count;i++) logmanager_flush(mpp[i]);
 		break;
 
 	case ROTATE_ACTION:

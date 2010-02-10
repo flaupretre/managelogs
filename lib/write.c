@@ -15,38 +15,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-/*----------------------------------------------*/
-/* Called when the manager is closed. Even if we don't have an EOL, we
-* must write the buffer */
-
-LIB_INTERNAL void write_end(LOGMANAGER mp, TIMESTAMP t)
-{
-write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,0,t);
-mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
-}
-
-/*----------------------------------------------*/
-/* Buffer output so that the files are cut on line boundaries ('\n' char) */
-
-void logmanager_write(LOGMANAGER mp, const char *buf, apr_off_t size
-	,unsigned int flags, TIMESTAMP t)
-{
-int i;
-
-CHECK_MP(mp);
-CHECK_TIME(mp,t);
-
-DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",(unsigned long)size);
-INCR_STAT_COUNT(write);
-
-if ((!buf) || (!size)) return;
-
-if (mp->flags & LMGR_IGNORE_EOL)
-	{
-	write_level2(mp,buf,size,flags,t);
-	return;
-	}
-
 #define APPEND_TO_EOL_BUF(_buf,_size) { \
 	DEBUG1(mp,3,"Appending %lu bytes to eol buffer",(unsigned long)(_size)); \
 	mp->eol_buffer.buf=allocate(mp->eol_buffer.buf \
@@ -62,6 +30,44 @@ if (mp->flags & LMGR_IGNORE_EOL)
 
 #define FREE_EOL_BUF() \
 	mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
+
+/*----------------------------------------------*/
+
+static TIMESTAMP last_write_time=0;
+
+/*----------------------------------------------*/
+/* Called when the manager is closed. Even if we don't have an EOL, we
+* must write the buffer */
+
+LIB_INTERNAL void write_end(LOGMANAGER mp)
+{
+write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,0,last_write_time);
+FREE_EOL_BUF();
+}
+
+/*----------------------------------------------*/
+/* Buffer output so that the files are cut on line boundaries ('\n' char) */
+
+void logmanager_write(LOGMANAGER mp, const char *buf, apr_off_t size
+	,unsigned int flags, TIMESTAMP t)
+{
+int i;
+
+CHECK_MP(mp);
+NORMALIZE_TIMESTAMP(t);
+
+DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",(unsigned long)size);
+INCR_STAT_COUNT(write);
+
+last_write_time=t;
+
+if ((!buf) || (!size)) return;
+
+if (mp->flags & LMGR_IGNORE_EOL)
+	{
+	write_level2(mp,buf,size,flags,t);
+	return;
+	}
 
 /* 1. If eol_buffer contains some data from a previous write, search a '\n'
 from the beginning. If found, output the buffer and input data up to \n,

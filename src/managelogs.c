@@ -72,7 +72,7 @@ if (mpp)
 	for (i=0;i<mgr_count;i++)
 		{
 		if (stats_toggle) logmanager_display_stats(mpp[i]);
-		logmanager_destroy(mpp[i],timestamp);
+		logmanager_destroy(mpp[i]);
 		}
 	}
 
@@ -106,7 +106,7 @@ opp=get_options(argc,argv,&mgr_count);
 mpp=allocate(NULL,mgr_count*sizeof(*mpp));
 for (i=0;i<mgr_count;i++)
 	{
-	mpp[i]=new_logmanager(opp[i],timestamp);
+	mpp[i]=new_logmanager(opp[i]);
 	logmanager_open(mpp[i],timestamp);
 	}
 

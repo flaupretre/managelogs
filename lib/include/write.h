@@ -25,7 +25,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void write_end(LOGMANAGER mp, TIMESTAMP t);
+LIB_INTERNAL void write_end(LOGMANAGER mp);
 LIB_INTERNAL void write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
 

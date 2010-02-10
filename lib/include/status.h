@@ -22,7 +22,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 LIB_INTERNAL char *status_path(LOGMANAGER mp);
 LIB_INTERNAL void get_status_from_file(LOGMANAGER mp);
-LIB_INTERNAL void dump_status_to_file(LOGMANAGER mp,TIMESTAMP t);
+LIB_INTERNAL void dump_status_to_file(LOGMANAGER mp);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_STATUS_H */

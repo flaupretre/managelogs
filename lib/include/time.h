@@ -26,11 +26,6 @@ typedef unsigned long TIMESTAMP;
 
 #define NORMALIZE_TIMESTAMP(_t)	{ if ((_t)==NOW) (_t)=time_now(); }
 
-#define CHECK_TIME(_mp,_t)	{ \
-	NORMALIZE_TIMESTAMP(t); \
-	(_mp)->last_time=_t; \
-	}
-
 /*----------------------------------------------*/
 
 LIB_INTERNAL TIMESTAMP time_now(void);

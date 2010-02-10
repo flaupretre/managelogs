@@ -126,7 +126,6 @@ typedef struct
 	TIMESTAMP rotate_delay;
 	TIMESTAMP purge_delay;
 	apr_fileperms_t create_mode;
-	TIMESTAMP last_time;
 	char *rotate_cmd;
 	struct
 		{
@@ -164,13 +163,13 @@ typedef void * LOGMANAGER; /* Opaque to client */
 /*----------------------------------------------*/
 /* Functions */
 
-extern LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts,TIMESTAMP t);
-extern void logmanager_destroy(LOGMANAGER mp,TIMESTAMP t);
+extern LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts);
+extern void logmanager_destroy(LOGMANAGER mp);
 extern void logmanager_open(LOGMANAGER mp,TIMESTAMP t);
-extern void logmanager_close(LOGMANAGER mp,TIMESTAMP t);
+extern void logmanager_close(LOGMANAGER mp);
 extern void logmanager_write(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
-extern void logmanager_flush(LOGMANAGER mp,TIMESTAMP t);
+extern void logmanager_flush(LOGMANAGER mp);
 extern void logmanager_rotate(LOGMANAGER mp,TIMESTAMP t);
 extern char *logmanager_compression_list(void);
 extern char *logmanager_version(void);
