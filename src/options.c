@@ -208,7 +208,6 @@ while (1)
 				break;
 
 			case 'v':
-				if (!op->debug_file) op->debug_file=duplicate("stderr");
 				op->debug_level++;
 				break;
 

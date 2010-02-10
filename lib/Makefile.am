@@ -22,6 +22,7 @@ noinst_HEADERS = include/config.h \
 	include/stats.h         stats.c \
 	include/status.h        status.c \
 	include/write.h         write.c \
+	include/debug.h         debug.c \
 	include/array.h \
 	logmanager.c \
 	$(top_srcdir)/util/util.c \

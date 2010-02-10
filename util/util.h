@@ -72,31 +72,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*-------------*/
 
-#define DBG_PASS_LEVEL(_mp,_level) \
-	((_mp)->debug.fp && (_level <= (_mp)->debug.level))
-
-#define DEBUG(_mp,_level,_fmt)		{\
-	if (DBG_PASS_LEVEL(_mp,_level))\
-		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n");\
-	}
-
-#define DEBUG1(_mp,_level,_fmt,_a1)		{\
-	if (DBG_PASS_LEVEL(_mp,_level))\
-		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1);\
-	}
-
-#define DEBUG2(_mp,_level,_fmt,_a1,_a2)		{\
-	if (DBG_PASS_LEVEL(_mp,_level))\
-		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1,_a2);\
-	}
-
-#define DEBUG3(_mp,_level,_fmt,_a1,_a2,_a3)		{\
-	if (DBG_PASS_LEVEL(_mp,_level))\
-		(void)apr_file_printf((_mp)->debug.fp->fd,"> " _fmt "\n",_a1,_a2,_a3);\
-	}
-
-/*-------------*/
-
 #define POOL	apr_pool_t *
 
 #define NULL_POOL	(POOL)0

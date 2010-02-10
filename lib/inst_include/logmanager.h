@@ -135,6 +135,7 @@ typedef struct
 		} eol_buffer;
 	struct
 		{
+		char *path;
 		OFILE *fp;
 		int level;
 		} debug;

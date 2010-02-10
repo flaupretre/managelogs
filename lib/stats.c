@@ -28,7 +28,7 @@ void logmanager_display_stats(LOGMANAGER mp)
 OFILE *fp;
 char buf[32];
 
-fp=(mp->debug.fp ? mp->debug.fp : file_open_for_append("stdout",0));
+fp=debug_fp(mp);
 
 file_write_string_nl(fp,"================== logmanager statistics ==================",YES);
 
@@ -49,8 +49,6 @@ DISPLAY_COUNT(dump);
 DISPLAY_COUNT(sync);
 
 file_write_string_nl(fp,"===========================================================",YES);
-
-if (!mp->debug.fp) file_close(fp);
 }
 
 /*------------------------------------------------------------------------*/

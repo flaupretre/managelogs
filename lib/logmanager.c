@@ -70,6 +70,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/pid.h"
 #include "include/link.h"
 #include "include/cmd.h"
+#include "include/debug.h"
 
 /*----------------------------------------------*/
 
@@ -142,6 +143,7 @@ static const char *_basename(const char *path);
 #include "pid.c"
 #include "link.c"
 #include "cmd.c"
+#include "debug.c"
 
 /*----------------------------------------------*/
 
@@ -290,13 +292,10 @@ opts->global_maxsize=mp->global_maxsize;
 mp->create_mode=opts->create_mode;
 if (!mp->create_mode) mp->create_mode=0x644;
 
-/*-- Open debug file */
+/*-- Debug info */
 
-if (opts->debug_file)
-	{
-	mp->debug.fp=file_open_for_append(opts->debug_file,(apr_int32_t)PIDFILE_MODE);
-	mp->debug.level=opts->debug_level;
-	}
+mp->debug.path=duplicate(opts->debug_file);
+mp->debug.level=opts->debug_level;
 
 /* Rotate command */
 
@@ -384,9 +383,7 @@ if (BACKUP_COUNT(mp))
 	ARRAY_CLEAR(mp->backup.files);
 	}
 
-/*-- Close debug file */
-
-if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
+debug_close(mp);	/*-- Close debug file */
 
 /* Free paths */
 
@@ -394,6 +391,7 @@ if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 (void)allocate(mp->root_dir,0);
 (void)allocate(mp->status_path,0);
 (void)allocate(mp->pid_path,0);
+(void)allocate(mp->debug.path,0);
 
 /* Last, free the envelope */
 
