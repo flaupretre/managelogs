@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __BACKUP_H
-#define __BACKUP_H
+#ifndef __LMGR_BACKUP_H
+#define __LMGR_BACKUP_H
 
 /*----------------------------------------------*/
 
@@ -33,5 +33,5 @@ LIB_INTERNAL void remove_oldest_backup(LOGMANAGER mp);
 LIB_INTERNAL void refresh_backup_links(LOGMANAGER mp);
 
 /*----------------------------------------------*/
-#endif	/* __BACKUP_H */
+#endif	/* __LMGR_BACKUP_H */
 

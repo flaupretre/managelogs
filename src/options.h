@@ -15,8 +15,8 @@ Copyright F. Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __OPTIONS_H
-#define __OPTIONS_H
+#ifndef __MGL_OPTIONS_H
+#define __MGL_OPTIONS_H
 
 #include <apr.h>
 
@@ -30,4 +30,4 @@ extern LOGMANAGER_OPTIONS **get_options(int argc, char **argv, int *countp);
 extern void free_options(LOGMANAGER_OPTIONS **opp , int count);
 
 /*----------------------------------------------*/
-#endif	/* __OPTIONS_H */
+#endif	/* __MGL_OPTIONS_H */

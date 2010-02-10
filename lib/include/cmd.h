@@ -15,12 +15,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __CMD_H
-#define __CMD_H
+#ifndef __LMGR_CMD_H
+#define __LMGR_CMD_H
 
 /*----------------------------------------------*/
 
 LIB_INTERNAL void run_bg_cmd(LOGMANAGER mp,char *cmd, LOGFILE *file,TIMESTAMP t);
 
 /*----------------------------------------------*/
-#endif	/* __CMD_H */
+#endif	/* __LMGR_CMD_H */

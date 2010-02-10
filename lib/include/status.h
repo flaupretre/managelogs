@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __STATUS_H
-#define __STATUS_H
+#ifndef __LMGR_STATUS_H
+#define __LMGR_STATUS_H
 
 /*----------------------------------------------*/
 
@@ -25,5 +25,5 @@ LIB_INTERNAL void get_status_from_file(LOGMANAGER mp);
 LIB_INTERNAL void dump_status_to_file(LOGMANAGER mp,TIMESTAMP t);
 
 /*----------------------------------------------*/
-#endif	/* __STATUS_H */
+#endif	/* __LMGR_STATUS_H */
 

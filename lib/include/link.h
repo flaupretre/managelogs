@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __LINK_H
-#define __LINK_H
+#ifndef _LMGR__LINK_H
+#define __LMGR_LINK_H
 
 /*----------------------------------------------*/
 
@@ -26,4 +26,4 @@ LIB_INTERNAL void clear_logfile_link(LOGMANAGER mp, LOGFILE *lp);
 LIB_INTERNAL void create_logfile_link(LOGMANAGER mp, LOGFILE *lp,int num);
 
 /*----------------------------------------------*/
-#endif	/* __LINK_H */
+#endif	/* __LMGR_LINK_H */

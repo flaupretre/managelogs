@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __COMPRESS_H
-#define __COMPRESS_H
+#ifndef __LMGR_COMPRESS_H
+#define __LMGR_COMPRESS_H
 
 /*----------------------------------------------*/
 
@@ -52,4 +52,4 @@ typedef struct
 LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg);
 
 /*----------------------------------------------*/
-#endif	/* __COMPRESS_H */
+#endif	/* __LMGR_COMPRESS_H */

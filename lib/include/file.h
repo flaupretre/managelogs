@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __FILE_H
-#define __FILE_H
+#ifndef __LMGR_FILE_H
+#define __LMGR_FILE_H
 
 #include <apr.h>
 
@@ -45,5 +45,5 @@ LIB_INTERNAL OFILE *file_close(OFILE *fp);
 LIB_INTERNAL char *file_get_contents(const char *path, apr_off_t *sizep);
 
 /*----------------------------------------------*/
-#endif	/* __FILE_H */
+#endif	/* __LMGR_FILE_H */
 

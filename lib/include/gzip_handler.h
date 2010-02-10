@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __GZIP_HANDLER_H
-#define __GZIP_HANDLER_H
+#ifndef __LMGR_GZIP_HANDLER_H
+#define __LMGR_GZIP_HANDLER_H
 
 #ifdef HAVE_ZLIB
 /*----------------------------------------------*/
@@ -26,4 +26,4 @@ LIB_INTERNAL COMPRESS_HANDLER gzip_handler;
 /*----------------------------------------------*/
 #endif /* HAVE_ZLIB */
 /*----------------------------------------------*/
-#endif
+#endif	/* __LMGR_GZIP_HANDLER_H */

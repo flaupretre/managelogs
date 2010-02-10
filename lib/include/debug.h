@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __DEBUG_H
-#define __DEBUG_H
+#ifndef __LMGR_DEBUG_H
+#define __LMGR_DEBUG_H
 
 /*----------------------------------------------*/
 
@@ -51,4 +51,4 @@ LIB_INTERNAL apr_file_t *debug_fd(LOGMANAGER mp);
 LIB_INTERNAL void debug_close(LOGMANAGER mp);
 
 /*----------------------------------------------*/
-#endif	/* __DEBUG_H */
+#endif	/* __LMGR_DEBUG_H */

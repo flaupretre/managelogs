@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __INTR_H
-#define __INTR_H
+#ifndef __MGL_INTR_H
+#define __MGL_INTR_H
 
 #include <apr.h>
 
@@ -52,4 +52,4 @@ extern void signal_shutdown(void);
 extern void do_action(ACTION action);
 
 /*----------------------------------------------*/
-#endif	/* __INTR_H */
+#endif	/* __MGL_INTR_H */

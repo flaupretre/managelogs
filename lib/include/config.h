@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __LMGR_CONFIG_H
+#define __LMGR_CONFIG_H
 
 /*----------------------------------------------*/
 
@@ -42,4 +42,4 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define STATUSFILE_MODE	0x0644
 
 /*----------------------------------------------*/
-#endif	/* __CONFIG_H */
+#endif	/* __LMGR_CONFIG_H */

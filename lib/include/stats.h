@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __STATS_H
-#define __STATS_H
+#ifndef __LMGR_STATS_H
+#define __LMGR_STATS_H
 
 /*----------------------------------------------*/
 
@@ -25,6 +25,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define INCR_STAT_COUNT(_item)	{ STAT_COUNT_ITEM(_item)++; }
 
 /*----------------------------------------------*/
-#endif	/* __STATS_H */
+#endif	/* __LMGR_STATS_H */
 
 

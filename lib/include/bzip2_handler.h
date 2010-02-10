@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __BZIP2_HANDLER_H
-#define __BZIP2_HANDLER_H
+#ifndef __LMGR_BZIP2_HANDLER_H
+#define __LMGR_BZIP2_HANDLER_H
 
 #ifdef HAVE_BZ2
 
@@ -25,6 +25,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 LIB_INTERNAL COMPRESS_HANDLER bzip2_handler;
 
 /*----------------------------------------------*/
-#endif
-/*----------------------------------------------*/
 #endif /* HAVE_BZ2 */
+/*----------------------------------------------*/
+#endif /* __LMGR_BZIP2_HANDLER_H */

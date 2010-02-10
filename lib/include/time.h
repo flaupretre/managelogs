@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __TIME_H
-#define __TIME_H
+#ifndef __LMGR_TIME_H
+#define __LMGR_TIME_H
 
 #ifndef NOW
 typedef unsigned long TIMESTAMP;
@@ -37,5 +37,5 @@ LIB_INTERNAL TIMESTAMP time_now(void);
 LIB_INTERNAL TIMESTAMP strval_to_time(const char *val);
 
 /*----------------------------------------------*/
-#endif	/* __TIME_H */
+#endif	/* __LMGR_TIME_H */
 

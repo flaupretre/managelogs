@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __PID_H
-#define __PID_H
+#ifndef __LMGR_PID_H
+#define __LMGR_PID_H
 
 /*----------------------------------------------*/
 
@@ -26,5 +26,5 @@ LIB_INTERNAL void create_pid_file(LOGMANAGER mp);
 LIB_INTERNAL void remove_pid_file(LOGMANAGER mp);
 
 /*----------------------------------------------*/
-#endif	/* __PID_H */
+#endif	/* _LMGR__PID_H */
 

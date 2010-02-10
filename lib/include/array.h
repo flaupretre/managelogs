@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __ARRAY_H
-#define __ARRAY_H
+#ifndef __LMGR_ARRAY_H
+#define __LMGR_ARRAY_H
 
 /*----------------------------------------------*/
 
@@ -98,4 +98,4 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	}
 
 /*----------------------------------------------*/
-#endif	/* __ARRAY_H */
+#endif	/* __LMGR_ARRAY_H */

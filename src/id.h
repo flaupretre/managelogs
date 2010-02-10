@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __ID_H
-#define __ID_H
+#ifndef __MGL_ID_H
+#define __MGL_ID_H
 
 #include "../config.h"
 
@@ -25,4 +25,4 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 extern void change_id(const char *string);
 
 /*----------------------------------------------*/
-#endif	/* __ID_H */
+#endif	/* __MGL_ID_H */

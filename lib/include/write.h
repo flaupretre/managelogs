@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __WRITE_H
-#define __WRITE_H
+#ifndef __LMGR_WRITE_H
+#define __LMGR_WRITE_H
 
 /*----------------------------------------------*/
 
@@ -30,4 +30,4 @@ LIB_INTERNAL void write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t);
 
 /*----------------------------------------------*/
-#endif	/* __WRITE_H */
+#endif	/* __LMGR_WRITE_H */

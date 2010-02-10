@@ -15,8 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __UTIL_H
-#define __UTIL_H
+#ifndef __LMGR_UTIL_H
+#define __LMGR_UTIL_H
 
 #include <apr.h>
 #include <apr_file_io.h>
@@ -112,4 +112,4 @@ LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
 LIB_INTERNAL void *duplicate_mem(const void *,apr_size_t size);
 
 /*----------------------------------------------*/
-#endif	/* __UTIL_H */
+#endif	/* __LMGR_UTIL_H */
