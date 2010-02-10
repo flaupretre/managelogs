@@ -85,81 +85,39 @@ clist=logmanager_compression_list();
 fprintf(fd,MANAGELOGS_BANNER "\n\
 Usage: managelogs [options...] <base-path1> [[options...] <base-path2> ...] \n");
 
-fprintf(fd,"\
-\n\
+fprintf(fd,"\n\
 *---- Global options (these options apply to the whole process) :\n\
 \n\
- -h|--help           Display this message\n\
-\n\
- -u|--user <id>      Program runs with this user ID\n\
-                       <id> = <uid>[:<gid>]\n\
-                       <uid> and <gid> are user/group names or numeric ids\n\
-\n\
- -V|--version        Print version banner and exit\n\
-\n\
- -I|--stats          Display internal stats before exiting (for\n\
-                     troubleshooting, debugging, and performance tests)\n\
-\n\
- -R|--refresh-only   Just refresh/purge files, then exit\n\
+ -h|--help                 Display this message\n\
+ -u|--user <id>            Program runs with this user ID\n\
+ -V|--version              Print version banner and exit\n\
+ -I|--stats                Display internal stats before exiting \n\
+ -R|--refresh-only         Just refresh/purge files, then exit\n\
 \n\
 *---- per-manager options (these options apply to the next <base-path> only) :\n\
 \n\
- -v|--verbose        Increment debug level\n\
-\n\
- -d|--debug <path>   Write debug messages to <path>\n\
-                       <path> can be a file path, 'stdout', or 'stderr'.\n\
-                       Default: stderr\n\
-\n");
+ -v|--verbose              Increment debug level\n\
+ -d|--debug <path>         Write debug messages to <path>\n");
 
 if (clist[0]) /* If at least one compression scheme is supported */
 	{
 	fprintf(fd,"\
- -c|--compress <comp>[:<level>]  Activate compression and appends the\n\
-                     corresponding suffix to the log file names.\n\
-                       <comp> must be one of : %s\n\
-                       <level> is one of [123456789bf] (f=fast, b=best)\n\
-                       Default level: best\n\
-\n",clist);
+ -c|--compress <cp>[:lvl]  Activate compression\n",clist);
 	}
 
 fprintf(fd,"\
- -s|--size <size>    Set the maximum file size at which rotation occurs\n\
-                       <size> is a numeric value optionnally followed\n\
-                       by 'K' (Kilo), 'M' (Mega), or 'G' (Giga).\n\
-                       Default: no limit\n\
-\n\
- -r|--rotate-delay <delay>  Set the maximum delay between the creation of a new\n\
-                       log file and the next rotation.\n\
-                         <delay> is a suite of patterns in the form\n\
-                         '[0-9]+[dhm]' (d=days, h=hours, m=minutes)\n\
-                         Example : 1d12h = 1 day and 12 hours (same as '36h')\n\
- \n\
- -p|--purge-delay <delay>  Remove backup log files older than <delay>\n\
-                         Argument: same format as for '--rotate-delay'\n\
-\n\
- -S|--global-size <size>  Set the maximum size the whole set of log files can\n\
-                     take on disk (active log + backups).\n\
-                       Argument: same as for '--size'\n\
-\n\
- -m|--mode <mode>    Permissions to set when creating a new log file\n\
-                       <mode> is an octal Unix-style file permission\n\
-                       (see man chmod(2) for more). Default mode: %x\n\
-\n\
- -k|--keep <n>       Only keep <n> log files (the active one + <n-1>\n\
-                     backups)\n\
-\n\
- -l|--link           Maintain a link to the active log file\n\
-\n\
- -L|--backup-links   Maintain links to the active and backup log files\n\
-\n\
- -H|--hardlink       Create hard links instead of symbolic links\n\
-\n\
- -e|--ignore-eol     Disables the internal mechanism ensuring that log files\n\
-                     are rotated on line boundaries\n\
-\n\
- -C|--rotate-cmd <cmd>    Execute <cmd> on every rotation\n\
-\n\
- -x|--enospc-abort   Abort on 'no more space' write error (default: ignore)\n\
+ -s|--size <size>          Set the file size limit\n\
+ -r|--rotate-delay <delay> Set the rotation delay\n\
+ -p|--purge-delay <delay>  Set the purge delay\n\
+ -S|--global-size <size>   Set the global size limit\n\
+ -m|--mode <mode>          Permissions to set when creating a log file\n\
+ -k|--keep <n>             Only keep <n> log files\n\
+ -l|--link                 Maintain a link to the active log file\n\
+ -L|--backup-links         Also maintain links to backup log files\n\
+ -H|--hardlink             Create hard links instead of symbolic links\n\
+ -e|--ignore-eol           Disables the eol buffering mechanism\n\
+ -C|--rotate-cmd <cmd>     Execute <cmd> on every rotation\n\
+ -x|--enospc-abort         Abort on 'no more space' write error\n\
 \n",LOGFILE_MODE);
 
 (void)allocate(clist,0);
