@@ -1,8 +1,145 @@
+2010-02-11  François Laupretre  <flp@users.sourceforge.net>
+
+	* INSTALL, TODO:
+	Todo and install refer to the base managelogs URL
+	[25543519c660] [tip]
+
+2010-02-10  François Laupretre  <flp@users.sourceforge.net>
+
+	* doc/managelogs.8, doc/managelogs.8.htm:
+	Update man pages
+	[67c8b909ab3e]
+
+	* src/options.c:
+	Shring '-h' message to a more compact format
+	[4f89f2214012]
+
+	* lib/link.c, lib/logmanager.c, lib/status.c, util/util.c,
+	util/util.h:
+	move basename(), dirname(), absolute_path() to util.c/ut_xxx
+	[ff19d7f5d967]
+
+	* lib/include/status.h, lib/include/time.h, lib/include/write.h,
+	lib/inst_include/logmanager.h, lib/write.c, src/intr.c,
+	src/managelogs.c:
+	Remove timestamp arg in the API calls which don't need it. Remove
+	last_time field in LOGMANAGER struct and CHECK_TIME() macro
+	[d215c563ffb8]
+
+	* lib/bzip2_handler.c, lib/gzip_handler.c, lib/include/compress.h:
+	Compress API: rename init_v1 to init
+	[3a59fc359b7e]
+
+	* lib/backup.c, lib/include/array.h, lib/logmanager.c, lib/status.c,
+	lib/write.c:
+	Minor fixes to remove warnings in '-Wall -pedantic -Wextra' mode
+	[6ba48e869ec8]
+
+	* lib/Makefile.am, lib/compress.c, lib/include/plain_handler.h,
+	lib/plain_handler.c:
+	Extract the plain handler from compress.c to plain_handler.{c|h}
+	[1b8db7d1dc47]
+
+	* lib/include/array.h, lib/include/backup.h,
+	lib/include/bzip2_handler.h, lib/include/cmd.h,
+	lib/include/compress.h, lib/include/config.h, lib/include/debug.h,
+	lib/include/file.h, lib/include/gzip_handler.h, lib/include/link.h,
+	lib/include/pid.h, lib/include/stats.h, lib/include/status.h,
+	lib/include/time.h, lib/include/write.h, src/id.h, src/intr.h,
+	src/options.h, util/util.h:
+	Add prefix to the symbol ensuring that include files are included
+	only once (avoids possible conflicts)
+	[0573a30e3367]
+
+	* .hgignore:
+	Add *.tar.gz to hg ignored patterns
+	[ec51a10c21c8]
+
+	* lib/Makefile.am, lib/debug.c, lib/include/debug.h,
+	lib/inst_include/logmanager.h, lib/logmanager.c, lib/stats.c,
+	src/options.c, util/util.h:
+	Restructure debug system. Open debug file at first message. Move
+	debug code to debug.c/debug.h. Debug system is part of the library
+	now (cannot be used in src)
+	[3a57c6041d95]
+
+	* lib/compress.c:
+	Add a predict_size function to plain compression handler (returns
+	input argument)
+	[fde57fe9657c]
+
+2010-02-09  François Laupretre  <flp@users.sourceforge.net>
+
+	* lib/file.c, lib/include/file.h:
+	Replace apr_size_t with apr_off_t at several places
+	[7fc447948514]
+
+	* lib/cmd.c:
+	Run_bg_cmd: security: return if cmd is null
+	[6e991ff36643]
+
+	* lib/write.c:
+	Changes in the write/eol logic to make it really impossible to
+	exceed individual file size when compression is off
+	[9b61a99427dd]
+
+	* lib/backup.c, lib/logmanager.c:
+	SHOULD_ROTATE and GLOBAL_CONDITIONS_EXCEEDED macros transformed to
+	functions for better readability and easier debugging. Call
+	run_bg_cmd during rotate only if command is set.
+	[7d7524d64ae7]
+
+	* util/util.h:
+	Add DEBUG3 macro
+	[2b2a8f89e4fd]
+
+	* configure.in, src/intr.c, src/managelogs.c, src/managelogs.h,
+	src/options.c:
+	replace atexit(shutdown_proc) with an explicit call to exit_proc().
+	Reason : forked process (bg command) inherited the atexit function
+	and displayed stats.
+	[c229baea0241]
+
+	* lib/Makefile.am:
+	Fix: After exploding logmanager.c to a set of files, these files
+	were not included in distribution
+	[2db95a49a541]
+
+	* build/cleanup:
+	Revert change: Don't remove html man in cleanup
+	[3802b469ad4f]
+
+	* build/cleanup, build/mk_html_doc.sh, doc/Makefile.am:
+	Add HTML man creation in doc/Makefile. Add script wrapping man2html
+	[ff1524325b33]
+
+	* configure.in, util/util.c:
+	Add dmalloc support
+	[6d9475458f0a]
+
+	* lib/logmanager.c:
+	Fix typo
+	[1df7a2e8a9b6]
+
+	* TODO:
+	Replace TODO content with the address of the online TODO document
+	[2926e6599470]
+
+	* INSTALL:
+	*
+	[d83e60b3aa03]
+
+	* ChangeLog, NEWS:
+	Update ChangeLog and NEWS according to the GNU standards: Move
+	ChangeLog content to NEWS and fill ChangeLog with the result of 'hg
+	log --style=changelog'
+	[30de1630a9eb]
+
 2010-02-06  François Laupretre  <flp@users.sourceforge.net>
 
 	* TODO:
 	Suppress todo element
-	[3767a185afaf] [tip]
+	[3767a185afaf]
 
 	* lib/logmanager.c:
 	Change in the way active file name is built Fix bug in path
