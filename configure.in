@@ -5,7 +5,7 @@ AC_PREREQ(2.59)
 
 #--- Versions are set here
 
-AC_INIT(managelogs, 2.0.0, managelogs-bugs@tekwire.net)
+AC_INIT(managelogs, 2.0.1, managelogs-bugs@tekwire.net)
 
 LIB_LT_VERSION="2"
 AC_SUBST(LIB_LT_VERSION)
@@ -101,7 +101,7 @@ AC_SUBST(APR_CPPFLAGS)
 APR_LDFLAGS="`$apr_config --ldflags`"
 AC_SUBST(APR_LDFLAGS)
 
-RPM_DEPS="$RPM_DEPS apr-libs"
+RPM_DEPS="$RPM_DEPS apr"
 
 #----------------------------------------------------------------------
 # Checks for compression libraries
@@ -120,7 +120,7 @@ AC_FUNC_FORK
 AC_CHECK_FUNCS([malloc realloc memset strchr])
 
 AC_CONFIG_FILES([Makefile
-				managelogs.spec.src
+				managelogs.spec
 				lib/Makefile
 				src/Makefile
 				doc/Makefile])

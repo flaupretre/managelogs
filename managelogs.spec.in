@@ -1,0 +1,65 @@
+#
+# This file allows to build source and binary RPM packages
+#
+# How to build :
+# 	- Run './configure' (without options)
+#	- Then, run 'make rpm'
+#
+# This will build two packages (source and binary) in /usr/src/redhat/[S]RPMS
+#
+# WARNING: Tested on Linux RHEL 5 only.
+#
+# Note: To generate debuginfo packages, you need to install the
+# redhat-rpm-config package first.
+#==============================================================================
+#
+# @configure_input@
+#
+Name: @PACKAGE_NAME@
+Summary: managelogs log management software
+Group: Applications/Internet
+Version: @PACKAGE_VERSION@
+Release: @RELEASE_NUMBER@
+ExclusiveOs: @RPM_OS@
+License: Apache license 2.0
+Source: @PACKAGE_NAME@-%{version}.tar.gz
+URL: http://@PACKAGE_NAME@.tekwire.net/
+Source: %{name}-%{version}.tar.gz
+Prefix: %{_prefix}
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
+BuildPrereq: apr-devel zlib-devel bzip2-devel
+Packager: Francois Laupretre <francois@tekwire.net>
+AutoReqProv: no
+Requires:  @RPM_DEPS@
+provides: @PACKAGE_NAME@
+
+%description
+managelogs is a log management program for Apache.
+It rotates and purges the Apache log files based on different size
+limits and includes a lot of useful features.
+
+%prep
+%setup -q
+
+%build
+%configure
+make %{?_smp_mflags}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%makeinstall
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(-,root,root,-)
+%doc AUTHORS COPYING NEWS README doc/managelogs.8.htm
+%{_bindir}/managelogs
+%{_libdir}/liblogmanager.*
+%{_includedir}/logmanager.h
+%{_mandir}/man8/managelogs.8.gz
