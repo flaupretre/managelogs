@@ -170,7 +170,7 @@ while (1)
 				break;
 
 			case 'c':
-				if (strlen(opt_arg) >= LMGR_COMPRESS_STRING_SIZE)
+				if (strlen(opt_arg) > LMGR_COMPRESS_STRING_SIZE)
 					FATAL_ERROR1("Invalid compression parameter : %s",opt_arg);
 				strcpy(op->compress_string,opt_arg);
 				break;

@@ -67,7 +67,7 @@ return result;
 LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg)
 {
 COMPRESS_HANDLER **chpp;
-char buf[LMGR_COMPRESS_STRING_SIZE],*level;
+char buf[LMGR_COMPRESS_STRING_SIZE+1],*level;
 LOGMANAGER mp=(LOGMANAGER )sp;
 
 if ((strlen(arg)+1) >= sizeof(buf)) FATAL_ERROR("compression arg too long");

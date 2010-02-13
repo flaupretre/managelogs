@@ -55,7 +55,7 @@ typedef unsigned long TIMESTAMP;
 /* Max size of compress method */
 
 #define LMGR_COMPRESS_SIZE	5
-#define LMGR_COMPRESS_STRING_SIZE	(LMGR_COMPRESS_SIZE+3)
+#define LMGR_COMPRESS_STRING_SIZE	(LMGR_COMPRESS_SIZE+5)
 
 /*----------------------------------------------*/
 
@@ -68,7 +68,7 @@ typedef struct
 	unsigned int api_version;
 	char *base_path;
 	unsigned int flags;
-	char compress_string[LMGR_COMPRESS_STRING_SIZE];
+	char compress_string[LMGR_COMPRESS_STRING_SIZE+1];
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
