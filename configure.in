@@ -69,6 +69,9 @@ AC_SUBST(RPM_DEPS)
 RPM_OS=`uname -s`
 AC_SUBST(RPM_OS)
 
+RPMBUILD_OPTS=``
+AC_SUBST(RPMBUILD_OPTS)
+
 #----------------------------------------------------------------------
 # Checks for APR library
 # uses the find_apr.m4 script to locate APR. sets apr_found and apr_config

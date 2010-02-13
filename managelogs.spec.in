@@ -42,7 +42,7 @@ limits and includes a lot of useful features.
 %setup -q
 
 %build
-%configure
+%configure %{?_without_zlib} %{?_without_bz2}
 make %{?_smp_mflags}
 
 %install

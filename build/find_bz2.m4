@@ -20,6 +20,7 @@ BZ2_OK=0
 if test "$with_bz2" = "no"; then
     echo "Disabling bz2 compression support"
 	BZ2_OK=1
+	RPMBUILD_OPTS="$RPMBUILD_OPTS --without bz2"
 else
     AC_CHECK_HEADERS(bzlib.h,
         AC_CHECK_LIB(bz2, BZ2_bzCompress,[

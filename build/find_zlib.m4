@@ -21,6 +21,7 @@ ZLIB_OK=0
 if test "$with_zlib" = "no"; then
     echo "Disabling zlib compression support"
 	ZLIB_OK=1
+	RPMBUILD_OPTS="$RPMBUILD_OPTS --without zlib"
 else
     AC_CHECK_HEADERS(zlib.h,
         AC_CHECK_LIB(z, gzread,[
