@@ -27,10 +27,10 @@ URL: http://@PACKAGE_NAME@.tekwire.net/
 Source: %{name}-%{version}.tar.gz
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildPrereq: @BUILD_DEPENDS@
+BuildPrereq: @RPM_BUILD_DEPS@
 Packager: Francois Laupretre <francois@tekwire.net>
 AutoReqProv: no
-Requires:  @RUNTIME_DEPS@
+Requires: @RPM_RUNTIME_DEPS@
 provides: @PACKAGE_NAME@
 
 %description

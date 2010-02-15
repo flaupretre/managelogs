@@ -63,20 +63,26 @@ AC_TYPE_SIZE_T
 #----------------------------------------------------------------------
 # Packaging stuff
 
-RUNTIME_DEPS=""
-AC_SUBST(RUNTIME_DEPS)
+RPM_RUNTIME_DEPS=""
+AC_SUBST(RPM_RUNTIME_DEPS)
+
+RPM_BUILD_DEPS=''
+AC_SUBST(RPM_BUILD_DEPS)
+
+DEB_RUNTIME_DEPS=""
+AC_SUBST(DEB_RUNTIME_DEPS)
+
+DEB_BUILD_DEPS=''
+AC_SUBST(DEB_BUILD_DEPS)
 
 PACKAGING_OS=`uname -s`
 AC_SUBST(PACKAGING_OS)
 
-RPMBUILD_OPTS=''
+RPM_BUILD_OPTS=''
 AC_SUBST(RPMBUILD_OPTS)
 
 ARCHITECTURE=`uname -i`
 AC_SUBST(ARCHITECTURE)
-
-BUILD_DEPENDS=''
-AC_SUBST(BUILD_DEPENDS)
 
 #----------------------------------------------------------------------
 # Checks for APR library
@@ -110,8 +116,11 @@ AC_SUBST(APR_CPPFLAGS)
 APR_LDFLAGS="`$apr_config --ldflags`"
 AC_SUBST(APR_LDFLAGS)
 
-RUNTIME_DEPS="$RUNTIME_DEPS apr"
-BUILD_DEPENDS="$BUILD_DEPENDS apr-devel"
+RPM_RUNTIME_DEPS="$RPM_RUNTIME_DEPS apr"
+RPM_BUILD_DEPS="$RPM_BUILD_DEPS apr-devel"
+
+DEB_RUNTIME_DEPS="$DEB_RUNTIME_DEPS libapr1"
+DEB_BUILD_DEPS="$DEB_BUILD_DEPS libapr1-dev"
 
 #----------------------------------------------------------------------
 # Checks for compression libraries

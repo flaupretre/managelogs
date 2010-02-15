@@ -20,15 +20,17 @@ BZ2_OK=0
 if test "$with_bz2" = "no"; then
     echo "Disabling bz2 compression support"
 	BZ2_OK=1
-	RPMBUILD_OPTS="$RPMBUILD_OPTS --without bz2"
+	RPM_BUILD_OPTS="$RPMBUILD_OPTS --without bz2"
 else
     AC_CHECK_HEADERS(bzlib.h,
         AC_CHECK_LIB(bz2, BZ2_bzCompress,[
             AC_DEFINE([HAVE_BZ2], [1], [Have bzip2 compression library])
             WITH_BZ2=1
 			BZ2_OK=1
-			RUNTIME_DEPS="$RUNTIME_DEPS bzip2-libs"
-			BUILD_DEPENDS="$BUILD_DEPENDS bzip2-devel"
+			RPM_RUNTIME_DEPS="$RPM_RUNTIME_DEPS bzip2-libs"
+			RPM_BUILD_DEPS="$RPM_BUILD_DEPS bzip2-devel"
+			DEB_RUNTIME_DEPS="$DEB_RUNTIME_DEPS libbz2"
+			DEB_BUILD_DEPS="$DEB_BUILD_DEPS libbz2-dev"
             if test "x${BZ2_DIR}" != "x"; then
                 BZ2_CFLAGS="-I${BZ2_DIR}/include"
                 BZ2_LIBS="-L${BZ2_DIR}/lib -lbz2"

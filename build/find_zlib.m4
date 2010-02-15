@@ -21,14 +21,16 @@ ZLIB_OK=0
 if test "$with_zlib" = "no"; then
     echo "Disabling zlib compression support"
 	ZLIB_OK=1
-	RPMBUILD_OPTS="$RPMBUILD_OPTS --without zlib"
+	RPM_BUILD_OPTS="$RPM_BUILD_OPTS --without zlib"
 else
     AC_CHECK_HEADERS(zlib.h,
         AC_CHECK_LIB(z, gzread,[
             AC_DEFINE([HAVE_ZLIB], [1], [Have zlib compression library])
             WITH_ZLIB=1
-			RUNTIME_DEPS="$RUNTIME_DEPS zlib"
-			BUILD_DEPENDS="$BUILD_DEPENDS zlib-devel"
+			RPM_RUNTIME_DEPS="$RPM_RUNTIME_DEPS zlib"
+			RPM_BUILD_DEPS="$RPM_BUILD_DEPS zlib-devel"
+			DEB_RUNTIME_DEPS="$DEB_RUNTIME_DEPS zlib1g"
+			DEB_BUILD_DEPS="$DEB_BUILD_DEPS zlib1g-dev"
 			ZLIB_OK=1
             if test "x${Z_DIR}" != "x"; then
                 Z_CFLAGS="-I${Z_DIR}/include"

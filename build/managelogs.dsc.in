@@ -15,16 +15,16 @@
 #
 Package: @PACKAGE_NAME@
 Version: @PACKAGE_VERSION@-@RELEASE_NUMBER@
-Summary: managelogs log management software
 Section: web
 Priority: optional
 Architecture: any
-Build-Depends: @BUILD_DEPENDS@
 Essential: no
 Maintainer: Francois Laupretre <francois@tekwire.net>
-Depends: @RUNTIME_DEPS@
+Depends: @DEB_RUNTIME_DEPS@
+Build-Depends: @DEB_BUILD_DEPS@
+Standards-Version: 3.8.4.0
 Provides: @PACKAGE_NAME@
-Description:
+Description: managelogs log management software
 managelogs is a log management program for Apache.
 It rotates and purges the Apache log files based on different size
 limits and includes a lot of useful features.
