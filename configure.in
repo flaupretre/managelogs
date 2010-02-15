@@ -64,13 +64,19 @@ AC_TYPE_SIZE_T
 # Packaging stuff
 
 RUNTIME_DEPS=""
-AC_SUBST(RUNTIME_DEPS_DEPS)
+AC_SUBST(RUNTIME_DEPS)
 
 PACKAGING_OS=`uname -s`
 AC_SUBST(PACKAGING_OS)
 
-RPMBUILD_OPTS=``
+RPMBUILD_OPTS=''
 AC_SUBST(RPMBUILD_OPTS)
+
+ARCHITECTURE=`uname -i`
+AC_SUBST(ARCHITECTURE)
+
+BUILD_DEPENDS=''
+AC_SUBST(BUILD_DEPENDS)
 
 #----------------------------------------------------------------------
 # Checks for APR library
@@ -105,6 +111,7 @@ APR_LDFLAGS="`$apr_config --ldflags`"
 AC_SUBST(APR_LDFLAGS)
 
 RUNTIME_DEPS="$RUNTIME_DEPS apr"
+BUILD_DEPENDS="$BUILD_DEPENDS apr-devel"
 
 #----------------------------------------------------------------------
 # Checks for compression libraries
@@ -124,6 +131,7 @@ AC_CHECK_FUNCS([malloc realloc memset strchr])
 
 AC_CONFIG_FILES([Makefile
 				build/managelogs.spec
+				build/managelogs.dsc
 				lib/Makefile
 				src/Makefile
 				doc/Makefile])

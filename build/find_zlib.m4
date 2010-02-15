@@ -28,6 +28,7 @@ else
             AC_DEFINE([HAVE_ZLIB], [1], [Have zlib compression library])
             WITH_ZLIB=1
 			RUNTIME_DEPS="$RUNTIME_DEPS zlib"
+			BUILD_DEPENDS="$BUILD_DEPENDS zlib-devel"
 			ZLIB_OK=1
             if test "x${Z_DIR}" != "x"; then
                 Z_CFLAGS="-I${Z_DIR}/include"

@@ -1,0 +1,30 @@
+#
+# This file allows to build source and binary deb packages
+#
+# How to build :
+# 	- Run './configure' (without options)
+#	- Then, run 'make deb'
+#
+# This will build two packages (source and binary) in /usr/src/redhat/[S]RPMS
+#
+# WARNING: Tested on Linux RHEL 5 only.
+#
+#==============================================================================
+#
+# @configure_input@
+#
+Package: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@-@RELEASE_NUMBER@
+Summary: managelogs log management software
+Section: web
+Priority: optional
+Architecture: any
+Build-Depends: @BUILD_DEPENDS@
+Essential: no
+Maintainer: Francois Laupretre <francois@tekwire.net>
+Depends: @RUNTIME_DEPS@
+Provides: @PACKAGE_NAME@
+Description:
+managelogs is a log management program for Apache.
+It rotates and purges the Apache log files based on different size
+limits and includes a lot of useful features.

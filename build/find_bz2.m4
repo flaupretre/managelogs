@@ -28,6 +28,7 @@ else
             WITH_BZ2=1
 			BZ2_OK=1
 			RUNTIME_DEPS="$RUNTIME_DEPS bzip2-libs"
+			BUILD_DEPENDS="$BUILD_DEPENDS bzip2-devel"
             if test "x${BZ2_DIR}" != "x"; then
                 BZ2_CFLAGS="-I${BZ2_DIR}/include"
                 BZ2_LIBS="-L${BZ2_DIR}/lib -lbz2"

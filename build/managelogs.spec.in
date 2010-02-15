@@ -27,7 +27,7 @@ URL: http://@PACKAGE_NAME@.tekwire.net/
 Source: %{name}-%{version}.tar.gz
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildPrereq: apr-devel zlib-devel bzip2-devel
+BuildPrereq: @BUILD_DEPENDS@
 Packager: Francois Laupretre <francois@tekwire.net>
 AutoReqProv: no
 Requires:  @RUNTIME_DEPS@
