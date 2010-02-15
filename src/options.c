@@ -171,9 +171,7 @@ while (1)
 				break;
 
 			case 'c':
-				if (strlen(opt_arg) > LMGR_COMPRESS_STRING_SIZE)
-					FATAL_ERROR1("Invalid compression parameter : %s",opt_arg);
-				strcpy(op->compress_string,opt_arg);
+				op->compress_string=duplicate(opt_arg);
 				break;
 
 			case 's':
@@ -328,6 +326,7 @@ for (i=0;i<count;i++)
 	(void)allocate(opp[i]->base_path,0);
 	(void)allocate(opp[i]->debug_file,0);
 	(void)allocate(opp[i]->rotate_cmd,0);
+	(void)allocate(opp[i]->compress_string,0);
 	(void)allocate(opp[i],0);
 	}
 

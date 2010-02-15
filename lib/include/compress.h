@@ -22,7 +22,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 typedef struct
 	{
-	char suffix[LMGR_COMPRESS_SIZE+1];	/* Uncompressed : empty string */
+	char *suffix;	/* Uncompressed : empty string */
 	void (*init)(void *sp, const char *level);
 	void (*destroy)(void *sp);
 	void (*start)(void *sp);
@@ -61,7 +61,7 @@ typedef struct
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg);
+LIB_INTERNAL void init_compress_handler_from_string(void *sp, const char *arg);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_COMPRESS_H */

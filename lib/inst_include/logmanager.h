@@ -53,11 +53,6 @@ typedef unsigned long TIMESTAMP;
 #define LMGR_FAIL_ENOSPC	0x10	/* Abort on 'no more space' error */
 #define LMGR_PID_FILE		0x20	/* Maintain PID file */
 
-/* Max size of compress method */
-
-#define LMGR_COMPRESS_SIZE	5
-#define LMGR_COMPRESS_STRING_SIZE	(LMGR_COMPRESS_SIZE+5)
-
 /*----------------------------------------------*/
 
 #define LOGMANAGER_API_VERSION	2
@@ -69,7 +64,7 @@ typedef struct
 	unsigned int api_version;
 	char *base_path;
 	unsigned int flags;
-	char compress_string[LMGR_COMPRESS_STRING_SIZE+1];
+	char *compress_string;
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;

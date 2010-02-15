@@ -54,7 +54,8 @@ result[size=0]='\0';
 
 for (chpp=compress_handlers;*chpp;chpp++)
 	{
-	if (! *(suffix=(*chpp)->suffix)) continue;	/* Plain handler */
+	suffix=(*chpp)->suffix;
+	if (! suffix[0]) continue;	/* Plain handler */
 	result=allocate(result,size+strlen(suffix)+2);
 	strcat(result," ");
 	strcat(result,suffix);
@@ -64,27 +65,35 @@ return result;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void init_compress_handler_from_string(void *sp, char *arg)
+LIB_INTERNAL void init_compress_handler_from_string(void *sp, const char *arg)
 {
 COMPRESS_HANDLER **chpp;
-char buf[LMGR_COMPRESS_STRING_SIZE+1],*level;
+char *buf,*level,*suffix;
 LOGMANAGER mp=(LOGMANAGER )sp;
 
-if ((strlen(arg)+1) >= sizeof(buf)) FATAL_ERROR("compression arg too long");
-strcpy(buf,arg);
+mp->compress.handler = &plain_handler;	/* Default */
 
-if ((level=strchr(buf,':'))!=NULL) *(level++)='\0';
-
-for (chpp=compress_handlers;*chpp;chpp++)
+if (arg)
 	{
-	if (!strcmp((*chpp)->suffix,buf))
+	buf=duplicate(arg);
+
+	if ((level=strchr(buf,':'))!=NULL) *(level++)='\0';
+
+	for (chpp=compress_handlers;*chpp;chpp++)
 		{
-		mp->compress.handler=(*chpp);
-		if ((*chpp)->init) (*chpp)->init(sp,level);
-		break;
+		suffix=(*chpp)->suffix;
+		if (!suffix[0]) continue; /* Ignore plain handler */
+		if (!strcmp(suffix,buf))
+			{
+			mp->compress.handler->init=(*chpp);
+			if (mp->compress.handler->init)
+				mp->compress.handler->init(sp,level);
+			break;
+			}
 		}
+	(void)allocate(buf,0);
+	if (!(*chpp)) FATAL_ERROR1("Invalid compression : %s",buf);
 	}
-if (!(*chpp)) FATAL_ERROR1("Invalid compression : %s",buf);
 }
 
 /*----------------------------------------------*/
