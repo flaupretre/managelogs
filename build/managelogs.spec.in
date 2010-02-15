@@ -20,7 +20,7 @@ Summary: managelogs log management software
 Group: Applications/Internet
 Version: @PACKAGE_VERSION@
 Release: @RELEASE_NUMBER@
-ExclusiveOs: @RPM_OS@
+ExclusiveOs: @PACKAGING_OS@
 License: Apache license 2.0
 Source: @PACKAGE_NAME@-%{version}.tar.gz
 URL: http://@PACKAGE_NAME@.tekwire.net/
@@ -30,7 +30,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildPrereq: apr-devel zlib-devel bzip2-devel
 Packager: Francois Laupretre <francois@tekwire.net>
 AutoReqProv: no
-Requires:  @RPM_DEPS@
+Requires:  @RUNTIME_DEPS@
 provides: @PACKAGE_NAME@
 
 %description

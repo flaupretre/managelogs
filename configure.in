@@ -61,13 +61,13 @@ AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
 
 #----------------------------------------------------------------------
-# RPM stuff
+# Packaging stuff
 
-RPM_DEPS=""
-AC_SUBST(RPM_DEPS)
+RUNTIME_DEPS=""
+AC_SUBST(RUNTIME_DEPS_DEPS)
 
-RPM_OS=`uname -s`
-AC_SUBST(RPM_OS)
+PACKAGING_OS=`uname -s`
+AC_SUBST(PACKAGING_OS)
 
 RPMBUILD_OPTS=``
 AC_SUBST(RPMBUILD_OPTS)
@@ -104,7 +104,7 @@ AC_SUBST(APR_CPPFLAGS)
 APR_LDFLAGS="`$apr_config --ldflags`"
 AC_SUBST(APR_LDFLAGS)
 
-RPM_DEPS="$RPM_DEPS apr"
+RUNTIME_DEPS="$RUNTIME_DEPS apr"
 
 #----------------------------------------------------------------------
 # Checks for compression libraries
@@ -123,7 +123,7 @@ AC_FUNC_FORK
 AC_CHECK_FUNCS([malloc realloc memset strchr])
 
 AC_CONFIG_FILES([Makefile
-				managelogs.spec
+				build/managelogs.spec
 				lib/Makefile
 				src/Makefile
 				doc/Makefile])

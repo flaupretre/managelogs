@@ -27,7 +27,7 @@ else
         AC_CHECK_LIB(z, gzread,[
             AC_DEFINE([HAVE_ZLIB], [1], [Have zlib compression library])
             WITH_ZLIB=1
-			RPM_DEPS="$RPM_DEPS zlib"
+			RUNTIME_DEPS="$RUNTIME_DEPS zlib"
 			ZLIB_OK=1
             if test "x${Z_DIR}" != "x"; then
                 Z_CFLAGS="-I${Z_DIR}/include"

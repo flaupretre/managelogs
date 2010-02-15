@@ -5,4 +5,4 @@ EXTRA_DIST = ACKNOWLEDGEMENTS NOTICE build/cleanup build/reconfigure build/mk_ht
 
 rpm: dist
 	cp $(DIST_ARCHIVES) /usr/src/redhat/SOURCES
-	rpmbuild -ba managelogs.spec $(RPMBUILD_OPTS)
+	rpmbuild -ba build/managelogs.spec $(RPMBUILD_OPTS)

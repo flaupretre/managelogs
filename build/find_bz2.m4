@@ -27,7 +27,7 @@ else
             AC_DEFINE([HAVE_BZ2], [1], [Have bzip2 compression library])
             WITH_BZ2=1
 			BZ2_OK=1
-			RPM_DEPS="$RPM_DEPS bzip2-libs"
+			RUNTIME_DEPS="$RUNTIME_DEPS bzip2-libs"
             if test "x${BZ2_DIR}" != "x"; then
                 BZ2_CFLAGS="-I${BZ2_DIR}/include"
                 BZ2_LIBS="-L${BZ2_DIR}/lib -lbz2"
