@@ -39,6 +39,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define PIDFILE_MODE	0x0644
 
+#define DEBUGFILE_MODE	0x0644
+
 #define STATUSFILE_MODE	0x0644
 
 /*----------------------------------------------*/

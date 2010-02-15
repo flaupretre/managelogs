@@ -22,7 +22,7 @@ LIB_INTERNAL OFILE *debug_fp(LOGMANAGER mp)
 if (! mp->debug.fp) 
 	{
 	mp->debug.fp=file_open_for_append((mp->debug.path ? mp->debug.path
-		: "stderr"),(apr_int32_t)PIDFILE_MODE);
+		: "stderr"),(apr_int32_t)DEBUGFILE_MODE);
 	}
 
 return mp->debug.fp;
