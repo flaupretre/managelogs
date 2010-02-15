@@ -145,6 +145,7 @@ while (1)
 
 	op=NEW_STRUCT(LOGMANAGER_OPTIONS);
 	op->create_mode=LOGFILE_MODE;
+	op->flags=LMGR_PID_FILE;	/* maintain a pid file */
 	opp=allocate(opp,(++(*countp))*sizeof(*opp));
 	opp[(*countp)-1]=op;
 

@@ -240,7 +240,7 @@ mp=(LOGMANAGER )allocate(NULL,sizeof(*mp));
 mp->base_path=duplicate(opts->base_path);
 mp->root_dir=ut_dirname(mp->base_path);
 mp->status_path=status_path(mp);
-mp->pid_path=pid_path(mp);
+if (opts->flags & LMGR_PID_FILE) mp->pid_path=pid_path(mp);
 
 /*-- Flags */
 
@@ -346,8 +346,6 @@ else
 }
 
 /*----------------------------------------------*/
-/* Note: Don't remove the pid file if it has been overwritten by another 
-log manager (happens with error_log when apache starts) */
 
 void logmanager_destroy(LOGMANAGER mp)
 {
@@ -361,19 +359,13 @@ DEBUG(mp,1,"Destroying log manager");
 
 if (IS_OPEN(mp)) logmanager_close(mp);
 
-/*-- Remove the PID file */
+remove_pid_file(mp);	/*-- Remove the PID file */
 
-if (!pid_file_is_overwritten(mp)) remove_pid_file(mp);
+C_VOID_HANDLER(mp,destroy);	/*-- Destroy compress handler */
 
-/*-- Destroy compress handler */
+FREE_LOGFILE(mp->active.file);	/*-- Free the LOGFILE structs */
 
-C_VOID_HANDLER(mp,destroy);
-
-/*-- Free the LOGFILE structs */
-
-FREE_LOGFILE(mp->active.file);
-
-if (BACKUP_COUNT(mp))
+if (BACKUP_COUNT(mp))	/* Free backup array */
 	{
 	for (i=0;i<BACKUP_COUNT(mp);i++) FREE_LOGFILE(BACKUP_FILES(mp)[i]);
 	ARRAY_CLEAR(mp->backup.files);

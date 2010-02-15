@@ -21,7 +21,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 
 LIB_INTERNAL char *pid_path(LOGMANAGER mp);
-LIB_INTERNAL BOOL pid_file_is_overwritten(LOGMANAGER mp);
 LIB_INTERNAL void create_pid_file(LOGMANAGER mp);
 LIB_INTERNAL void remove_pid_file(LOGMANAGER mp);
 

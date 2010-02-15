@@ -46,11 +46,12 @@ typedef unsigned long TIMESTAMP;
 
 /* LOGMANAGER option flags */
 
-#define LMGR_ACTIVE_LINK	0x01
-#define LMGR_BACKUP_LINKS	0x02
-#define LMGR_HARD_LINKS		0x04
-#define LMGR_IGNORE_EOL		0x08
-#define LMGR_FAIL_ENOSPC	0x10
+#define LMGR_ACTIVE_LINK	0x01	/* Maintain link to active log */
+#define LMGR_BACKUP_LINKS	0x02	/* Maintain link to backup logs */
+#define LMGR_HARD_LINKS		0x04	/* Create hard links (not symbolic) */
+#define LMGR_IGNORE_EOL		0x08	/* Don't rotate on eol only */
+#define LMGR_FAIL_ENOSPC	0x10	/* Abort on 'no more space' error */
+#define LMGR_PID_FILE		0x20	/* Maintain PID file */
 
 /* Max size of compress method */
 

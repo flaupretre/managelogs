@@ -37,6 +37,8 @@ OFILE *fp;
 char buf[32];
 unsigned long pid;
 
+if (! mp->pid_path) return;
+
 pid=(unsigned long)getpid();
 DEBUG2(mp,1,"Creating PID file (%s, pid=%lu)",mp->pid_path,pid);
 DEBUG1(mp,2,"PPID=%lu",(unsigned long)getppid());
@@ -50,29 +52,26 @@ file_write_string_nl(fp,buf,YES);
 }
 
 /*----------------------------------------------*/
+/* Note: Don't remove the pid file if it has been overwritten by another 
+log manager (happens with error_log when apache starts) */
 
-LIB_INTERNAL BOOL pid_file_is_overwritten(LOGMANAGER mp)
+LIB_INTERNAL void remove_pid_file(LOGMANAGER mp)
 {
 char *buf;
 unsigned long pid;
 
-if (!file_exists(mp->pid_path)) return NO; /* Should not happen but, in case... */
+if (! mp->pid_path) return;
+
+DEBUG1(mp,1,"Removing PID file(%s)",mp->pid_path);
+
+if (!file_exists(mp->pid_path)) return; /* Should not happen but, in case... */
 
 buf=file_get_contents(mp->pid_path,NULL);
 pid=0;
 (void)sscanf(buf,"%lu",&pid);
 (void)allocate(buf,0);
 
-return (pid != (unsigned long)getpid());
-}
-
-/*----------------------------------------------*/
-
-LIB_INTERNAL void remove_pid_file(LOGMANAGER mp)
-{
-DEBUG1(mp,1,"Removing PID file(%s)",mp->pid_path);
-
-(void)file_delete(mp->pid_path,NO);
+if (pid == (unsigned long)getpid()) (void)file_delete(mp->pid_path,NO);
 }
 
 /*------------------------------------------------------------------------*/
