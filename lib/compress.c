@@ -91,8 +91,8 @@ if (arg)
 			break;
 			}
 		}
-	(void)allocate(buf,0);
 	if (!(*chpp)) FATAL_ERROR1("Invalid compression : %s",buf);
+	(void)allocate(buf,0);
 	}
 }
 

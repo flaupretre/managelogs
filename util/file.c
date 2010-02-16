@@ -78,7 +78,7 @@ LIB_INTERNAL BOOL file_exists(const char *path)
 {
 apr_finfo_t finfo;
 apr_status_t status;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 status=apr_stat(&finfo,path,0,CHECK_TPOOL());
 
@@ -91,7 +91,7 @@ return (status==APR_SUCCESS);
 LIB_INTERNAL BOOL file_rename(const char *oldpath,const char *newpath, BOOL fatal)
 {
 BOOL status;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 status=(BOOL)(apr_file_rename(oldpath,newpath,CHECK_TPOOL())==APR_SUCCESS);
 if ((!status) && fatal)
@@ -107,7 +107,7 @@ return status;
 LIB_INTERNAL BOOL file_delete(const char *path, BOOL fatal)
 {
 apr_status_t status;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 status=apr_file_remove(path,CHECK_TPOOL());
 if (fatal && (status!=APR_SUCCESS) && (status!=APR_ENOENT))
@@ -142,7 +142,7 @@ LIB_INTERNAL apr_off_t file_size(const char *path)
 {
 apr_finfo_t finfo;
 apr_off_t size;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 if (apr_stat(&finfo,path,APR_FINFO_SIZE,CHECK_TPOOL())!=APR_SUCCESS)
 	FATAL_ERROR1("Cannot get file size (%s)\n",path);
@@ -150,6 +150,22 @@ size=(apr_off_t)(finfo.size);
 
 FREE_TPOOL();
 return size;
+}
+
+/*----------------------------------------------*/
+
+LIB_INTERNAL apr_filetype_e file_type(const char *path)
+{
+apr_finfo_t finfo;
+apr_filetype_e type;
+DECLARE_TPOOL;
+
+if (apr_stat(&finfo,path,APR_FINFO_TYPE,CHECK_TPOOL())!=APR_SUCCESS)
+	FATAL_ERROR1("Cannot get file type (%s)\n",path);
+type=(apr_filetype_e)(finfo.filetype);
+
+FREE_TPOOL();
+return type;
 }
 
 /*----------------------------------------------*/
@@ -258,7 +274,7 @@ apr_file_t *fd;
 apr_finfo_t finfo;
 char *p;
 apr_size_t size;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 (void)apr_file_open(&fd,path,APR_READ,0,CHECK_TPOOL());
 if (!fd) FATAL_ERROR1("Cannot open file for reading (%s)",path);
