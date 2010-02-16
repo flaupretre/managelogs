@@ -12,7 +12,6 @@ include_HEADERS = inst_include/logmanager.h
 noinst_HEADERS = include/config.h \
 	include/bzip2_handler.h bzip2_handler.c \
 	include/compress.h      compress.c \
-	include/file.h          file.c \
 	include/gzip_handler.h  gzip_handler.c \
 	include/time.h          time.c \
 	include/backup.h        backup.c \
@@ -26,6 +25,8 @@ noinst_HEADERS = include/config.h \
 	include/plain_handler.h plain_handler.c \
 	include/array.h \
 	logmanager.c \
+	$(top_srcdir)/util/file.c \
+	$(top_srcdir)/util/file.h \
 	$(top_srcdir)/util/util.c \
 	$(top_srcdir)/util/util.h
 
