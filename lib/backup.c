@@ -25,7 +25,7 @@ LIB_INTERNAL void refresh_backup_links(LOGMANAGER mp)
 unsigned int i;
 
 DEBUG(mp,1,"Refreshing backup links");
-INCR_STAT_COUNT(refresh_backup_links);
+INCR_STAT_COUNT(mp,refresh_backup_links);
 
 if (BACKUP_COUNT(mp))
 	{
@@ -63,7 +63,7 @@ LIB_INTERNAL void remove_oldest_backup(LOGMANAGER mp)
 if (! BACKUP_COUNT(mp)) return; /* Should never happen */
 
 DEBUG1(mp,1,"Removing oldest backup file (%s)",OLDEST_BACKUP_FILE(mp)->path);
-INCR_STAT_COUNT(remove_oldest);
+INCR_STAT_COUNT(mp,remove_oldest);
 
 mp->backup.size -= OLDEST_BACKUP_FILE(mp)->size;
 DELETE_LOGFILE(OLDEST_BACKUP_FILE(mp));
