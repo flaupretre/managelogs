@@ -63,7 +63,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/plain_handler.h"
 #include "include/gzip_handler.h"
 #include "include/bzip2_handler.h"
-#include "include/file.h"
+#include "../util/file.h"
 #include "include/array.h"
 #include "include/backup.h"
 #include "include/stats.h"
@@ -129,7 +129,7 @@ static void _sync_logfiles_from_disk(LOGMANAGER mp);
 /* Files are included here because they can refer to the declarations above */
 
 #include "../util/util.c"
-#include "file.c"
+#include "../util/file.c"
 #include "time.c"
 #include "gzip_handler.c"
 #include "plain_handler.c"
@@ -218,7 +218,7 @@ CHECK_MP(mp);
 if (!IS_OPEN(mp)) return;
 
 DEBUG1(mp,1,"Flushing %s",mp->active.file->path);
-INCR_STAT_COUNT(flush);
+INCR_STAT_COUNT(mp,flush);
 
 C_VOID_HANDLER(mp,flush);
 }
@@ -436,7 +436,7 @@ int len;
 char *path,*ep;
 int i;
 
-INCR_STAT_COUNT(new_active_file);
+INCR_STAT_COUNT(mp,new_active_file);
 
 lp=mp->active.file=NEW_LOGFILE();
 
@@ -469,7 +469,7 @@ CHECK_MP(mp);
 NORMALIZE_TIMESTAMP(t);
 
 DEBUG1(mp,1,"Starting rotation (%s)",mp->base_path);
-INCR_STAT_COUNT(rotate);
+INCR_STAT_COUNT(mp,rotate);
 
 if (IS_OPEN(mp)) _close_active_file(mp);
 
@@ -503,7 +503,7 @@ unsigned int i;
 LOGFILE **lpp;
 
 DEBUG(mp,1,"Syncing log files from disk");
-INCR_STAT_COUNT(sync);
+INCR_STAT_COUNT(mp,sync);
 
 if (! IS_OPEN(mp)) SYNC_LOGFILE_FROM_DISK(mp->active.file);
 

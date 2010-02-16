@@ -63,6 +63,7 @@ static apr_getopt_option_t long_options[]=
 	{"rotate-delay",'r',1 },
 	{"purge-delay",'p',1 },
 	{"enospc-abort",'x',0 },
+	{"input",'i',1 },
 	{"",'\0', 0 }
 	};
 
@@ -93,6 +94,7 @@ fprintf(fd,"\n\
  -V|--version              Print version banner and exit\n\
  -I|--stats                Display internal stats before exiting \n\
  -R|--refresh-only         Just refresh/purge files, then exit\n\
+ -i|--input <path>         Read from <file> (Default : stdin)\n\
 \n\
 *---- per-manager options (these options apply to the next <base-path> only) :\n\
 \n\
@@ -102,7 +104,7 @@ fprintf(fd,"\n\
 if (clist[0]) /* If at least one compression scheme is supported */
 	{
 	fprintf(fd,"\
- -c|--compress <cp>[:lvl]  Activate compression\n",clist);
+ -c|--compress <cp>[:lvl]  Activate compression (cp is one of %s\n",clist);
 	}
 
 fprintf(fd,"\
@@ -118,7 +120,7 @@ fprintf(fd,"\
  -e|--ignore-eol           Disables the eol buffering mechanism\n\
  -C|--rotate-cmd <cmd>     Execute <cmd> on every rotation\n\
  -x|--enospc-abort         Abort on 'no more space' write error\n\
-\n",LOGFILE_MODE);
+\n");
 
 (void)allocate(clist,0);
 
@@ -134,7 +136,7 @@ apr_status_t status;
 LOGMANAGER_OPTIONS **opp, *op;
 int optch;
 const char *opt_arg;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 opp=(LOGMANAGER_OPTIONS **)0;
 (*countp)=0;
@@ -227,11 +229,11 @@ while (1)
 				break;
 
 			case 'I':
-				stats_toggle=1;
+				stats_toggle=YES;
 				break;
 
 			case 'R':
-				refresh_only=1;
+				refresh_only=YES;
 				break;
 
 			case 'C':
@@ -244,6 +246,10 @@ while (1)
 
 			case 'p':
 				op->purge_delay=convert_delay(opt_arg);
+				break;
+
+			case 'i':
+				input_path=duplicate(opt_arg);
 				break;
 			}
 		}

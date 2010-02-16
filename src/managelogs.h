@@ -37,6 +37,7 @@ extern int stats_toggle;
 extern int refresh_only;
 extern LOGMANAGER *mpp;
 extern int mgr_count;
+extern char *input_path;
 
 /*----------------------------------------------*/
 

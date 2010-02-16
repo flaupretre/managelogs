@@ -39,10 +39,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <logmanager.h>
 
 #include "../util/util.h"
+#include "../util/file.h"
 #include "intr.h"
 #include "options.h"
 
 #include "../util/util.c"
+#include "../util/file.c"
 
 /*----------------------------------------------*/
 
@@ -52,10 +54,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 LOGMANAGER *mpp=(LOGMANAGER *)0;
 int mgr_count;
+char *input_path=NULL;
+static BOOL input_is_fifo=NO;
+static apr_file_t *f_input=(apr_file_t *)0;
 
 TIMESTAMP timestamp=NOW;
-int stats_toggle=0;
-int refresh_only=0;
+BOOL stats_toggle=NO;
+BOOL refresh_only=NO;
 
 DECLARE_POOL(main_pool);
 
@@ -76,9 +81,13 @@ if (mpp)
 		}
 	}
 
-mpp=allocate(mpp,0);
+if (f_input) (void)apr_file_close(f_input);
 
-apr_terminate();	/* Includes main_pool free */
+mpp=allocate(mpp,0);
+input_path=allocate(input_path,0);
+
+FREE_POOL(main_pool);
+apr_terminate();
 
 exit(status);
 }
@@ -87,12 +96,12 @@ exit(status);
 
 int main (int argc, char * argv[])
 {
-apr_file_t *f_stdin;
 apr_size_t nread,chunk_size,tmp_size;
 char buf[CHUNK_MAX];
 apr_status_t status;
 LOGMANAGER_OPTIONS **opp;
 int i;
+apr_int32_t flags;
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
 intr_on();
@@ -120,19 +129,42 @@ free_options(opp,mgr_count); /* We don't need the options structs anymore */
 
 if (refresh_only) exit_proc(0);
 
-/* Open stdin for reading */
-
-if (apr_file_open_stdin(&f_stdin,CHECK_POOL(main_pool)) != APR_SUCCESS)
-	FATAL_ERROR("Cannot open stdin\n");
-
-signal_init();
+signal_init();	/* Init signal handlers */
 
 /* Main loop */
 
 for (;;)
 	{
+	if (! f_input)
+		{
+		/* -- Open input and check for fifo */
+		/* Should be done before entering the loop, but we need to do it */
+		/* here because APR does not support non-block open flag, so, when */
+		/* opening a fifo, the open() call blocks until a writer connects. */
+		/* Another solution would be manage input without APR but it would */
+		/* probably be less portable. */
+
+		if (input_path)
+			{
+			flags=APR_READ;
+			if (file_type(input_path) == APR_PIPE)
+				{
+				flags |= APR_WRITE; /* Workaround to EOF issue on fifos */
+				input_is_fifo=YES;
+				}
+			(void)apr_file_open(&f_input,input_path,flags,0
+				,CHECK_POOL(main_pool));
+			if (!f_input) FATAL_ERROR1("Cannot open file (%s)",input_path);
+			}
+		else
+			{
+			(void)apr_file_open_stdin(&f_input,CHECK_POOL(main_pool));
+			if (!f_input) FATAL_ERROR("Cannot open standard input for reading");
+			}
+		}
+
 	nread=chunk_size;
-	status=apr_file_read(f_stdin, buf, &nread);
+	status=apr_file_read(f_input, buf, &nread);
 	if (status==APR_EOF) do_action(TERMINATE_ACTION);
 	if (status != APR_SUCCESS) exit_proc(3);
 

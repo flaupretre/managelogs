@@ -13,7 +13,8 @@ managelogs - Piped logging program to rotate/purge Apache logs
 
 <P>
 
-managelogs is a log processing program to be used in conjunction with Apache's
+managelogs is a log processing program primarily intended to be used in
+conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 <P>
@@ -47,11 +48,14 @@ files, and time delay
 <BR>
 
 - Maintains its state across stop/start/restart operations
+<BR>
+
+- Supports reading its data from a named pipe (fifo)
 </DL>
 <P>
 
-A managelogs process continuously reads data from its standard input and
-sends it to its
+A managelogs process continuously reads data (by default, from its standard
+input) and sends it in parallel to its
 <I>log manager(s).</I>
 
 A log manager should be considered as an output channel. Each log 
@@ -65,15 +69,14 @@ log manager.
 <P>
 
 There is no limit to the number of log managers a
-managelogs process can handle. They all receive a copy of the data read from
-the process' standard input and each one processes this data according to its
-configuration.
+managelogs process can handle. They all receive the same data and each of them
+processes it according to its configuration.
 <P>
 
 Note: In most cases, and especially
 during your first steps with managelogs, you will define only one log
-manager, making no difference between the log manager and the managelogs process
-it belongs to.
+manager per managelogs process, making no difference between the log manager
+and the managelogs process it belongs to.
 <P>
 
 A log manager manages an
@@ -153,6 +156,13 @@ or performance tests)
 
 <DD>
 Just refresh/purge log files and exit
+<DT><B>-i</B>|<B>--input</B> <B></B><I>&lt;path&gt;</I>
+
+<DD>
+Read data from <I>&lt;path&gt;</I> instead of standard input.
+<BR>
+
+See 'READING FROM A NAMED PIPE' below for more info on named pipe support.
 </DL>
 <P>
 
@@ -424,6 +434,47 @@ file pointed by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
 want some statistics without keeping the detailed logs, or if you use the rotate
 command to transfer the log file to another location/server.
 <A NAME="lbAI">&nbsp;</A>
+<H2>READING FROM A NAMED PIPE</H2>
+
+<P>
+
+Although managelogs was primarily intended to be used with Apache, it can be
+used as a general purpose log managing program with a lot of other software.
+As most software don't support a piped logfile feature similar to Apache, the
+usual solution to connect them with managelogs involves a named pipe (aka fifo).
+<P>
+
+In order to use a named pipe :
+<DL COMPACT>
+<DT><DD>
+- The pipe file must exist before both processes are started,
+<BR>
+
+- The '--input' option must be provided on the managelogs command line, followed
+with the path of the named pipe (don't redirect managelogs' standard input from
+the named pipe).
+<BR>
+
+- managelogs automatically detects that it is reading from a named pipe and
+adapts its behavior (see below).
+</DL>
+<P>
+
+Note that managelogs explicitely checks the input file type. So, using
+the '--input' option does not automatically imply the 'named pipe behavior'.
+If the option is followed with the path of a regular file, managelogs will
+behave as if this file had been redirected to its standard input.
+<P>
+
+When managelogs is reading from a named pipe, it remains connected , even after
+the process writing to the pipe exits. This way,
+both processes are independant : the writer process can connect to and
+disconnect from the pipe without disturbing the managelogs process.
+<P>
+
+The only way to stop a managelogs process connected to a named pipe is to kill it
+with a signal (SIGTERM is the standard for this).
+<A NAME="lbAJ">&nbsp;</A>
 <H2>EXAMPLES</H2>
 
 <P>
@@ -522,25 +573,25 @@ executed every night :
 <P>
 
 0 0 * * * kill -USR1 `cat &lt;apache_dir&gt;/logs/access_log.pid`
-<A NAME="lbAJ">&nbsp;</A>
+<A NAME="lbAK">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
 <P>
 
 The managelogs web site : <A HREF="http://managelogs.tekwire.net">http://managelogs.tekwire.net</A>
-<A NAME="lbAK">&nbsp;</A>
+<A NAME="lbAL">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 <P>
 
 Francois Laupretre &lt;<A HREF="mailto:francois@tekwire.net">francois@tekwire.net</A>&gt;
-<A NAME="lbAL">&nbsp;</A>
+<A NAME="lbAM">&nbsp;</A>
 <H2>LICENSE</H2>
 
 <P>
 
 Apache license, Version 2.0 &lt;<A HREF="http://www.apache.org/licenses/">http://www.apache.org/licenses/</A>&gt;
-<A NAME="lbAM">&nbsp;</A>
+<A NAME="lbAN">&nbsp;</A>
 <H2>BUGS</H2>
 
 <P>

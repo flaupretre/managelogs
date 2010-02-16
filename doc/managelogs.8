@@ -6,7 +6,8 @@ managelogs \- Piped logging program to rotate/purge Apache logs
 .RI " [ " options1 " ] " <base-path1> " [[ " options2 " ] " <base-path2> " ...]"
 .SH "DESCRIPTION"
 .PP
-managelogs is a log processing program to be used in conjunction with Apache's
+managelogs is a log processing program primarily intended to be used in
+conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 .PP
@@ -30,9 +31,11 @@ files, and time delay
 - Ensures that rotations occur on line boundaries,
 .br
 - Maintains its state across stop/start/restart operations
+.br
+- Supports reading its data from a named pipe (fifo)
 .PP
-A managelogs process continuously reads data from its standard input and
-sends it to its
+A managelogs process continuously reads data (by default, from its standard
+input) and sends it in parallel to its
 .I log manager(s).
 A log manager should be considered as an output channel. Each log 
 manager is defined
@@ -43,14 +46,13 @@ from. Each set of '[ \fIoptions\fR ] \fI<base-path>\fR' arguments defines a
 log manager.
 .PP
 There is no limit to the number of log managers a
-managelogs process can handle. They all receive a copy of the data read from
-the process' standard input and each one processes this data according to its
-configuration.
+managelogs process can handle. They all receive the same data and each of them
+processes it according to its configuration.
 .PP
 Note: In most cases, and especially
 during your first steps with managelogs, you will define only one log
-manager, making no difference between the log manager and the managelogs process
-it belongs to.
+manager per managelogs process, making no difference between the log manager
+and the managelogs process it belongs to.
 .PP
 A log manager manages an
 .I active
@@ -109,6 +111,11 @@ or performance tests)
 .TP
 .BR -R | --refresh-only
 Just refresh/purge log files and exit
+.TP
+.BR -i | --input " " \fI<path>\fR
+Read data from \fI<path>\fR instead of standard input.
+.br
+See 'READING FROM A NAMED PIPE' below for more info on named pipe support.
 .PP
 ---- Log manager options (apply to the next \fI<base-path>\fR only) :
 .TP
@@ -320,6 +327,36 @@ Note : During its execution, the rotate command is allowed to delete the
 file pointed by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
 want some statistics without keeping the detailed logs, or if you use the rotate
 command to transfer the log file to another location/server.
+.SH "READING FROM A NAMED PIPE"
+.PP
+Although managelogs was primarily intended to be used with Apache, it can be
+used as a general purpose log managing program with a lot of other software.
+As most software don't support a piped logfile feature similar to Apache, the
+usual solution to connect them with managelogs involves a named pipe (aka fifo).
+.PP
+In order to use a named pipe :
+.IP
+- The pipe file must exist before both processes are started,
+.br
+- The '--input' option must be provided on the managelogs command line, followed
+with the path of the named pipe (don't redirect managelogs' standard input from
+the named pipe).
+.br
+- managelogs automatically detects that it is reading from a named pipe and
+adapts its behavior (see below).
+.PP
+Note that managelogs explicitely checks the input file type. So, using
+the '--input' option does not automatically imply the 'named pipe behavior'.
+If the option is followed with the path of a regular file, managelogs will
+behave as if this file had been redirected to its standard input.
+.PP
+When managelogs is reading from a named pipe, it remains connected , even after
+the process writing to the pipe exits. This way,
+both processes are independant : the writer process can connect to and
+disconnect from the pipe without disturbing the managelogs process.
+.PP
+The only way to stop a managelogs process connected to a named pipe is to kill it
+with a signal (SIGTERM is the standard for this).
 .SH "EXAMPLES"
 .PP
 Say we want to keep the last 3 Mbytes of access_log data in <apache-dir>/logs,
