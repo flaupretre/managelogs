@@ -102,37 +102,30 @@ intr_on();
 opp=get_options(argc,argv,&mgr_count);
 
 /* Create and open the log managers */
+/* Adapt read size if limit is small (better precision on rotation) */
+/* '10' is an arbitrary choice, it could be another value */
+/* Security : Chunk size cannot be lower than 100 bytes */
 
 mpp=allocate(NULL,mgr_count*sizeof(*mpp));
+chunk_size=CHUNK_MAX;
 for (i=0;i<mgr_count;i++)
 	{
 	mpp[i]=new_logmanager(opp[i]);
 	logmanager_open(mpp[i],timestamp);
+	tmp_size=opp[i]->file_maxsize/10;
+	if (tmp_size && (tmp_size < chunk_size)) chunk_size=tmp_size;
 	}
 
-if (refresh_only) exit_proc(0);
+free_options(opp,mgr_count); /* We don't need the options structs anymore */
 
-signal_init();
+if (refresh_only) exit_proc(0);
 
 /* Open stdin for reading */
 
 if (apr_file_open_stdin(&f_stdin,CHECK_POOL(main_pool)) != APR_SUCCESS)
 	FATAL_ERROR("Cannot open stdin\n");
 
-/* Adapt read size if limit is small (better precision on rotation) */
-/* '10' is an arbitrary choice, it could be another value */
-/* Security : Chunk size cannot be lower than 100 bytes */
-
-chunk_size=CHUNK_MAX;
-for (i=0;i<mgr_count;i++)
-	{
-	tmp_size=opp[i]->file_maxsize/10;
-	if (tmp_size && (tmp_size < chunk_size)) chunk_size=tmp_size;
-	}
-
-/* Free options structs as we don't need them anymore */
-
-free_options(opp,mgr_count);
+signal_init();
 
 /* Main loop */
 
