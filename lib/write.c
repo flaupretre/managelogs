@@ -23,8 +23,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	mp->eol_buffer.len += _size; \
 	}
 
-#define WRITE_EOL_BUF() { \
-	write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,flags,t); \
+#define WRITE_EOL_BUF(_flags,_t) { \
+	write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,_flags,_t); \
 	FREE_EOL_BUF(); \
 	}
 
@@ -41,8 +41,7 @@ static TIMESTAMP last_write_time=0;
 
 LIB_INTERNAL void write_end(LOGMANAGER mp)
 {
-write_level2(mp,mp->eol_buffer.buf,mp->eol_buffer.len,0,last_write_time);
-FREE_EOL_BUF();
+WRITE_EOL_BUF(0,last_write_time);
 }
 
 /*----------------------------------------------*/
@@ -57,7 +56,7 @@ CHECK_MP(mp);
 NORMALIZE_TIMESTAMP(t);
 
 DEBUG1(mp,2,"Starting logmanager_write (size=%lu)",(unsigned long)size);
-INCR_STAT_COUNT(write);
+INCR_STAT_COUNT(mp,write);
 
 last_write_time=t;
 
@@ -85,7 +84,7 @@ if (mp->eol_buffer.buf)
 			APPEND_TO_EOL_BUF(buf,i+1);
 			buf += (i+1);
 			size -= (i+1);
-			WRITE_EOL_BUF();
+			WRITE_EOL_BUF(flags,t);
 			break;
 			}
 		}
@@ -110,7 +109,8 @@ for (i=size-1;;i--)
 		mp->eol_buffer.len=(size-i-1);
 		if (mp->eol_buffer.len)
 			{
-			DEBUG1(mp,3,"Storing %lu bytes in eol buffer",(unsigned long)(mp->eol_buffer.len));
+			DEBUG1(mp,3,"Storing %lu bytes in eol buffer"
+				,(unsigned long)(mp->eol_buffer.len));
 			size=i+1;
 			mp->eol_buffer.buf=duplicate_mem(&(buf[size]),mp->eol_buffer.len);
 			}
@@ -131,7 +131,7 @@ LIB_INTERNAL void write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
 apr_off_t csize;
 
 DEBUG1(mp,2,"Starting write_level2 (size=%lu)",(unsigned long)size);
-INCR_STAT_COUNT(write2);
+INCR_STAT_COUNT(mp,write2);
 
 if ((!buf) || (size==0) || (!IS_OPEN(mp))) return;
 
