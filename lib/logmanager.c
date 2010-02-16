@@ -169,6 +169,7 @@ if  (mp->rotate_delay
 	&& (mp->active.file->start < (t - mp->rotate_delay)))
 	{
 	DEBUG(mp,1,"Should rotate on delay");
+	return YES;
 	}
 
 return NO;
