@@ -20,9 +20,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define STAT_COUNT_ITEM(_item)	mp->stats._item ## _count
+#define STAT_COUNT_ITEM(_mp,_item)	(_mp)->stats._item ## _count
 
-#define INCR_STAT_COUNT(_item)	{ STAT_COUNT_ITEM(_item)++; }
+#define INCR_STAT_COUNT(_mp,_item)	{ STAT_COUNT_ITEM(_mp,_item)++; }
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_STATS_H */

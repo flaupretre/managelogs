@@ -15,9 +15,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#define DISPLAY_COUNT(_item)	{ \
+#define DISPLAY_COUNT(_mp,_item)	{ \
 	file_write_string(fp,"    " #_item " : ",YES); \
-	snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_item)); \
+	snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_mp,_item)); \
 	file_write_string_nl(fp,buf,YES); \
 	}
 
@@ -36,17 +36,17 @@ file_write_string(fp,"Base path : ",YES);
 file_write_string_nl(fp,mp->base_path,YES);
 file_write_string(fp,"\nCounts :\n",YES);
 
-DISPLAY_COUNT(write);
-DISPLAY_COUNT(write2);
-DISPLAY_COUNT(flush);
-DISPLAY_COUNT(link);
-DISPLAY_COUNT(refresh_backup_links);
-DISPLAY_COUNT(refresh_active_link);
-DISPLAY_COUNT(new_active_file);
-DISPLAY_COUNT(rotate);
-DISPLAY_COUNT(remove_oldest);
-DISPLAY_COUNT(dump);
-DISPLAY_COUNT(sync);
+DISPLAY_COUNT(mp,write);
+DISPLAY_COUNT(mp,write2);
+DISPLAY_COUNT(mp,flush);
+DISPLAY_COUNT(mp,link);
+DISPLAY_COUNT(mp,refresh_backup_links);
+DISPLAY_COUNT(mp,refresh_active_link);
+DISPLAY_COUNT(mp,new_active_file);
+DISPLAY_COUNT(mp,rotate);
+DISPLAY_COUNT(mp,remove_oldest);
+DISPLAY_COUNT(mp,dump);
+DISPLAY_COUNT(mp,sync);
 
 file_write_string_nl(fp,"===========================================================",YES);
 }
