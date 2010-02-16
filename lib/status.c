@@ -129,7 +129,7 @@ char buf[32];
 unsigned int i;
 
 DEBUG1(mp,1,"Writing status to file (%s)",mp->status_path);
-INCR_STAT_COUNT(dump);
+INCR_STAT_COUNT(mp,dump);
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 

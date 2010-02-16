@@ -39,7 +39,7 @@ char buf[64],*group;
 apr_uid_t uid;
 apr_gid_t gid;
 BOOL gid_set;
-DECLARE_TPOOL
+DECLARE_TPOOL;
 
 if (strlen(string) >= sizeof(buf))
 	FATAL_ERROR1("ID string too long (%s)",string);

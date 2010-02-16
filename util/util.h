@@ -41,7 +41,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /* Set to pure macro expansion because of cast problems on 64-bit */
 
 #define FATAL_ERROR_STEP1	apr_file_t *__fd; \
-							DECLARE_POOL(_my_tmp_pool) \
+							DECLARE_POOL(_my_tmp_pool); \
 							(void)apr_file_open_stderr(&__fd \
 								,CHECK_POOL(_my_tmp_pool));
 
@@ -76,7 +76,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define NULL_POOL	(POOL)0
 
-#define DECLARE_POOL(_p)	POOL _p=NULL_POOL;
+#define DECLARE_POOL(_p)	POOL _p=NULL_POOL
 
 #define NEW_POOL(_p)	((void)apr_pool_create(&_p, NULL), _p)
 

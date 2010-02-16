@@ -64,7 +64,7 @@ if (!lp) return;
 if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 	|| ((num!=0) && (mp->flags & LMGR_BACKUP_LINKS)))
 	{
-	INCR_STAT_COUNT(link);
+	INCR_STAT_COUNT(mp,link);
 	lname=link_name(mp,num);
 	if (mp->flags & LMGR_HARD_LINKS)
 		{
@@ -93,7 +93,7 @@ else
 LIB_INTERNAL void refresh_active_link(LOGMANAGER mp)
 {
 DEBUG(mp,1,"Refreshing active link");
-INCR_STAT_COUNT(refresh_active_link);
+INCR_STAT_COUNT(mp,refresh_active_link);
 
 clear_logfile_link(mp,mp->active.file);
 create_logfile_link(mp,mp->active.file,0);

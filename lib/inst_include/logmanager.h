@@ -82,7 +82,7 @@ typedef struct
 #ifdef IN_LMGR_LIB
 
 #include "../include/compress.h"
-#include "../include/file.h"
+#include "../../util/file.h"
 #include "../include/array.h"
 
 typedef struct
