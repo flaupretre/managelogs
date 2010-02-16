@@ -16,7 +16,7 @@ config.status
 *.o
 libtool
 managelogs.spec
-managelogs.spec.src
+managelogs.dsc
 stamp-h1
 src/managelogs
 *.tar.gz
