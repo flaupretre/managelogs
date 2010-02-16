@@ -85,7 +85,7 @@ if (arg)
 		if (!suffix[0]) continue; /* Ignore plain handler */
 		if (!strcmp(suffix,buf))
 			{
-			mp->compress.handler->init=(*chpp);
+			mp->compress.handler=(*chpp);
 			if (mp->compress.handler->init)
 				mp->compress.handler->init(sp,level);
 			break;
