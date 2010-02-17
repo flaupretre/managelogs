@@ -42,7 +42,7 @@ if (fork())		/* Parent returns */
 	,mp->compress.handler->suffix,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_VERSION",PACKAGE_VERSION,CHECK_TPOOL());
 
-(void)snprintf(buf,sizeof(buf),"%lu",t);
+(void)apr_snprintf(buf,sizeof(buf),"%lu",t);
 (void)apr_env_set("LOGMANAGER_TIME",buf,CHECK_TPOOL());
 
 /* Run command through shell */

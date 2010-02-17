@@ -27,7 +27,7 @@ strcpy(p,mp->base_path);
 
 if (num)
 	{
-	snprintf(buf,sizeof(buf),((num > 999) ? ".B.%d" : ".B.%03d"),num);
+	(void)apr_snprintf(buf,sizeof(buf),((num > 999) ? ".B.%d" : ".B.%03d"),num);
 	p=allocate(p,len += strlen(buf));
 	strcat(p,buf);
 	}
@@ -69,7 +69,7 @@ if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 	if (mp->flags & LMGR_HARD_LINKS)
 		{
 		file_delete(lname,NO);
-#ifdef HARDLINK_SUPPORT
+#if HAVE_LINK
 		/* Must use the full path as target */
 		(void)link(lp->path,lp->link=lname);
 #endif
@@ -77,7 +77,7 @@ if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 	else
 		{
 		file_delete(lname,NO);
-#ifdef SYMLINK_SUPPORT
+#if HAVE_SYMLINK
 		(void)symlink(ut_basename(lp->path),lp->link=lname);
 #endif
 		}

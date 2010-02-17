@@ -15,6 +15,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include <apr_portable.h>
+
+#if APR_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 /*----------------------------------------------*/
 /* Return absolute path of PID file */
 
@@ -24,7 +30,7 @@ char *p;
 int len;
 
 p=allocate(NULL,len=(strlen(mp->base_path)+5));
-snprintf(p,len,"%s.pid",mp->base_path);
+(void)apr_snprintf(p,len,"%s.pid",mp->base_path);
 
 return p;
 }
@@ -35,17 +41,17 @@ LIB_INTERNAL void create_pid_file(LOGMANAGER mp)
 {
 OFILE *fp;
 char buf[32];
-unsigned long pid;
+apr_os_proc_t pid;
 
 if (! mp->pid_path) return;
 
-pid=(unsigned long)getpid();
-DEBUG2(mp,1,"Creating PID file (%s, pid=%lu)",mp->pid_path,pid);
-DEBUG1(mp,2,"PPID=%lu",(unsigned long)getppid());
+pid=getpid();
+DEBUG2(mp,1,"Creating PID file (%s, pid=" APR_PID_T_FMT ")",mp->pid_path,pid);
+DEBUG1(mp,2,"PPID=" APR_PID_T_FMT,getppid());
 
 fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
 
-(void)snprintf(buf,sizeof(buf),"%lu",pid);
+(void)apr_snprintf(buf,sizeof(buf),APR_PID_T_FMT,pid);
 file_write_string_nl(fp,buf,YES);
 
 (void)file_close(fp);
@@ -58,7 +64,7 @@ log manager (happens with error_log when apache starts) */
 LIB_INTERNAL void remove_pid_file(LOGMANAGER mp)
 {
 char *buf;
-unsigned long pid;
+apr_os_proc_t pid;
 
 if (! mp->pid_path) return;
 
@@ -67,11 +73,11 @@ DEBUG1(mp,1,"Removing PID file(%s)",mp->pid_path);
 if (!file_exists(mp->pid_path)) return; /* Should not happen but, in case... */
 
 buf=file_get_contents(mp->pid_path,NULL);
-pid=0;
-(void)sscanf(buf,"%lu",&pid);
+pid=(apr_os_proc_t)0;
+(void)sscanf(buf,APR_PID_T_FMT,&pid);
 (void)allocate(buf,0);
 
-if (pid == (unsigned long)getpid()) (void)file_delete(mp->pid_path,NO);
+if (pid == getpid()) (void)file_delete(mp->pid_path,NO);
 }
 
 /*------------------------------------------------------------------------*/

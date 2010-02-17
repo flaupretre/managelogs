@@ -17,7 +17,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define DISPLAY_COUNT(_mp,_item)	{ \
 	file_write_string(fp,"    " #_item " : ",YES); \
-	snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_mp,_item)); \
+	(void)apr_snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_mp,_item)); \
 	file_write_string_nl(fp,buf,YES); \
 	}
 

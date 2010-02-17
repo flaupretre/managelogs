@@ -166,7 +166,7 @@ int len;
 if (!root_dir) return duplicate(str);
 
 p=allocate(NULL,len=strlen(root_dir)+strlen(str)+2);
-snprintf(p,len,"%s%s",root_dir,str);
+(void)apr_snprintf(p,len,"%s%s",root_dir,str);
 return p;
 }
 

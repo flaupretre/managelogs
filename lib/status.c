@@ -24,7 +24,7 @@ char *p;
 int len;
 
 p=allocate(NULL,len=(strlen(mp->base_path)+8));
-snprintf(p,len,"%s.status",mp->base_path);
+(void)apr_snprintf(p,len,"%s.status",mp->base_path);
 
 return p;
 }
@@ -109,10 +109,10 @@ if (file_exists(mp->status_path))
 		file_write_string(fp,_type " ",YES);	/* Path */ \
 		file_write_string_nl(fp,ut_basename((_lp)->path),YES); \
 		file_write_string(fp,"s ",YES);			/* Start */ \
-		(void)snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
+		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
 		file_write_string_nl(fp,buf,YES); \
 		file_write_string(fp,"e ",YES);			/* End */ \
-		(void)snprintf(buf,sizeof(buf),"%lu",(_lp)->end); \
+		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->end); \
 		file_write_string_nl(fp,buf,YES); \
 		if ((_lp)->link) \
 			{ \
@@ -136,7 +136,7 @@ fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 file_write_string_nl(fp,"I === Managelogs status data ===",YES);
 
 file_write_string(fp,"A ",YES);
-(void)snprintf(buf,sizeof(buf),"%d",LOGMANAGER_API_VERSION);
+(void)apr_snprintf(buf,sizeof(buf),"%d",LOGMANAGER_API_VERSION);
 file_write_string_nl(fp,buf,YES);
 
 file_write_string_nl(fp,"V " PACKAGE_VERSION,YES);

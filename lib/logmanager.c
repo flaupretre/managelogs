@@ -23,6 +23,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr_file_io.h>
 #include <apr_env.h>
 #include <apr_errno.h>
+#include <apr_strings.h>
 
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -117,8 +118,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-static BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
-static BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
+static APR_INLINE BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
+static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
 static void _open_active_file(LOGMANAGER mp);
 static void _close_active_file(LOGMANAGER mp);
 static void _new_active_file(LOGMANAGER mp,TIMESTAMP t);
@@ -146,7 +147,7 @@ static void _sync_logfiles_from_disk(LOGMANAGER mp);
 
 /*----------------------------------------------*/
 
-static BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+static APR_INLINE BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
 {
 apr_off_t future_size;
 
@@ -177,7 +178,7 @@ return NO;
 
 /*----------------------------------------------*/
 
-static BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
 {
 apr_off_t future_size;
 
@@ -445,11 +446,11 @@ len =64; /* should be enough for any suffix  (compression + number) */
 
 len += strlen(mp->base_path)+11;
 path=allocate(NULL,len);
-(void)snprintf(path,len,"%s._%08lX",mp->base_path,t);
+(void)apr_snprintf(path,len,"%s._%08lX",mp->base_path,t);
 
 for (i=0,ep=path+strlen(path);;i++)
 	{
-	if (i) sprintf(ep,((i < 1000) ? "_%03d" : "_%d"),i);
+	if (i) (void)apr_snprintf(ep,10,((i < 1000) ? "_%03d" : "_%d"),i);
 	if (mp->compress.handler->suffix[0])
 		{
 		strcat(ep,".");
