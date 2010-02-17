@@ -34,6 +34,16 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <strings.h>
 #endif
 
+#if APR_HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+/* Don't use APR_HAVE_SYS_STAT_H (not always correctly defined) */
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 /*---------*/
 
 #include <logmanager.h>
@@ -102,6 +112,8 @@ apr_status_t status;
 LOGMANAGER_OPTIONS **opp;
 int i;
 apr_int32_t flags;
+
+(void)umask((mode_t)0); /* Clear file creation mask */
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
 intr_on();
