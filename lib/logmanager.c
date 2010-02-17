@@ -449,7 +449,7 @@ path=allocate(NULL,len);
 
 for (i=0,ep=path+strlen(path);;i++)
 	{
-	if (i) sprintf(ep,((i < 1000) ? ".%03d" : ".%d"),i);
+	if (i) sprintf(ep,((i < 1000) ? "_%03d" : "_%d"),i);
 	if (mp->compress.handler->suffix[0])
 		{
 		strcat(ep,".");

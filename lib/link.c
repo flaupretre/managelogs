@@ -27,7 +27,7 @@ strcpy(p,mp->base_path);
 
 if (num)
 	{
-	snprintf(buf,sizeof(buf),((num > 999) ? ".b.%d" : ".b.%03d"),num);
+	snprintf(buf,sizeof(buf),((num > 999) ? ".B.%d" : ".B.%03d"),num);
 	p=allocate(p,len += strlen(buf));
 	strcat(p,buf);
 	}
