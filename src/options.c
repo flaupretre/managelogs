@@ -26,7 +26,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <string.h>
 #endif
 
-#include "../util/util.h"
+#include "../common/util.h"
 #include "options.h"
 #include "managelogs.h"
 #include "id.h"

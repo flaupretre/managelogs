@@ -38,13 +38,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <logmanager.h>
 
-#include "../util/util.h"
-#include "../util/file.h"
+#include "../common/util.h"
+#include "../common/file.h"
 #include "intr.h"
 #include "options.h"
 
-#include "../util/util.c"
-#include "../util/file.c"
+#include "../common/util.c"
+#include "../common/file.c"
 
 /*----------------------------------------------*/
 

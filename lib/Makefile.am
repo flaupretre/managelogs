@@ -25,10 +25,10 @@ noinst_HEADERS = include/config.h \
 	include/plain_handler.h plain_handler.c \
 	include/array.h \
 	logmanager.c \
-	$(top_srcdir)/util/file.c \
-	$(top_srcdir)/util/file.h \
-	$(top_srcdir)/util/util.c \
-	$(top_srcdir)/util/util.h
+	$(top_srcdir)/common/file.c \
+	$(top_srcdir)/common/file.h \
+	$(top_srcdir)/common/util.c \
+	$(top_srcdir)/common/util.h
 
 liblogmanager_la_LIBADD = $(APR_LIBS) $(Z_LIBS) $(BZ2_LIBS)
 liblogmanager_la_LDFLAGS = -version-info $(LIB_LT_VERSION):$(LIB_LT_REVISION):$(LIB_LT_AGE)

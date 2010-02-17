@@ -54,7 +54,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include "../config.h"
 
-#include "../util/util.h"
+#include "../common/util.h"
 #include "inst_include/logmanager.h"
 #include "include/config.h"
 #include "include/time.h"
@@ -63,7 +63,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/plain_handler.h"
 #include "include/gzip_handler.h"
 #include "include/bzip2_handler.h"
-#include "../util/file.h"
+#include "../common/file.h"
 #include "include/array.h"
 #include "include/backup.h"
 #include "include/stats.h"
@@ -128,8 +128,8 @@ static void _sync_logfiles_from_disk(LOGMANAGER mp);
 /* Other source files (non exported symbols) */
 /* Files are included here because they can refer to the declarations above */
 
-#include "../util/util.c"
-#include "../util/file.c"
+#include "../common/util.c"
+#include "../common/file.c"
 #include "time.c"
 #include "gzip_handler.c"
 #include "plain_handler.c"
