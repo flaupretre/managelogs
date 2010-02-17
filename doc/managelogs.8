@@ -195,8 +195,8 @@ before the size limit is reached.
 Maintain a link file (named \fI<base-path>\fR) to the active log file.
 .TP
 .BR -L | --backup-links
-Also maintain links to the backup log files (backup links are named
-\fI<base-path>.{001,002,...}\fR, most recent first)
+Also maintain links to the backup log files (backup link are named
+\fI<base-path>.{B.001[.gz|.bz2],B.002[.gz|.bz2],...}\fR, most recent first)
 .TP
 .BR -H | --hardlink
 Create hard links instead of symbolic links.
@@ -241,11 +241,11 @@ files is kept.
 A log file. The \fI<xxxxxxxx>\fR part of the name is a unique identifier
 computed
 by the log manager when the file is created. When several log files are present,
-their alphabetical order always corresponds to their creation time chronological
+their alphabetical order corresponds to their creation time chronological
 order. So, when you list a directory in
 alphabetical order, the oldest backup
 log file comes first, and the active log
-file comes last. And a command like 'cat <base-path>._*' displays the
+file comes last, so that the 'cat <base-path>._*' command displays the
 whole log data in chronological order.
 .br
 When compression is turned on, the log manager automatically appends the
@@ -256,11 +256,11 @@ If the '--link' option is set for this log manager, it maintains a link
 from <base-path> to the active log file. By default, it is a symbolic link,
 but the '--hardlink' option allows to use hard links instead.
 .TP
-<base-path>.{001,002,...}
+<base-path>.{B.001[.gz|.bz2],B.002[.gz|.bz2],...}
 These are also links, but to the backup log files. They are created and
 maintained only if the '--backup-links' option was set. The files are numbered
-in reverse chronological order : <base-path>.001 is the most recent backup,
-<base-path>.002 is the previous one...
+in reverse chronological order : <base-path>.B.001[.gz|.bz2] is the most recent backup,
+<base-path>.B.002[.gz|.bz2] is the previous one...
 .SH "SIGNALS"
 .TP
 .B SIGUSR1
@@ -373,8 +373,8 @@ such a configuration :
 # ls -l $apache_dir/logs/access_log*
 \...
 lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log -> access_log._49BFB0A2
-lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.001 -> access_log._49BF8366
-lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.002 -> access_log._49BF2522
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.B.001 -> access_log._49BF8366
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.B.002 -> access_log._49BF2522
 -rw-r--r-- 1 root root 1048564 Mar  5 12:34 access_log._49BF2522
 -rw-r--r-- 1 root root 1048543 Mar 17 15:16 access_log._49BF8366
 -rw-r--r-- 1 root root  483328 Mar 19 07:05 access_log._49BFB0A2
@@ -385,7 +385,7 @@ lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.002 -> access_log._49BF25
 In this list you can see (in alphabetical order) :
 - The symbolic link to the active log file
 .br
-- The 2 symbolic links to the 2 backup log files
+- The 2 symbolic links to the backup log files
 .br
 - The 2 backup log files (in chronological order)
 .br

@@ -271,8 +271,8 @@ Maintain a link file (named <I>&lt;base-path&gt;</I>) to the active log file.
 <DT><B>-L</B>|<B>--backup-links</B>
 
 <DD>
-Also maintain links to the backup log files (backup links are named
-<I>&lt;base-path&gt;.{001,002,...}</I>, most recent first)
+Also maintain links to the backup log files (backup link are named
+<I>&lt;base-path&gt;.{B.001[.gz|.bz2],B.002[.gz|.bz2],...}</I>, most recent first)
 <DT><B>-H</B>|<B>--hardlink</B>
 
 <DD>
@@ -325,11 +325,11 @@ files is kept.
 A log file. The <I>&lt;xxxxxxxx&gt;</I> part of the name is a unique identifier
 computed
 by the log manager when the file is created. When several log files are present,
-their alphabetical order always corresponds to their creation time chronological
+their alphabetical order corresponds to their creation time chronological
 order. So, when you list a directory in
 alphabetical order, the oldest backup
 log file comes first, and the active log
-file comes last. And a command like 'cat &lt;base-path&gt;._*' displays the
+file comes last, so that the 'cat &lt;base-path&gt;._*' command displays the
 whole log data in chronological order.
 <BR>
 
@@ -339,11 +339,11 @@ compression type to the file name.
 If the '--link' option is set for this log manager, it maintains a link
 from &lt;base-path&gt; to the active log file. By default, it is a symbolic link,
 but the '--hardlink' option allows to use hard links instead.
-<DT>&lt;base-path&gt;.{001,002,...}<DD>
+<DT>&lt;base-path&gt;.{B.001[.gz|.bz2],B.002[.gz|.bz2],...}<DD>
 These are also links, but to the backup log files. They are created and
 maintained only if the '--backup-links' option was set. The files are numbered
-in reverse chronological order : &lt;base-path&gt;.001 is the most recent backup,
-&lt;base-path&gt;.002 is the previous one...
+in reverse chronological order : &lt;base-path&gt;.B.001[.gz|.bz2] is the most recent backup,
+&lt;base-path&gt;.B.002[.gz|.bz2] is the previous one...
 </DL>
 <A NAME="lbAG">&nbsp;</A>
 <H2>SIGNALS</H2>
@@ -496,8 +496,8 @@ such a configuration :
 # ls -l $apache_dir/logs/access_log*
 ...
 lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log -&gt; access_log._49BFB0A2
-lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.001 -&gt; access_log._49BF8366
-lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.002 -&gt; access_log._49BF2522
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.B.001 -&gt; access_log._49BF8366
+lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.B.002 -&gt; access_log._49BF2522
 -rw-r--r-- 1 root root 1048564 Mar  5 12:34 access_log._49BF2522
 -rw-r--r-- 1 root root 1048543 Mar 17 15:16 access_log._49BF8366
 -rw-r--r-- 1 root root  483328 Mar 19 07:05 access_log._49BFB0A2
@@ -510,7 +510,7 @@ lrwxrwxrwx 1 root root      20 Mar 17 15:16 access_log.002 -&gt; access_log._49B
 - The symbolic link to the active log file
 <BR>
 
-- The 2 symbolic links to the 2 backup log files
+- The 2 symbolic links to the backup log files
 <BR>
 
 - The 2 backup log files (in chronological order)
