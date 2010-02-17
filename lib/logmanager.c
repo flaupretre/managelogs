@@ -57,7 +57,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "../common/util.h"
 #include "inst_include/logmanager.h"
 #include "include/config.h"
-#include "include/time.h"
+#include "../common/time.h"
 #include "include/status.h"
 #include "include/compress.h"
 #include "include/plain_handler.h"
@@ -130,7 +130,7 @@ static void _sync_logfiles_from_disk(LOGMANAGER mp);
 
 #include "../common/util.c"
 #include "../common/file.c"
-#include "time.c"
+#include "../common/time.c"
 #include "gzip_handler.c"
 #include "plain_handler.c"
 #include "bzip2_handler.c"
