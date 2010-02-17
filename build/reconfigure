@@ -1,6 +1,7 @@
 
 build/cleanup
 
-autoreconf -v
+./autogen.sh --verbose
 
 ./configure $*
+

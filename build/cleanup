@@ -13,6 +13,12 @@ fi
 	configure \
 	`find . -name 'Makefile.in'` \
 	`find . -name '.deps'` \
+	build/config.guess \
+	build/config.sub \
+	build/depcomp \
+	build/install-sh \
+	build/ltmain.sh \
+	build/missing \
 	*.tar.gz \
 	*.rpm
 
