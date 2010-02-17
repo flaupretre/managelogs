@@ -31,6 +31,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define FREE_EOL_BUF() \
 	mp->eol_buffer.buf=allocate(mp->eol_buffer.buf,mp->eol_buffer.len=0);
 
+#define EOL_BUF_IS_EMPTY()	(mp->eol_buffer.buf == NULL)
+
 /*----------------------------------------------*/
 
 static TIMESTAMP last_write_time=0;
@@ -72,7 +74,7 @@ if (mp->flags & LMGR_IGNORE_EOL)
 from the beginning. If found, output the buffer and input data up to \n,
 truncate data. If not found, append data to the buffer */
 
-if (mp->eol_buffer.buf)
+if (! EOL_BUF_IS_EMPTY())
 	{
 	for (i=0;i<size;i++)
 		{
@@ -89,7 +91,7 @@ if (mp->eol_buffer.buf)
 			}
 		}
 
-	if (mp->eol_buffer.buf) /* if not found, append to eol_buffer.buf */
+	if (! EOL_BUF_IS_EMPTY()) /* if not found, append to eol_buffer.buf */
 		{
 		APPEND_TO_EOL_BUF(buf,size);
 		return;
