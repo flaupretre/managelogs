@@ -57,6 +57,7 @@ int mgr_count;
 char *input_path=NULL;
 static BOOL input_is_fifo=NO;
 static apr_file_t *f_input=(apr_file_t *)0;
+static char input_buf[CHUNK_MAX];
 
 TIMESTAMP timestamp=NOW;
 BOOL stats_toggle=NO;
@@ -97,7 +98,6 @@ exit(status);
 int main (int argc, char * argv[])
 {
 apr_size_t nread,chunk_size,tmp_size;
-char buf[CHUNK_MAX];
 apr_status_t status;
 LOGMANAGER_OPTIONS **opp;
 int i;
@@ -139,10 +139,10 @@ for (;;)
 		{
 		/* -- Open input and check for fifo */
 		/* Should be done before entering the loop, but we need to do it */
-		/* here because APR does not support non-block open flag, so, when */
+		/* here because APR does not support non-blocking open flag, so, when */
 		/* opening a fifo, the open() call blocks until a writer connects. */
-		/* Another solution would be manage input without APR but it would */
-		/* probably be less portable. */
+		/* Another solution would be to manage input without APR but it would */
+		/* be less portable. */
 
 		if (input_path)
 			{
@@ -164,12 +164,13 @@ for (;;)
 		}
 
 	nread=chunk_size;
-	status=apr_file_read(f_input, buf, &nread);
+	status=apr_file_read(f_input, input_buf, &nread);
 	if (status==APR_EOF) do_action(TERMINATE_ACTION);
 	if (status != APR_SUCCESS) exit_proc(3);
 
 	NOINTR_START();
-	for (i=0;i<mgr_count;i++) logmanager_write(mpp[i],buf,nread,0,timestamp);
+	for (i=0;i<mgr_count;i++)
+		logmanager_write(mpp[i],input_buf,nread,0,timestamp);
 	NOINTR_END();
 	check_and_run_pending_action();
 	}
