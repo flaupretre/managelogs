@@ -20,3 +20,9 @@ managelogs.dsc
 stamp-h1
 src/managelogs
 *.tar.gz
+config.guess
+config.sub
+depcomp
+install-sh
+ltmain.sh
+missing
