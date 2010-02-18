@@ -91,7 +91,8 @@ typedef struct
 	char *link;
 	TIMESTAMP start;
 	TIMESTAMP end;
-	apr_off_t size; /* Invalid for active file when open */
+	apr_off_t size;  /* File (compressed) size */
+	apr_off_t osize; /* Original (uncompressed) size */
 	} LOGFILE;
 
 typedef struct

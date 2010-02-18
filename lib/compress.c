@@ -46,7 +46,7 @@ static COMPRESS_HANDLER *compress_handlers[]={
 char *logmanager_compression_list()
 {
 COMPRESS_HANDLER **chpp;
-char *result,*suffix;
+char *result,*name;
 int size;
 
 result=allocate(NULL,1);
@@ -54,11 +54,11 @@ result[size=0]='\0';
 
 for (chpp=compress_handlers;*chpp;chpp++)
 	{
-	suffix=(*chpp)->suffix;
-	if (! suffix[0]) continue;	/* Plain handler */
-	result=allocate(result,size+strlen(suffix)+2);
+	name=(*chpp)->name;
+	if (! name[0]) continue;	/* Plain handler */
+	ALLOC_P(result,size+strlen(name)+2);
 	strcat(result," ");
-	strcat(result,suffix);
+	strcat(result,name);
 	}
 return result;
 }
@@ -68,8 +68,9 @@ return result;
 LIB_INTERNAL void init_compress_handler_from_string(void *sp, const char *arg)
 {
 COMPRESS_HANDLER **chpp;
-char *buf,*level,*suffix;
+char *buf,*level,*name;
 LOGMANAGER mp=(LOGMANAGER )sp;
+CHECK_MP(mp);
 
 mp->compress.handler = &plain_handler;	/* Default */
 
@@ -81,9 +82,8 @@ if (arg)
 
 	for (chpp=compress_handlers;*chpp;chpp++)
 		{
-		suffix=(*chpp)->suffix;
-		if (!suffix[0]) continue; /* Ignore plain handler */
-		if (!strcmp(suffix,buf))
+		name=(*chpp)->name;
+		if (!strcmp(name,buf))
 			{
 			mp->compress.handler=(*chpp);
 			if (mp->compress.handler->init)
@@ -92,9 +92,27 @@ if (arg)
 			}
 		}
 	if (!(*chpp)) FATAL_ERROR1("Invalid compression : %s",buf);
-	(void)allocate(buf,0);
+	FREE_P(buf);
 	}
 }
 
 /*----------------------------------------------*/
 
+LIB_INTERNAL void compress_and_write(void *sp, const char *buf
+	, apr_off_t size, TIMESTAMP t)
+{
+LOGMANAGER mp=(LOGMANAGER )sp;
+CHECK_MP(mp);
+
+C_VOID_HANDLER2(mp,compress_and_write,buf,size);
+
+/* Update sizes */
+
+mp->active.file->osize += size;
+mp->active.file->size=mp->active.fp->size;
+
+mp->active.file->end=t;	/*-- Update end timestamp */
+
+}
+
+/*----------------------------------------------*/

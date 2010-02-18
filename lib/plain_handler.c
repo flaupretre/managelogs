@@ -39,6 +39,7 @@ static void plain_compress_and_write(void *sp, const char *buf, apr_size_t size)
 LIB_INTERNAL COMPRESS_HANDLER plain_handler=
 	{
 	"",							/* suffix */
+	"none",						/* name */
 	NULL,						/* init */
 	NULL,						/* destroy */
 	NULL,						/* start */

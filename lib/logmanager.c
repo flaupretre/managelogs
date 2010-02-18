@@ -55,7 +55,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include "../config.h"
 
-#include "../common/util.h"
+#include "../common/global.h"
+#include "../common/alloc.h"
+#include "../common/convert.h"
+#include "../common/path.h"
 #include "inst_include/logmanager.h"
 #include "include/config.h"
 #include "../common/time.h"
@@ -78,7 +81,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define IS_OPEN(_mp) ((_mp)->active.fp)
 
-#define NEW_LOGFILE() (LOGFILE *)allocate(NULL,sizeof(LOGFILE))
+#define NEW_LOGFILE() NEW_STRUCT(LOGFILE)
 
 #define DELETE_LOGFILE(_lp)	{ \
 	if (_lp) \
@@ -92,10 +95,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define FREE_LOGFILE(_lp)	{ \
 	if (_lp) \
 		{ \
-		if ((_lp)->path) (void)allocate((_lp)->path,0); \
-		if ((_lp)->link) (void)allocate((_lp)->link,0); \
+		FREE_P((_lp)->path); \
+		FREE_P((_lp)->link); \
 		} \
-	(_lp)=allocate((_lp),0); \
+	FREE_P(_lp); \
 	} \
 
 #define SYNC_LOGFILE_FROM_DISK(_lp)	{ \
@@ -107,8 +110,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	}
 
 #define ACTIVE_SIZE(_mp) \
-	((_mp)->active.fp ? (_mp)->active.fp->size : \
-		((_mp)->active.file ? (_mp)->active.file->size : 0))
+	((_mp)->active.file ? (_mp)->active.file->size : 0)
 
 /* For added security */
 
@@ -120,6 +122,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 static APR_INLINE BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
 static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
+LIB_INTERNAL void init_logmanager_paths(LOGMANAGER mp,LOGMANAGER_OPTIONS *opts);
 static void _open_active_file(LOGMANAGER mp);
 static void _close_active_file(LOGMANAGER mp);
 static void _new_active_file(LOGMANAGER mp,TIMESTAMP t);
@@ -129,7 +132,9 @@ static void _sync_logfiles_from_disk(LOGMANAGER mp);
 /* Other source files (non exported symbols) */
 /* Files are included here because they can refer to the declarations above */
 
-#include "../common/util.c"
+#include "../common/alloc.c"
+#include "../common/convert.c"
+#include "../common/path.c"
 #include "../common/file.c"
 #include "../common/time.c"
 #include "gzip_handler.c"
@@ -156,11 +161,9 @@ if (mp->file_maxsize && ACTIVE_SIZE(mp))
 	future_size=FUTURE_ACTIVE_SIZE(mp,add);
 	if (future_size > mp->file_maxsize)
 		{
-		DEBUG3(mp,1,"Should rotate on size (add=%lu,future=%lu, limit=%lu)"
-			,(unsigned long)add,(unsigned long)future_size
-			,(unsigned long)(mp->file_maxsize));
-		DEBUG1(mp,1,"Additional info : current=%lu"
-			,(unsigned long)(ACTIVE_SIZE(mp)));
+		DEBUG3(mp,1,"Should rotate on size (add=%" APR_OFF_T_FMT ",future=%" APR_OFF_T_FMT ", limit=%" APR_OFF_T_FMT ")"
+			,add,future_size,mp->file_maxsize);
+		DEBUG1(mp,1,"Additional info : current=%" APR_OFF_T_FMT,ACTIVE_SIZE(mp));
 		return YES;
 		}
 	}
@@ -188,9 +191,8 @@ if ((mp->global_maxsize) && BACKUP_COUNT(mp))
 	if (future_size > mp->global_maxsize)
 		{
 		/* Purge on global size */
-		DEBUG3(mp,1,"Global size conditions exceeded (add=%lu,future=%lu, limit=%lu)"
-			,(unsigned long)add,(unsigned long)future_size
-			,(unsigned long)(mp->global_maxsize));
+		DEBUG3(mp,1,"Global size conditions exceeded (add=%" APR_OFF_T_FMT ",future=%" APR_OFF_T_FMT ", limit=%" APR_OFF_T_FMT ")"
+			,add,future_size,mp->global_maxsize);
 		return YES;
 		}
 	}
@@ -226,6 +228,17 @@ C_VOID_HANDLER(mp,flush);
 }
 	
 /*----------------------------------------------*/
+/*-- Root, PID, Status paths */
+
+LIB_INTERNAL void init_logmanager_paths(LOGMANAGER mp,LOGMANAGER_OPTIONS *opts)
+{
+DUP_P(mp->base_path,opts->base_path);
+mp->root_dir=ut_dirname(mp->base_path);
+mp->status_path=status_path(mp);
+if (opts->flags & LMGR_PID_FILE) mp->pid_path=pid_path(mp);
+}
+
+/*----------------------------------------------*/
 /* NB: Status is read at creation time and written at close time (not destroy).
 * This function must not write anything to the file system as it can be used
 * for analysis (modifications can start when the manager is open()ed).
@@ -237,12 +250,7 @@ LOGMANAGER mp;
 
 mp=(LOGMANAGER )allocate(NULL,sizeof(*mp));
 
-/*-- Root, PID, Status paths */
-
-mp->base_path=duplicate(opts->base_path);
-mp->root_dir=ut_dirname(mp->base_path);
-mp->status_path=status_path(mp);
-if (opts->flags & LMGR_PID_FILE) mp->pid_path=pid_path(mp);
+init_logmanager_paths(mp,opts);
 
 /*-- Flags */
 
@@ -255,6 +263,7 @@ init_compress_handler_from_string(mp,opts->compress_string);
 /*-- Populates mp->active and mp->backup */
 
 get_status_from_file(mp);
+_sync_logfiles_from_disk(mp);
 
 /*-- Max sizes and limits */
 /* Ensures that file limit is lower than global limit. If global limit is set
@@ -292,12 +301,12 @@ if (!mp->create_mode) mp->create_mode=0x644;
 
 /*-- Debug info */
 
-mp->debug.path=duplicate(opts->debug_file);
+DUP_P(mp->debug.path,opts->debug_file);
 mp->debug.level=opts->debug_level;
 
 /* Rotate command */
 
-mp->rotate_cmd=duplicate(opts->rotate_cmd);
+DUP_P(mp->rotate_cmd,opts->rotate_cmd);
 
 /* V 2+ specific options */
 
@@ -377,15 +386,15 @@ debug_close(mp);	/*-- Close debug file */
 
 /* Free paths */
 
-(void)allocate(mp->base_path,0);
-(void)allocate(mp->root_dir,0);
-(void)allocate(mp->status_path,0);
-(void)allocate(mp->pid_path,0);
-(void)allocate(mp->debug.path,0);
+FREE_P(mp->base_path);
+FREE_P(mp->root_dir);
+FREE_P(mp->status_path);
+FREE_P(mp->pid_path);
+FREE_P(mp->debug.path);
 
 /* Last, free the envelope */
 
-(void)allocate(mp,0);
+FREE_P(mp);
 }
 
 /*----------------------------------------------*/

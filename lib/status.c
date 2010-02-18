@@ -55,6 +55,13 @@ if (file_exists(mp->status_path))
 		val=p+2;
 		switch (*p)
 			{
+			case 'A':
+				if (strval_to_ulong(val) < LOGMANAGER_STATUS_VERSION)
+					FATAL_ERROR1("This status file was created by \
+an old program version and cannot be read.\nPlease remove the \
+status file (%s) and restart the program.",mp->status_path);
+				break;
+
 			case 'a':
 				lp=NEW_LOGFILE();
 				lp->path=ut_absolute_path(mp->root_dir,val);
@@ -74,9 +81,9 @@ if (file_exists(mp->status_path))
 				break;
 
 			case 'C':
-				if (strcmp(val,mp->compress.handler->suffix))
+				if (strcmp(val,mp->compress.handler->name))
 					FATAL_ERROR2("Cannot continue from another compression engine (previous: %s ; new: %s)"
-						,val,mp->compress.handler->suffix);
+						,val,mp->compress.handler->name);
 				break;
 
 			case 's':
@@ -88,37 +95,51 @@ if (file_exists(mp->status_path))
 				if (!lp) break;	/* Security against invalid file */
 				lp->end=strval_to_time(val);
 				break;
+
+			case 'i':
+				if (!lp) break;	/* Security against invalid file */
+				lp->size=strval_to_apr_off_t(val);
+				break;
+
+			case 'o':
+				if (!lp) break;	/* Security against invalid file */
+				lp->osize=strval_to_apr_off_t(val);
+				break;
 			/* Ignore other values */
 			}
 		p=p2+1;
 		}
 
-	(void)allocate(buf,0);
-	_sync_logfiles_from_disk(mp);
+	FREE_P(buf);
 	}
 }
 
 /*----------------------------------------------*/
 /* Dump info about active and backup log files to a status file.
-* Sizes are not dumped as they will be retrieved from actual file size.
-*/
+* File size is dumped as it allows to check for file corruption */
 
 #define DUMP_FILE(_lp,_type)	{ \
 	if (_lp) \
 		{ \
 		file_write_string(fp,_type " ",YES);	/* Path */ \
 		file_write_string_nl(fp,ut_basename((_lp)->path),YES); \
+		if ((_lp)->link) \
+			{ \
+			file_write_string(fp,"L ",YES);	/* Link */ \
+			file_write_string_nl(fp,ut_basename((_lp)->link),YES); \
+			} \
 		file_write_string(fp,"s ",YES);			/* Start */ \
 		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
 		file_write_string_nl(fp,buf,YES); \
 		file_write_string(fp,"e ",YES);			/* End */ \
 		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->end); \
 		file_write_string_nl(fp,buf,YES); \
-		if ((_lp)->link) \
-			{ \
-			file_write_string(fp,"L ",YES);	/* Link */ \
-			file_write_string_nl(fp,ut_basename((_lp)->link),YES); \
-			} \
+		file_write_string(fp,"i ",YES);			/* Compressed size */ \
+		(void)apr_snprintf(buf,sizeof(buf),"%" APR_OFF_T_FMT,(_lp)->size); \
+		file_write_string_nl(fp,buf,YES); \
+		file_write_string(fp,"o ",YES);			/* Uncompressed size */ \
+		(void)apr_snprintf(buf,sizeof(buf),"%" APR_OFF_T_FMT,(_lp)->osize); \
+		file_write_string_nl(fp,buf,YES); \
 		} \
 	}
 
@@ -133,16 +154,16 @@ INCR_STAT_COUNT(mp,dump);
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 
-file_write_string_nl(fp,"I === Managelogs status data ===",YES);
+file_write_string_nl(fp,"#==== Managelogs status data ===",YES);
 
 file_write_string(fp,"A ",YES);
-(void)apr_snprintf(buf,sizeof(buf),"%d",LOGMANAGER_API_VERSION);
+(void)apr_snprintf(buf,sizeof(buf),"%d",LOGMANAGER_STATUS_VERSION);
 file_write_string_nl(fp,buf,YES);
 
 file_write_string_nl(fp,"V " PACKAGE_VERSION,YES);
 
 file_write_string(fp,"C ",YES); /* Compression type */
-file_write_string_nl(fp,mp->compress.handler->suffix,YES);
+file_write_string_nl(fp,mp->compress.handler->name,YES);
 
 DUMP_FILE(mp->active.file,"a");
 

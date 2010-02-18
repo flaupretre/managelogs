@@ -46,12 +46,12 @@ apr_os_proc_t pid;
 if (! mp->pid_path) return;
 
 pid=getpid();
-DEBUG2(mp,1,"Creating PID file (%s, pid=" APR_PID_T_FMT ")",mp->pid_path,pid);
-DEBUG1(mp,2,"PPID=" APR_PID_T_FMT,getppid());
+DEBUG2(mp,1,"Creating PID file (%s, pid=%" APR_PID_T_FMT ")",mp->pid_path,pid);
+DEBUG1(mp,2,"PPID=%" APR_PID_T_FMT,getppid());
 
 fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
 
-(void)apr_snprintf(buf,sizeof(buf),APR_PID_T_FMT,pid);
+(void)apr_snprintf(buf,sizeof(buf),"%" APR_PID_T_FMT,pid);
 file_write_string_nl(fp,buf,YES);
 
 (void)file_close(fp);
@@ -74,8 +74,8 @@ if (!file_exists(mp->pid_path)) return; /* Should not happen but, in case... */
 
 buf=file_get_contents(mp->pid_path,NULL);
 pid=(apr_os_proc_t)0;
-(void)sscanf(buf,APR_PID_T_FMT,&pid);
-(void)allocate(buf,0);
+(void)sscanf(buf,"%" APR_PID_T_FMT,&pid);
+FREE_P(buf);
 
 if (pid == getpid()) (void)file_delete(mp->pid_path,NO);
 }
