@@ -28,9 +28,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void purge_backup_files(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
-LIB_INTERNAL void remove_oldest_backup(LOGMANAGER mp);
-LIB_INTERNAL void refresh_backup_links(LOGMANAGER mp);
+LIB_INTERNAL void purge_backup_files(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
+LIB_INTERNAL void remove_oldest_backup(LOGMANAGER *mp);
+LIB_INTERNAL void refresh_backup_links(LOGMANAGER *mp);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_BACKUP_H */

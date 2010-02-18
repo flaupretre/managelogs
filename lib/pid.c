@@ -24,7 +24,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 /* Return absolute path of PID file */
 
-LIB_INTERNAL char *pid_path(LOGMANAGER mp)
+LIB_INTERNAL char *pid_path(LOGMANAGER *mp)
 {
 char *p;
 int len;
@@ -37,7 +37,7 @@ return p;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void create_pid_file(LOGMANAGER mp)
+LIB_INTERNAL void create_pid_file(LOGMANAGER *mp)
 {
 OFILE *fp;
 char buf[32];
@@ -61,7 +61,7 @@ file_write_string_nl(fp,buf,YES);
 /* Note: Don't remove the pid file if it has been overwritten by another 
 log manager (happens with error_log when apache starts) */
 
-LIB_INTERNAL void remove_pid_file(LOGMANAGER mp)
+LIB_INTERNAL void remove_pid_file(LOGMANAGER *mp)
 {
 char *buf;
 apr_os_proc_t pid;

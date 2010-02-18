@@ -27,7 +27,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define PLAIN_INIT_POINTERS() LOGMANAGER mp=(LOGMANAGER )sp;
+#define PLAIN_INIT_POINTERS() LOGMANAGER *mp=(LOGMANAGER *)sp;
 
 /*----------------------------------------------*/
 

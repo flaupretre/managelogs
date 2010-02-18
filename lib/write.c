@@ -42,7 +42,7 @@ static TIMESTAMP last_write_time=0;
 /* Called when the manager is closed. Even if we don't have an EOL, we
 * must write the buffer */
 
-LIB_INTERNAL void write_end(LOGMANAGER mp)
+LIB_INTERNAL void write_end(LOGMANAGER *mp)
 {
 WRITE_EOL_BUF(0,last_write_time);
 }
@@ -50,7 +50,7 @@ WRITE_EOL_BUF(0,last_write_time);
 /*----------------------------------------------*/
 /* Buffer output so that the files are cut on line boundaries ('\n' char) */
 
-void logmanager_write(LOGMANAGER mp, const char *buf, apr_off_t size
+void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
 int i;
@@ -128,7 +128,7 @@ if (size) write_level2(mp,buf,size,flags,t);
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void write_level2(LOGMANAGER mp, const char *buf, apr_off_t size
+LIB_INTERNAL void write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
 apr_off_t csize;

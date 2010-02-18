@@ -20,10 +20,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL char *link_name(LOGMANAGER mp, int num);
-LIB_INTERNAL void refresh_active_link(LOGMANAGER mp);
-LIB_INTERNAL void clear_logfile_link(LOGMANAGER mp, LOGFILE *lp);
-LIB_INTERNAL void create_logfile_link(LOGMANAGER mp, LOGFILE *lp,int num);
+LIB_INTERNAL char *link_name(LOGMANAGER *mp, int num);
+LIB_INTERNAL void refresh_active_link(LOGMANAGER *mp);
+LIB_INTERNAL void clear_logfile_link(LOGMANAGER *mp, LOGFILE *lp);
+LIB_INTERNAL void create_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_LINK_H */

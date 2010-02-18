@@ -17,7 +17,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL char *link_name(LOGMANAGER mp, int num)
+LIB_INTERNAL char *link_name(LOGMANAGER *mp, int num)
 {
 int len;
 char buf[32],*p;
@@ -44,7 +44,7 @@ return p;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void clear_logfile_link(LOGMANAGER mp, LOGFILE *lp)
+LIB_INTERNAL void clear_logfile_link(LOGMANAGER *mp, LOGFILE *lp)
 {
 if (lp && lp->link)
 	{
@@ -55,7 +55,7 @@ if (lp && lp->link)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void create_logfile_link(LOGMANAGER mp, LOGFILE *lp,int num)
+LIB_INTERNAL void create_logfile_link(LOGMANAGER *mp, LOGFILE *lp,int num)
 {
 char *lname;
 
@@ -90,7 +90,7 @@ else
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void refresh_active_link(LOGMANAGER mp)
+LIB_INTERNAL void refresh_active_link(LOGMANAGER *mp)
 {
 DEBUG(mp,1,"Refreshing active link");
 INCR_STAT_COUNT(mp,refresh_active_link);

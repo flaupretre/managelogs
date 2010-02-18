@@ -46,9 +46,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL OFILE *debug_fp(LOGMANAGER mp);
-LIB_INTERNAL apr_file_t *debug_fd(LOGMANAGER mp);
-LIB_INTERNAL void debug_close(LOGMANAGER mp);
+LIB_INTERNAL OFILE *debug_fp(LOGMANAGER *mp);
+LIB_INTERNAL apr_file_t *debug_fd(LOGMANAGER *mp);
+LIB_INTERNAL void debug_close(LOGMANAGER *mp);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_DEBUG_H */

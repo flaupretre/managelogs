@@ -23,7 +23,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-void logmanager_display_stats(LOGMANAGER mp)
+void logmanager_display_stats(LOGMANAGER *mp)
 {
 OFILE *fp;
 char buf[32];

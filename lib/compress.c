@@ -69,7 +69,7 @@ LIB_INTERNAL void init_compress_handler_from_string(void *sp, const char *arg)
 {
 COMPRESS_HANDLER **chpp;
 char *buf,*level,*name;
-LOGMANAGER mp=(LOGMANAGER )sp;
+LOGMANAGER *mp=(LOGMANAGER *)sp;
 CHECK_MP(mp);
 
 mp->compress.handler = &plain_handler;	/* Default */
@@ -101,7 +101,7 @@ if (arg)
 LIB_INTERNAL void compress_and_write(void *sp, const char *buf
 	, apr_off_t size, TIMESTAMP t)
 {
-LOGMANAGER mp=(LOGMANAGER )sp;
+LOGMANAGER *mp=(LOGMANAGER *)sp;
 CHECK_MP(mp);
 
 C_VOID_HANDLER2(mp,compress_and_write,buf,size);

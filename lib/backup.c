@@ -20,7 +20,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 * If we don't do that, clear can destroy new links
 */
 
-LIB_INTERNAL void refresh_backup_links(LOGMANAGER mp)
+LIB_INTERNAL void refresh_backup_links(LOGMANAGER *mp)
 {
 unsigned int i;
 
@@ -46,7 +46,7 @@ if (BACKUP_COUNT(mp))
 to confirm actual sizes. If a backup file has been deleted by an external
 action, maybe we don't actually exceed the limits */
 
-LIB_INTERNAL void purge_backup_files(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+LIB_INTERNAL void purge_backup_files(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t)
 {
 if (global_conditions_exceeded(mp,add,t))
 	{
@@ -58,7 +58,7 @@ if (global_conditions_exceeded(mp,add,t))
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void remove_oldest_backup(LOGMANAGER mp)
+LIB_INTERNAL void remove_oldest_backup(LOGMANAGER *mp)
 {
 if (! BACKUP_COUNT(mp)) return; /* Should never happen */
 

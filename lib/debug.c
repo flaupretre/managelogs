@@ -17,7 +17,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL OFILE *debug_fp(LOGMANAGER mp)
+LIB_INTERNAL OFILE *debug_fp(LOGMANAGER *mp)
 {
 if (! mp->debug.fp) 
 	{
@@ -30,14 +30,14 @@ return mp->debug.fp;
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL apr_file_t *debug_fd(LOGMANAGER mp)
+LIB_INTERNAL apr_file_t *debug_fd(LOGMANAGER *mp)
 {
 return debug_fp(mp)->fd;
 }
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void debug_close(LOGMANAGER mp)
+LIB_INTERNAL void debug_close(LOGMANAGER *mp)
 {
 if (mp->debug.fp) mp->debug.fp=file_close(mp->debug.fp);
 }

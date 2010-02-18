@@ -120,13 +120,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-static APR_INLINE BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
-static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t);
-LIB_INTERNAL void init_logmanager_paths(LOGMANAGER mp,LOGMANAGER_OPTIONS *opts);
-static void _open_active_file(LOGMANAGER mp);
-static void _close_active_file(LOGMANAGER mp);
-static void _new_active_file(LOGMANAGER mp,TIMESTAMP t);
-static void _sync_logfiles_from_disk(LOGMANAGER mp);
+static APR_INLINE BOOL should_rotate(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
+static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
+LIB_INTERNAL void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts);
+static void _open_active_file(LOGMANAGER *mp);
+static void _close_active_file(LOGMANAGER *mp);
+static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t);
+static void _sync_logfiles_from_disk(LOGMANAGER *mp);
 
 /*-----------*/
 /* Other source files (non exported symbols) */
@@ -152,7 +152,7 @@ static void _sync_logfiles_from_disk(LOGMANAGER mp);
 
 /*----------------------------------------------*/
 
-static APR_INLINE BOOL should_rotate(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+static APR_INLINE BOOL should_rotate(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t)
 {
 apr_off_t future_size;
 
@@ -161,7 +161,7 @@ if (mp->file_maxsize && ACTIVE_SIZE(mp))
 	future_size=FUTURE_ACTIVE_SIZE(mp,add);
 	if (future_size > mp->file_maxsize)
 		{
-		DEBUG3(mp,1,"Should rotate on size (add=%" APR_OFF_T_FMT ",future=%" APR_OFF_T_FMT ", limit=%" APR_OFF_T_FMT ")"
+		DEBUG3(mp,1,"Should rotate on size (add=%" APR_OFF_T_FMT ", future=%" APR_OFF_T_FMT ", limit=%" APR_OFF_T_FMT ")"
 			,add,future_size,mp->file_maxsize);
 		DEBUG1(mp,1,"Additional info : current=%" APR_OFF_T_FMT,ACTIVE_SIZE(mp));
 		return YES;
@@ -181,7 +181,7 @@ return NO;
 
 /*----------------------------------------------*/
 
-static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER mp,apr_off_t add,TIMESTAMP t)
+static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t)
 {
 apr_off_t future_size;
 
@@ -215,7 +215,7 @@ return NO;
 
 /*----------------------------------------------*/
 
-void logmanager_flush(LOGMANAGER mp)
+void logmanager_flush(LOGMANAGER *mp)
 {
 CHECK_MP(mp);
 
@@ -230,7 +230,7 @@ C_VOID_HANDLER(mp,flush);
 /*----------------------------------------------*/
 /*-- Root, PID, Status paths */
 
-LIB_INTERNAL void init_logmanager_paths(LOGMANAGER mp,LOGMANAGER_OPTIONS *opts)
+LIB_INTERNAL void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts)
 {
 DUP_P(mp->base_path,opts->base_path);
 mp->root_dir=ut_dirname(mp->base_path);
@@ -244,11 +244,11 @@ if (opts->flags & LMGR_PID_FILE) mp->pid_path=pid_path(mp);
 * for analysis (modifications can start when the manager is open()ed).
 */
 
-LOGMANAGER new_logmanager(LOGMANAGER_OPTIONS *opts)
+LOGMANAGER *new_logmanager(LOGMANAGER_OPTIONS *opts)
 {
-LOGMANAGER mp;
+LOGMANAGER *mp;
 
-mp=(LOGMANAGER )allocate(NULL,sizeof(*mp));
+mp=NEW_STRUCT(LOGMANAGER);
 
 init_logmanager_paths(mp,opts);
 
@@ -323,7 +323,7 @@ return mp;
 
 /*----------------------------------------------*/
 
-void logmanager_open(LOGMANAGER mp,TIMESTAMP t)
+void logmanager_open(LOGMANAGER *mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
 NORMALIZE_TIMESTAMP(t);
@@ -358,7 +358,7 @@ else
 
 /*----------------------------------------------*/
 
-void logmanager_destroy(LOGMANAGER mp)
+void logmanager_destroy(LOGMANAGER *mp)
 {
 unsigned int i;
 
@@ -399,7 +399,7 @@ FREE_P(mp);
 
 /*----------------------------------------------*/
 
-static void _open_active_file(LOGMANAGER mp)
+static void _open_active_file(LOGMANAGER *mp)
 {
 if (IS_OPEN(mp)) return;
 
@@ -414,7 +414,7 @@ C_VOID_HANDLER(mp,start);
 
 /*----------------------------------------------*/
 
-static void _close_active_file(LOGMANAGER mp)
+static void _close_active_file(LOGMANAGER *mp)
 {
 if (!IS_OPEN(mp)) return;
 
@@ -426,7 +426,7 @@ mp->active.fp=file_close(mp->active.fp);
 
 /*----------------------------------------------*/
 
-void logmanager_close(LOGMANAGER mp)
+void logmanager_close(LOGMANAGER *mp)
 {
 CHECK_MP(mp);
 
@@ -440,7 +440,7 @@ dump_status_to_file(mp);
 
 /*----------------------------------------------*/
 
-static void _new_active_file(LOGMANAGER mp,TIMESTAMP t)
+static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t)
 {
 LOGFILE *lp;
 int len;
@@ -474,7 +474,7 @@ lp->start=lp->end=t;
 
 /*----------------------------------------------*/
 
-void logmanager_rotate(LOGMANAGER mp,TIMESTAMP t)
+void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
 NORMALIZE_TIMESTAMP(t);
@@ -508,7 +508,7 @@ dump_status_to_file(mp);
 * NB: Don't check active file if it is open.
 */
 
-static void _sync_logfiles_from_disk(LOGMANAGER mp)
+static void _sync_logfiles_from_disk(LOGMANAGER *mp)
 {
 unsigned int i;
 LOGFILE **lpp;

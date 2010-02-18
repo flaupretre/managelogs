@@ -18,7 +18,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 /* Return absolute path of status file */
 
-LIB_INTERNAL char *status_path(LOGMANAGER mp)
+LIB_INTERNAL char *status_path(LOGMANAGER *mp)
 {
 char *p;
 int len;
@@ -32,7 +32,7 @@ return p;
 /*----------------------------------------------*/
 /* NB: the order of backup files must be preserved from file to mem */
 
-LIB_INTERNAL void get_status_from_file(LOGMANAGER mp)
+LIB_INTERNAL void get_status_from_file(LOGMANAGER *mp)
 {
 char *buf,*p,*p2,*val;
 LOGFILE *lp;
@@ -143,7 +143,7 @@ status file (%s) and restart the program.",mp->status_path);
 		} \
 	}
 
-LIB_INTERNAL void dump_status_to_file(LOGMANAGER mp)
+LIB_INTERNAL void dump_status_to_file(LOGMANAGER *mp)
 {
 OFILE *fp;
 char buf[32];

@@ -64,7 +64,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LOGMANAGER *mpp=(LOGMANAGER *)0;
+LOGMANAGER **mpp=(LOGMANAGER **)0;
 int mgr_count;
 char *input_path=NULL;
 static BOOL input_is_fifo=NO;
