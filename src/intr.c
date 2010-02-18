@@ -22,7 +22,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <stdlib.h>
 #endif
 
-#include "../common/util.h"
+#include "../common/global.h"
 #include "intr.h"
 #include "managelogs.h"
 

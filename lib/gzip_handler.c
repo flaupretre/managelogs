@@ -76,6 +76,7 @@ static void gzip_flush(void *sp);
 LIB_INTERNAL COMPRESS_HANDLER gzip_handler=
 	{
 	"gz",						/* suffix */
+	"gz",						/* name */
 	gzip_init,					/* init */
 	gzip_destroy,				/* destroy */
 	gzip_start,					/* start */
@@ -124,7 +125,7 @@ static void gzip_destroy(void *sp)
 {
 GZ_INIT_POINTERS();
 
-mp->compress.private=allocate(mp->compress.private,0);
+FREE_P(mp->compress.private);
 }
 
 /*----------------------------------------------*/

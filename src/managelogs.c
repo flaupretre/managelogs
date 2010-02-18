@@ -48,12 +48,14 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <logmanager.h>
 
-#include "../common/util.h"
+#include "../common/global.h"
 #include "../common/file.h"
 #include "intr.h"
 #include "options.h"
 
-#include "../common/util.c"
+#include "../common/alloc.c"
+#include "../common/convert.c"
+#include "../common/path.c"
 #include "../common/file.c"
 
 /*----------------------------------------------*/
@@ -94,8 +96,8 @@ if (mpp)
 
 if (f_input) (void)apr_file_close(f_input);
 
-mpp=allocate(mpp,0);
-input_path=allocate(input_path,0);
+FREE_P(mpp);
+FREE_P(input_path);
 
 FREE_POOL(main_pool);
 apr_terminate();
@@ -127,7 +129,7 @@ opp=get_options(argc,argv,&mgr_count);
 /* '10' is an arbitrary choice, it could be another value */
 /* Security : Chunk size cannot be lower than 100 bytes */
 
-mpp=allocate(NULL,mgr_count*sizeof(*mpp));
+ALLOC_P(mpp,mgr_count*sizeof(*mpp));
 chunk_size=CHUNK_MAX;
 for (i=0;i<mgr_count;i++)
 	{

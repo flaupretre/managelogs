@@ -26,7 +26,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <string.h>
 #endif
 
-#include "../common/util.h"
+#include "../common/global.h"
+#include "../common/alloc.h"
 #include "options.h"
 #include "managelogs.h"
 #include "id.h"
@@ -104,7 +105,7 @@ fprintf(fd,"\n\
 if (clist[0]) /* If at least one compression scheme is supported */
 	{
 	fprintf(fd,"\
- -c|--compress <cp>[:lvl]  Activate compression (cp is one of %s\n",clist);
+ -c|--compress <cp>[:lvl]  Activate compression (cp is one of :%s\n",clist);
 	}
 
 fprintf(fd,"\
@@ -122,7 +123,7 @@ fprintf(fd,"\
  -x|--enospc-abort         Abort on 'no more space' write error\n\
 \n");
 
-(void)allocate(clist,0);
+FREE_P(clist);
 
 if (rc >= 0) exit_proc(rc);
 }
@@ -148,7 +149,7 @@ while (1)
 	op=NEW_STRUCT(LOGMANAGER_OPTIONS);
 	op->create_mode=LOGFILE_MODE;
 	op->flags=LMGR_PID_FILE;	/* maintain a pid file */
-	opp=allocate(opp,(++(*countp))*sizeof(*opp));
+	ALLOC_P(opp,(++(*countp))*sizeof(*opp));
 	opp[(*countp)-1]=op;
 
 	(void)apr_getopt_init(&opt_s,CHECK_TPOOL(),argc,(char const * const *)argv);
@@ -164,8 +165,7 @@ while (1)
 				break;
 
 			case 'd':
-				if (op->debug_file) op->debug_file=allocate(op->debug_file,0);
-				op->debug_file=duplicate(opt_arg);
+				DUP_P(op->debug_file,opt_arg);
 				break;
 
 			case 'v':
@@ -329,14 +329,14 @@ int i;
 
 for (i=0;i<count;i++)
 	{
-	(void)allocate(opp[i]->base_path,0);
-	(void)allocate(opp[i]->debug_file,0);
-	(void)allocate(opp[i]->rotate_cmd,0);
-	(void)allocate(opp[i]->compress_string,0);
-	(void)allocate(opp[i],0);
+	FREE_P(opp[i]->base_path);
+	FREE_P(opp[i]->debug_file);
+	FREE_P(opp[i]->rotate_cmd);
+	FREE_P(opp[i]->compress_string);
+	FREE_P(opp[i]);
 	}
 
-(void)allocate(opp,0);
+FREE_P(opp);
 }
 
 /*----------------------------------------------*/

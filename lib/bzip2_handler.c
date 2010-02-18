@@ -80,6 +80,7 @@ static void bzip2_flush(void *sp);
 LIB_INTERNAL COMPRESS_HANDLER bzip2_handler=
 	{
 	"bz2",							/* suffix */
+	"bz2",							/* name */
 	bzip2_init,						/* init */
 	bzip2_destroy,					/* destroy */
 	bzip2_start,					/* start */
@@ -129,7 +130,7 @@ static void bzip2_destroy(void *sp)
 {
 BZ2_INIT_POINTERS();
 
-mp->compress.private=allocate(mp->compress.private,0);
+FREE_P(mp->compress.private);
 }
 
 /*----------------------------------------------*/

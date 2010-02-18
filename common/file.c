@@ -47,7 +47,7 @@ static OFILE *_new_ofile(const char *path)
 {
 OFILE *fp;
 
-fp=allocate(NULL,sizeof(OFILE));
+fp=NEW_STRUCT(OFILE);
 fp->pool=NULL_POOL;
 fp->path=duplicate(path);
 fp->fd=NULL;
@@ -60,8 +60,8 @@ return fp;
 static void _destroy_ofile(OFILE *fp)
 {
 FREE_POOL(fp->pool);
-(void)allocate(fp->path,0);
-(void)allocate(fp,0);
+FREE_P(fp->path);
+FREE_P(fp);
 }
 
 /*----------------------------------------------*/

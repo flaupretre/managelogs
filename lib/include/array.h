@@ -48,8 +48,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 	{ \
 	unsigned int _c; \
 	_c=((_count < 0) ? 0 : _count); \
-	ARRAY_ITEMS(_a)=allocate(ARRAY_ITEMS(_a) \
-		,_c * sizeof(*(ARRAY_ITEMS(_a)))); \
+	ALLOC_P(ARRAY_ITEMS(_a),_c * sizeof(*(ARRAY_ITEMS(_a)))); \
 	ARRAY_COUNT(_a)=_c; \
 	}
 

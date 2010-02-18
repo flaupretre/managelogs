@@ -28,13 +28,13 @@ strcpy(p,mp->base_path);
 if (num)
 	{
 	(void)apr_snprintf(buf,sizeof(buf),((num > 999) ? ".B.%d" : ".B.%03d"),num);
-	p=allocate(p,len += strlen(buf));
+	ALLOC_P(p,len += strlen(buf));
 	strcat(p,buf);
 	}
 
 if (mp->compress.handler->suffix[0])
 	{
-	p=allocate(p,len += (strlen(mp->compress.handler->suffix)+1));
+	ALLOC_P(p,len += (strlen(mp->compress.handler->suffix)+1));
 	strcat(p,".");
 	strcat(p,mp->compress.handler->suffix);
 	}
@@ -49,7 +49,7 @@ LIB_INTERNAL void clear_logfile_link(LOGMANAGER mp, LOGFILE *lp)
 if (lp && lp->link)
 	{
 	file_delete(lp->link,NO);
-	lp->link=allocate(lp->link,0);
+	FREE_P(lp->link);
 	}
 }
 

@@ -18,6 +18,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_user.h>
 #include <apr_lib.h>
+#include <apr_file_io.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
@@ -27,7 +28,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <sys/types.h>
 #endif
 
-#include "../common/util.h"
+#include "../common/global.h"
 
 #if APR_HAS_USER
 
