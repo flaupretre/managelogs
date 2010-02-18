@@ -28,8 +28,13 @@ noinst_HEADERS = include/config.h \
 	$(top_srcdir)/common/time.h \
 	$(top_srcdir)/common/file.c \
 	$(top_srcdir)/common/file.h \
-	$(top_srcdir)/common/util.c \
-	$(top_srcdir)/common/util.h
+	$(top_srcdir)/common/global.h \
+	$(top_srcdir)/common/alloc.c \
+	$(top_srcdir)/common/alloc.h \
+	$(top_srcdir)/common/convert.c \
+	$(top_srcdir)/common/convert.h \
+	$(top_srcdir)/common/path.c \
+	$(top_srcdir)/common/path.h
 
 liblogmanager_la_LIBADD = $(APR_LIBS) $(Z_LIBS) $(BZ2_LIBS)
 liblogmanager_la_LDFLAGS = -version-info $(LIB_LT_VERSION):$(LIB_LT_REVISION):$(LIB_LT_AGE)

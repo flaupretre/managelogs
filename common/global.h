@@ -15,11 +15,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
-#ifndef __LMGR_UTIL_H
-#define __LMGR_UTIL_H
+#ifndef __LMGR_GLOBAL_H
+#define __LMGR_GLOBAL_H
 
 #include <apr.h>
 #include <apr_file_io.h>
+#include <apr_pools.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
@@ -43,7 +44,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define FATAL_ERROR_STEP1	apr_file_t *__fd; \
 							DECLARE_POOL(_my_tmp_pool); \
 							(void)apr_file_open_stderr(&__fd \
-								,CHECK_POOL(_my_tmp_pool));
+								,CHECK_POOL(_my_tmp_pool)); \
+							(void)apr_file_printf(__fd \
+								,"*** ERROR: ");
 
 
 #define FATAL_ERROR_STEP2	(void)apr_file_printf(__fd,"\n"); \
@@ -96,23 +99,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define FREE_TPOOL()	FREE_POOL(_tmp_pool)
 
-/*-------------*/
-
-#define NEW_STRUCT(_type)	(_type *)allocate(NULL,sizeof(_type))
-
 /*----------------------------------------------*/
 
 typedef enum { NO, YES } BOOL;
 
 /*----------------------------------------------*/
-
-LIB_INTERNAL void *allocate(/*@null@*/ const void *p, apr_size_t size);
-LIB_INTERNAL void *duplicate(const char *string);
-LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
-LIB_INTERNAL void *duplicate_mem(const void *,apr_size_t size);
-LIB_INTERNAL char *ut_dirname(const char *path);
-LIB_INTERNAL const char *ut_basename(const char *path);
-LIB_INTERNAL char *ut_absolute_path(const char *root_dir, const char *str);
-
-/*----------------------------------------------*/
-#endif	/* __LMGR_UTIL_H */
+#endif	/* __LMGR_GLOBAL_H */

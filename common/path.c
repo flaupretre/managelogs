@@ -17,100 +17,15 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 #include <apr_file_io.h>
-
-#if APR_HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if APR_HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
+#include <apr_strings.h>
 
 #if APR_HAVE_STRING_H
 #include <string.h>
 #endif
 
-#if APR_HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#if APR_HAVE_STDIO_H
-#include <stdio.h>
-#endif
-
-#if WITH_DMALLOC
-#include <dmalloc.h>
-#endif
-
-#include "util.h"
-
-/*----------------------------------------------*/
-
-LIB_INTERNAL void *allocate(const void *p, apr_size_t size)
-{
-void *p2;
-
-p2=(void *)p; /* Avoids compile warnings for const/non-const declarations */
-
-if (p2)
-	{
-	if (size)
-		{
-		p2=realloc(p2,(size_t)size);
-		if (!p2) FATAL_ERROR("realloc error");
-		}
-	else
-		{
-		free(p2);
-		p2=NULL;
-		}
-	}
-else
-	{
-	if (size)
-		{
-		p2=malloc((size_t)size);
-		if (!p2) FATAL_ERROR("malloc error");
-		memset(p2,0,size);
-		}
-	}
-
-return p2;
-}	
-
-/*----------------------------------------------*/
-
-LIB_INTERNAL void *duplicate(const char *string)
-{
-if (!string) return NULL; /* Test before calling strlen() */
-
-return duplicate_mem(string,(apr_size_t)(strlen(string)+1));
-}
-
-/*----------------------------------------------*/
-
-LIB_INTERNAL void *duplicate_mem(const void *source,apr_size_t size)
-{
-void *p;
-
-if ((!source)||(!size)) return NULL;
-
-p=allocate(NULL,size);
-memcpy(p,source,size);
-return p;
-}
-
-/*----------------------------------------------*/
-
-LIB_INTERNAL unsigned long strval_to_ulong(const char *val)
-{
-unsigned long l;
-
-if (sscanf(val,"%lu",&l)!=1)
-	FATAL_ERROR1("Cannot read numeric value (%s)",val);
-
-return l;
-}
+#include "global.h"
+#include "path.h"
+#include "alloc.h"
 
 /*----------------------------------------------*/
 /* Return a pointer to the char after the last separator. If a separator
