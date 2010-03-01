@@ -15,6 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include "../config.h"
+
 #include <apr.h>
 #include <apr_user.h>
 #include <apr_lib.h>
