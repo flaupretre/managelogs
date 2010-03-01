@@ -15,6 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include "../config.h"
+
 #include <apr.h>
 #include <apr_signal.h>
 
@@ -49,14 +51,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <logmanager.h>
 
 #include "../common/global.h"
-#include "../common/file.h"
 #include "intr.h"
 #include "options.h"
 
 #include "../common/alloc.c"
 #include "../common/convert.c"
 #include "../common/path.c"
-#include "../common/file.c"
 
 /*----------------------------------------------*/
 
@@ -114,6 +114,7 @@ apr_status_t status;
 LOGMANAGER_OPTIONS **opp;
 int i;
 apr_int32_t flags;
+apr_finfo_t finfo;
 
 (void)umask((mode_t)0); /* Clear file creation mask */
 
@@ -161,7 +162,10 @@ for (;;)
 		if (input_path)
 			{
 			flags=APR_READ;
-			if (file_type(input_path) == APR_PIPE)
+			if (apr_stat(&finfo,input_path,APR_FINFO_TYPE,CHECK_POOL(main_pool))
+				!=APR_SUCCESS)
+				FATAL_ERROR1("Cannot get file type (%s)\n",input_path);
+			if ((apr_filetype_e)(finfo.filetype) == APR_PIPE)
 				{
 				flags |= APR_WRITE; /* Workaround to EOF issue on fifos */
 				input_is_fifo=YES;
