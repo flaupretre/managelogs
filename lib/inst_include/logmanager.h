@@ -64,7 +64,11 @@ typedef struct
 	unsigned int api_version;
 	char *base_path;
 	unsigned int flags;
-	char *compress_string;
+	struct
+		{
+		char *type;
+		char *level;
+		} compress;
 	apr_off_t file_maxsize;
 	apr_off_t global_maxsize;
 	unsigned int keep_count;
@@ -82,8 +86,9 @@ typedef struct
 #ifdef IN_LMGR_LIB
 
 #include "../include/compress.h"
-#include "../../common/file.h"
+#include "../include/file.h"
 #include "../include/array.h"
+#include "../include/checksum.h"
 
 typedef struct
 	{
@@ -93,6 +98,7 @@ typedef struct
 	TIMESTAMP end;
 	apr_off_t size;  /* File (compressed) size */
 	apr_off_t osize; /* Original (uncompressed) size */
+	CHECKSUM sum;
 	} LOGFILE;
 
 typedef struct
@@ -106,6 +112,8 @@ typedef struct
 		{
 		COMPRESS_HANDLER *handler;
 		void *private;
+		unsigned long ratio;
+		char *level;
 		} compress;
 	struct
 		{
@@ -129,6 +137,7 @@ typedef struct
 		char *buf;
 		apr_off_t len;
 		} eol_buffer;
+	TIMESTAMP last_write_time;
 	struct
 		{
 		char *path;
@@ -139,6 +148,7 @@ typedef struct
 		{
 		int write_count;
 		int write2_count;
+		int write3_count;
 		int flush_count;
 		int link_count;
 		int refresh_backup_links_count;
@@ -154,7 +164,7 @@ typedef struct
 typedef _LOGMANAGER_STRUCT LOGMANAGER;
 
 #else
-typedef struct {} LOGMANAGER; /* Opaque to client */
+typedef struct { int dummy; } LOGMANAGER; /* Opaque to client */
 #endif
 
 /*----------------------------------------------*/

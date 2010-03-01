@@ -67,7 +67,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/plain_handler.h"
 #include "include/gzip_handler.h"
 #include "include/bzip2_handler.h"
-#include "../common/file.h"
+#include "include/file.h"
 #include "include/array.h"
 #include "include/backup.h"
 #include "include/stats.h"
@@ -76,6 +76,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "include/link.h"
 #include "include/cmd.h"
 #include "include/debug.h"
+#include "include/checksum.h"
 
 /*----------------------------------------------*/
 
@@ -122,11 +123,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 static APR_INLINE BOOL should_rotate(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
 static APR_INLINE BOOL global_conditions_exceeded(LOGMANAGER *mp,apr_off_t add,TIMESTAMP t);
-LIB_INTERNAL void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts);
+static void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts);
 static void _open_active_file(LOGMANAGER *mp);
 static void _close_active_file(LOGMANAGER *mp);
 static void _new_active_file(LOGMANAGER *mp,TIMESTAMP t);
 static void _sync_logfiles_from_disk(LOGMANAGER *mp);
+static void free_logmanager_struct(LOGMANAGER *mp);
 
 /*-----------*/
 /* Other source files (non exported symbols) */
@@ -135,8 +137,8 @@ static void _sync_logfiles_from_disk(LOGMANAGER *mp);
 #include "../common/alloc.c"
 #include "../common/convert.c"
 #include "../common/path.c"
-#include "../common/file.c"
 #include "../common/time.c"
+#include "file.c"
 #include "gzip_handler.c"
 #include "plain_handler.c"
 #include "bzip2_handler.c"
@@ -149,6 +151,7 @@ static void _sync_logfiles_from_disk(LOGMANAGER *mp);
 #include "link.c"
 #include "cmd.c"
 #include "debug.c"
+#include "checksum.c"
 
 /*----------------------------------------------*/
 
@@ -234,7 +237,7 @@ LIB_INTERNAL void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts)
 {
 DUP_P(mp->base_path,opts->base_path);
 mp->root_dir=ut_dirname(mp->base_path);
-mp->status_path=status_path(mp);
+mp->status_path=status_path(opts->base_path);
 if (opts->flags & LMGR_PID_FILE) mp->pid_path=pid_path(mp);
 }
 
@@ -258,7 +261,15 @@ mp->flags=opts->flags;
 
 /*-- Compress engine */
 
-init_compress_handler_from_string(mp,opts->compress_string);
+mp->compress.handler=compress_handler_from_string(opts->compress.type);
+if (! mp->compress.handler)
+	FATAL_ERROR1("Invalid compression : %s",opts->compress.type);
+
+DUP_P(mp->compress.level,opts->compress.level);
+
+mp->compress.ratio=mp->compress.handler->default_ratio;
+
+mp->compress.private=C_HANDLER3(mp,init,mp->compress.level,write_level3,(void *)mp);
 
 /*-- Populates mp->active and mp->backup */
 
@@ -358,21 +369,11 @@ else
 
 /*----------------------------------------------*/
 
-void logmanager_destroy(LOGMANAGER *mp)
+static void free_logmanager_struct(LOGMANAGER *mp)
 {
 unsigned int i;
 
 CHECK_MP(mp);
-
-DEBUG(mp,1,"Destroying log manager");
-
-/*-- First, close the current log if not already done */
-
-if (IS_OPEN(mp)) logmanager_close(mp);
-
-remove_pid_file(mp);	/*-- Remove the PID file */
-
-C_VOID_HANDLER(mp,destroy);	/*-- Destroy compress handler */
 
 FREE_LOGFILE(mp->active.file);	/*-- Free the LOGFILE structs */
 
@@ -382,19 +383,38 @@ if (BACKUP_COUNT(mp))	/* Free backup array */
 	ARRAY_CLEAR(mp->backup.files);
 	}
 
-debug_close(mp);	/*-- Close debug file */
+FREE_P(mp->compress.private);
 
-/* Free paths */
+/* Free strings */
 
 FREE_P(mp->base_path);
 FREE_P(mp->root_dir);
 FREE_P(mp->status_path);
 FREE_P(mp->pid_path);
 FREE_P(mp->debug.path);
+FREE_P(mp->rotate_cmd);
+FREE_P(mp->compress.level);
 
-/* Last, free the envelope */
+FREE_P(mp);	/* Last, free the envelope */
+}
 
-FREE_P(mp);
+/*----------------------------------------------*/
+
+void logmanager_destroy(LOGMANAGER *mp)
+{
+CHECK_MP(mp);
+
+DEBUG(mp,1,"Destroying log manager");
+
+if (IS_OPEN(mp)) logmanager_close(mp);	/*-- First, close the current log */
+
+remove_pid_file(mp);	/*-- Remove the PID file */
+
+C_VOID_HANDLER(mp,destroy);	/*-- Destroy compress handler */
+
+debug_close(mp);	/*-- Close debug file */
+
+free_logmanager_struct(mp);	/* Now, free whole struct*/
 }
 
 /*----------------------------------------------*/
@@ -418,8 +438,16 @@ static void _close_active_file(LOGMANAGER *mp)
 {
 if (!IS_OPEN(mp)) return;
 
-C_VOID_HANDLER(mp,end);
-mp->active.file->size=mp->active.fp->size;
+C_VOID_HANDLER(mp,stop);
+
+/* Recompute compression ratio */
+/* If original size is too small, compression ratio is not representative */
+
+if (mp->active.file->osize > 10000)
+	{
+	mp->compress.ratio=mp->active.file->osize / mp->active.file->size;
+	if (mp->compress.ratio == 0) mp->compress.ratio=1;	/* Security */
+	}
 
 mp->active.fp=file_close(mp->active.fp);
 }
@@ -491,7 +519,7 @@ BACKUP_FILES(mp)[0]=mp->active.file;	/* Fill first slot */
 mp->backup.size += ACTIVE_SIZE(mp);		/* Add size to backup size */
 mp->active.file=(LOGFILE *)0;			/* Clear active file */
 
-if (mp->rotate_cmd) run_bg_cmd(mp,mp->rotate_cmd,BACKUP_FILES(mp)[0],t);
+if (mp->rotate_cmd) run_bg_cmd(mp,mp->rotate_cmd,BACKUP_FILES(mp)[0]->path,t);
 
 purge_backup_files(mp,0,t);
 refresh_backup_links(mp);
@@ -525,7 +553,7 @@ if (BACKUP_COUNT(mp))
 	for (i=0,lpp=BACKUP_FILES(mp);i<BACKUP_COUNT(mp);i++,lpp++)
 		{
 		SYNC_LOGFILE_FROM_DISK(*lpp);
-		if (*lpp) BACKUP_SIZE(mp) += (*lpp)->size;
+		if (*lpp) BACKUP_SIZE(mp) += (*lpp)->size; /* TODO: corruption check here */
 		}
 	ARRAY_PACK(mp->backup.files);
 	}

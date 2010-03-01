@@ -16,7 +16,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 =============================================================================*/
 
 #define DISPLAY_COUNT(_mp,_item)	{ \
-	file_write_string(fp,"    " #_item " : ",YES); \
+	file_write_string(fp,#_item " count : ",YES); \
 	(void)apr_snprintf(buf,sizeof(buf),"%d",STAT_COUNT_ITEM(_mp,_item)); \
 	file_write_string_nl(fp,buf,YES); \
 	}
@@ -34,10 +34,16 @@ file_write_string_nl(fp,"================== logmanager statistics ==============
 
 file_write_string(fp,"Base path : ",YES);
 file_write_string_nl(fp,mp->base_path,YES);
-file_write_string(fp,"\nCounts :\n",YES);
+
+file_write_string(fp,"Compression ratio : ",YES);
+(void)apr_snprintf(buf,sizeof(buf),"%lu",mp->compress.ratio);
+file_write_string_nl(fp,buf,YES);
+
+file_write_string_nl(fp,"",YES);
 
 DISPLAY_COUNT(mp,write);
 DISPLAY_COUNT(mp,write2);
+DISPLAY_COUNT(mp,write3);
 DISPLAY_COUNT(mp,flush);
 DISPLAY_COUNT(mp,link);
 DISPLAY_COUNT(mp,refresh_backup_links);

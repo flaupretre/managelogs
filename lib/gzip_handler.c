@@ -32,23 +32,18 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define GZ_DEFAULT_COMPRESS_RATIO	10
-
 #define GZ_RESET_OUTPUT_BUFFER()	{ \
 				zp->zs.next_out=(Bytef *)(zp->compbuf); \
 				zp->zs.avail_out=BUFSIZE; \
 				}
 
-#define WRITE_OUTPUT_BUFFER()	{ \
+#define GZ_WRITE_OUTPUT_BUFFER()	{ \
 				if (zp->zs.avail_out != BUFSIZE) \
-					file_write(mp->active.fp,zp->compbuf \
-					  ,BUFSIZE-zp->zs.avail_out,mp->flags & LMGR_FAIL_ENOSPC); \
+					zp->write_func(zp->write_arg,zp->compbuf \
+						,BUFSIZE-zp->zs.avail_out); \
 				}
 
-#define GZ_INIT_POINTERS() \
-	LOGMANAGER *mp; \
-	GZIP_DATA *zp; \
-	zp=(GZIP_DATA *)((mp=(LOGMANAGER *)sp)->compress.private); \
+#define GZ_ZP_INIT	GZIP_DATA *zp=(GZIP_DATA *)_zp
 
 /*----------------------------------------------*/
 
@@ -56,20 +51,20 @@ typedef struct
 	{
 	z_stream zs;
 	char compbuf[BUFSIZE];
-	uLong compress_ratio;
 	int compress_level;
+	WRITE_FUNC write_func;
+	void *write_arg;
 	} GZIP_DATA;
 
 /*----------------------------------------------*/
 
-static int  _gzip_get_comp_level(const char *clevel);
-static void gzip_init(void *sp, const char *level);
-static void gzip_destroy(void *sp);
-static void gzip_start(void *sp);
-static void gzip_end(void *sp);
-static apr_size_t gzip_predict_size(void *sp, apr_size_t size);
-static void gzip_compress_and_write(void *sp, const char *buf, apr_size_t size);
-static void gzip_flush(void *sp);
+static int _gzip_get_comp_level(const char *clevel);
+static void *gzip_init(void *_zp, const char *level
+	, WRITE_FUNC write_func, void *write_arg);
+static void gzip_start(void *_zp);
+static void gzip_stop(void *_zp);
+static void gzip_compress_and_write(void *_zp, const char *buf, apr_off_t size);
+static void gzip_flush(void *_zp);
 
 /*----------------------------------------------*/
 
@@ -77,11 +72,11 @@ LIB_INTERNAL COMPRESS_HANDLER gzip_handler=
 	{
 	"gz",						/* suffix */
 	"gz",						/* name */
+	10,							/* default_ratio */
 	gzip_init,					/* init */
-	gzip_destroy,				/* destroy */
+	NULL,						/* destroy */
 	gzip_start,					/* start */
-	gzip_end,					/* end */
-	gzip_predict_size,			/* predict_size */
+	gzip_stop,					/* stop */
 	gzip_compress_and_write,	/* compress_and_write */
 	gzip_flush					/* flush */
 	};
@@ -107,32 +102,26 @@ switch (c=(*clevel))
 
 /*----------------------------------------------*/
 
-static void gzip_init(void *sp, const char *clevel)
+static void *gzip_init(void *_zp, const char *clevel
+	, WRITE_FUNC write_func, void *write_arg)
 {
-GZ_INIT_POINTERS();
+GZ_ZP_INIT;
 
 zp=NEW_STRUCT(GZIP_DATA);
 
-zp->compress_ratio=GZ_DEFAULT_COMPRESS_RATIO;
 zp->compress_level=_gzip_get_comp_level(clevel);
 
-mp->compress.private=zp;
+zp->write_func=write_func;
+zp->write_arg=write_arg;
+
+return zp;
 }
 
 /*----------------------------------------------*/
 
-static void gzip_destroy(void *sp)
+static void gzip_start(void *_zp)
 {
-GZ_INIT_POINTERS();
-
-FREE_P(mp->compress.private);
-}
-
-/*----------------------------------------------*/
-
-static void gzip_start(void *sp)
-{
-GZ_INIT_POINTERS();
+GZ_ZP_INIT;
 
 zp->zs.zalloc=(alloc_func)Z_NULL;
 zp->zs.zfree=(free_func)Z_NULL;
@@ -143,12 +132,11 @@ if (deflateInit2(&(zp->zs),zp->compress_level,Z_DEFLATED,31,8
 }
 
 /*----------------------------------------------*/
-/* Recompute compress_ratio only if zs.total_in is high enough */
 
-static void gzip_end(void *sp)
+static void gzip_stop(void *_zp)
 {
 int status;
-GZ_INIT_POINTERS();
+GZ_ZP_INIT;
 
 while(YES)
 	{
@@ -156,14 +144,8 @@ while(YES)
 	status=deflate(&(zp->zs),Z_FINISH);
 	if ((status!=Z_STREAM_END)&&(status!=Z_OK))
 		FATAL_ERROR("Cannot flush compressed data\n");
-	WRITE_OUTPUT_BUFFER();
+	GZ_WRITE_OUTPUT_BUFFER();
 	if (status==Z_STREAM_END) break;
-	}
-
-if ((zp->zs.total_in > 100000) && (zp->zs.total_out!=0))
-	{
-	zp->compress_ratio=zp->zs.total_in/zp->zs.total_out;
-	if (zp->compress_ratio==0) zp->compress_ratio=1; /* Should never happen...*/
 	}
 
 (void)deflateEnd(&(zp->zs));
@@ -171,18 +153,9 @@ if ((zp->zs.total_in > 100000) && (zp->zs.total_out!=0))
 
 /*----------------------------------------------*/
 
-static apr_size_t gzip_predict_size(void *sp, apr_size_t size)
+static void gzip_compress_and_write(void *_zp, const char *buf, apr_off_t size)
 {
-GZ_INIT_POINTERS();
-
-return size/zp->compress_ratio;
-}
-
-/*----------------------------------------------*/
-
-static void gzip_compress_and_write(void *sp, const char *buf, apr_size_t size)
-{
-GZ_INIT_POINTERS();
+GZ_ZP_INIT;
 
 zp->zs.next_in=(unsigned char *)buf;
 zp->zs.avail_in=(uInt)size;
@@ -192,16 +165,16 @@ while (zp->zs.avail_in != 0)
 	GZ_RESET_OUTPUT_BUFFER();
 	if (deflate(&(zp->zs),Z_NO_FLUSH)!=Z_OK)
 		FATAL_ERROR("Cannot compress data");
-	WRITE_OUTPUT_BUFFER();
+	GZ_WRITE_OUTPUT_BUFFER();
 	}
 }
 
 /*----------------------------------------------*/
 
-static void gzip_flush(void *sp)
+static void gzip_flush(void *_zp)
 {
-gzip_end(sp);
-gzip_start(sp);
+gzip_stop(_zp);
+gzip_start(_zp);
 }
 
 /*----------------------------------------------*/

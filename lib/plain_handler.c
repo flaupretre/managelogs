@@ -27,12 +27,22 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define PLAIN_INIT_POINTERS() LOGMANAGER *mp=(LOGMANAGER *)sp;
+#define PLAIN_ZP_INIT	PLAIN_DATA *zp; zp=(PLAIN_DATA *)_zp
 
 /*----------------------------------------------*/
 
-static apr_size_t plain_predict_size(void *sp, apr_size_t size);
-static void plain_compress_and_write(void *sp, const char *buf, apr_size_t size);
+typedef struct
+	{
+	WRITE_FUNC write_func;
+	void *write_arg;
+	} PLAIN_DATA;
+
+/*----------------------------------------------*/
+
+static void *plain_init(void *_zp, const char *level
+	, WRITE_FUNC write_func, void *write_arg);
+static void plain_compress_and_write(void *_zp, const char *buf
+	, apr_off_t size);
 
 /*----------------------------------------------*/
 
@@ -40,29 +50,37 @@ LIB_INTERNAL COMPRESS_HANDLER plain_handler=
 	{
 	"",							/* suffix */
 	"none",						/* name */
-	NULL,						/* init */
+	1,							/* default_ratio */
+	plain_init,					/* init */
 	NULL,						/* destroy */
 	NULL,						/* start */
-	NULL,						/* end */
-	plain_predict_size,			/* predict_size */
+	NULL,						/* stop */
 	plain_compress_and_write,	/* compress_and_write */
 	NULL						/* flush */
 	};
 
 /*----------------------------------------------*/
 
-static apr_size_t plain_predict_size(void *sp, apr_size_t size)
+static void *plain_init(void *_zp, const char *clevel
+	, WRITE_FUNC write_func, void *write_arg)
 {
-return size;
+PLAIN_ZP_INIT;
+
+zp=NEW_STRUCT(PLAIN_DATA);
+
+zp->write_func=write_func;
+zp->write_arg=write_arg;
+
+return zp;
 }
 
 /*----------------------------------------------*/
 
-static void plain_compress_and_write(void *sp, const char *buf, apr_size_t size)
+static void plain_compress_and_write(void *_zp, const char *buf, apr_off_t size)
 {
-PLAIN_INIT_POINTERS();
+PLAIN_ZP_INIT;
 
-file_write(mp->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
+zp->write_func(zp->write_arg,buf,size);
 }
 
 /*----------------------------------------------*/

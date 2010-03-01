@@ -35,16 +35,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #define EOL_BUF_IS_EMPTY()	(mp->eol_buffer.buf == NULL)
 
 /*----------------------------------------------*/
-
-static TIMESTAMP last_write_time=0;
-
-/*----------------------------------------------*/
 /* Called when the manager is closed. Even if we don't have an EOL, we
 * must write the buffer */
 
 LIB_INTERNAL void write_end(LOGMANAGER *mp)
 {
-WRITE_EOL_BUF(0,last_write_time);
+WRITE_EOL_BUF(0,mp->last_write_time);
 }
 
 /*----------------------------------------------*/
@@ -61,7 +57,7 @@ NORMALIZE_TIMESTAMP(t);
 DEBUG1(mp,2,"Starting logmanager_write (size=%" APR_OFF_T_FMT ")",size);
 INCR_STAT_COUNT(mp,write);
 
-last_write_time=t;
+mp->last_write_time=t;
 
 if ((!buf) || (!size)) return;
 
@@ -131,24 +127,33 @@ if (size) write_level2(mp,buf,size,flags,t);
 LIB_INTERNAL void write_level2(LOGMANAGER *mp, const char *buf, apr_off_t size
 	,unsigned int flags, TIMESTAMP t)
 {
-apr_off_t csize;
-
 DEBUG1(mp,2,"Starting write_level2 (size=%" APR_OFF_T_FMT ")",size);
 INCR_STAT_COUNT(mp,write2);
 
 if ((!buf) || (size==0) || (!IS_OPEN(mp))) return;
 
-csize=C_HANDLER1(mp,predict_size,size);
-
 /*-- rotate/purge ? (before writing) */
 
-if ((!(flags & LMGRW_CANNOT_ROTATE)) && should_rotate(mp,csize,t))
+if ((!(flags & LMGRW_CANNOT_ROTATE)) && should_rotate(mp,size,t))
 	{
 	logmanager_rotate(mp,t); /* includes a purge */
 	}
-else purge_backup_files(mp,csize,t);
+else purge_backup_files(mp,size,t);
 
 compress_and_write(mp,buf,size,t);	/*-- Write data */
+}
+
+/*----------------------------------------------*/
+
+LIB_INTERNAL void write_level3(void *_mp, const char *buf, apr_off_t size)
+{
+LOGMANAGER *mp=(LOGMANAGER *)_mp;
+
+INCR_STAT_COUNT(mp,write3);
+
+mp->active.file->sum=update_checksum(mp->active.file->sum,buf,size);
+file_write(mp->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
+mp->active.file->size=mp->active.fp->size;
 }
 
 /*------------------------------------------------------------------------*/

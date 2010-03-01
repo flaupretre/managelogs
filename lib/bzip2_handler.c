@@ -36,23 +36,18 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#define BZ2_DEFAULT_COMPRESS_RATIO	20
-
 #define BZ2_RESET_OUTPUT_BUFFER()	{ \
 				zp->zs.next_out=zp->compbuf; \
 				zp->zs.avail_out=BUFSIZE; \
 				}
 
-#define WRITE_OUTPUT_BUFFER()	{ \
+#define BZ2_WRITE_OUTPUT_BUFFER()	{ \
 				if (zp->zs.avail_out != BUFSIZE) \
-					file_write(mp->active.fp,zp->compbuf \
-						,BUFSIZE-zp->zs.avail_out,mp->flags & LMGR_FAIL_ENOSPC); \
+					zp->write_func(zp->write_arg,zp->compbuf \
+						,BUFSIZE-zp->zs.avail_out); \
 				}
 
-#define BZ2_INIT_POINTERS() \
-	LOGMANAGER *mp; \
-	BZIP2_DATA *zp; \
-	zp=(BZIP2_DATA *)((mp=(LOGMANAGER *)sp)->compress.private); \
+#define BZ2_ZP_INIT	BZIP2_DATA *zp=(BZIP2_DATA *)_zp
 
 /*----------------------------------------------*/
 
@@ -60,20 +55,20 @@ typedef struct
 	{
 	bz_stream zs;
 	char compbuf[BUFSIZE];
-	unsigned int compress_ratio;
 	int compress_level;
+	WRITE_FUNC write_func;
+	void *write_arg;
 	} BZIP2_DATA;
 
 /*----------------------------------------------*/
 
-static int  _bzip2_get_comp_level(const char *clevel);
-static void bzip2_init(void *sp, const char *level);
-static void bzip2_destroy(void *sp);
-static void bzip2_start(void *sp);
-static void bzip2_end(void *sp);
-static apr_size_t bzip2_predict_size(void *sp, apr_size_t size);
-static void bzip2_compress_and_write(void *sp, const char *buf, apr_size_t size);
-static void bzip2_flush(void *sp);
+static int _bzip2_get_comp_level(const char *clevel);
+static void *bzip2_init(void *zp, const char *level
+	, WRITE_FUNC write_func, void *write_arg);
+static void bzip2_start(void *zp);
+static void bzip2_stop(void *zp);
+static void bzip2_compress_and_write(void *zp, const char *buf, apr_off_t size);
+static void bzip2_flush(void *zp);
 
 /*----------------------------------------------*/
 
@@ -81,11 +76,11 @@ LIB_INTERNAL COMPRESS_HANDLER bzip2_handler=
 	{
 	"bz2",							/* suffix */
 	"bz2",							/* name */
+	20,								/* default_ratio */
 	bzip2_init,						/* init */
-	bzip2_destroy,					/* destroy */
+	NULL,							/* destroy */
 	bzip2_start,					/* start */
-	bzip2_end,						/* end */
-	bzip2_predict_size,				/* predict_size */
+	bzip2_stop,						/* stop */
 	bzip2_compress_and_write,		/* compress_and_write */
 	bzip2_flush						/* flush */
 	};
@@ -112,32 +107,26 @@ switch (c=(*clevel))
 
 /*----------------------------------------------*/
 
-static void bzip2_init(void *sp, const char *clevel)
+static void *bzip2_init(void *_zp, const char *clevel
+	, WRITE_FUNC write_func, void *write_arg)
 {
-BZ2_INIT_POINTERS();
+BZ2_ZP_INIT;
 
 zp=NEW_STRUCT(BZIP2_DATA);
 
-zp->compress_ratio=BZ2_DEFAULT_COMPRESS_RATIO;
 zp->compress_level=_bzip2_get_comp_level(clevel);
 
-mp->compress.private=zp;
+zp->write_func=write_func;
+zp->write_arg=write_arg;
+
+return zp;
 }
 
 /*----------------------------------------------*/
 
-static void bzip2_destroy(void *sp)
+static void bzip2_start(void *_zp)
 {
-BZ2_INIT_POINTERS();
-
-FREE_P(mp->compress.private);
-}
-
-/*----------------------------------------------*/
-
-static void bzip2_start(void *sp)
-{
-BZ2_INIT_POINTERS();
+BZ2_ZP_INIT;
 
 zp->zs.bzalloc=NULL;
 zp->zs.bzfree=NULL;
@@ -147,12 +136,11 @@ if (BZ2_bzCompressInit(&(zp->zs),zp->compress_level,0,0)!=BZ_OK)
 }
 
 /*----------------------------------------------*/
-/* TODO: 64-bit portable division */
 
-static void bzip2_end(void *sp)
+static void bzip2_stop(void *_zp)
 {
 int status;
-BZ2_INIT_POINTERS();
+BZ2_ZP_INIT;
 
 while(YES)
 	{
@@ -160,15 +148,8 @@ while(YES)
 	status=BZ2_bzCompress(&(zp->zs),BZ_FINISH);
 	if ((status!=BZ_STREAM_END)&&(status!=BZ_FINISH_OK))
 		FATAL_ERROR("Cannot flush compressed data\n");
-	WRITE_OUTPUT_BUFFER();
+	BZ2_WRITE_OUTPUT_BUFFER();
 	if (status==BZ_STREAM_END) break;
-	}
-
-if ((zp->zs.total_in_hi32==0) && (zp->zs.total_out_hi32==0)
-	&& (zp->zs.total_in_lo32 > 100000) && (zp->zs.total_out_lo32!=0))
-	{
-	zp->compress_ratio=zp->zs.total_in_lo32/zp->zs.total_out_lo32;
-	if (zp->compress_ratio==0) zp->compress_ratio=1; /* Should never happen... */
 	}
 
 (void)BZ2_bzCompressEnd(&(zp->zs));
@@ -176,18 +157,9 @@ if ((zp->zs.total_in_hi32==0) && (zp->zs.total_out_hi32==0)
 
 /*----------------------------------------------*/
 
-static apr_size_t bzip2_predict_size(void *sp, apr_size_t size)
+static void bzip2_compress_and_write(void *_zp, const char *buf, apr_off_t size)
 {
-BZ2_INIT_POINTERS();
-
-return size/zp->compress_ratio;
-}
-
-/*----------------------------------------------*/
-
-static void bzip2_compress_and_write(void *sp, const char *buf, apr_size_t size)
-{
-BZ2_INIT_POINTERS();
+BZ2_ZP_INIT;
 
 zp->zs.next_in=(char *)buf;
 zp->zs.avail_in=(unsigned int)size;
@@ -197,16 +169,16 @@ while (zp->zs.avail_in != 0)
 	BZ2_RESET_OUTPUT_BUFFER();
 	if (BZ2_bzCompress(&(zp->zs),BZ_RUN)!=BZ_RUN_OK)
 		FATAL_ERROR("Cannot compress data");
-	WRITE_OUTPUT_BUFFER();
+	BZ2_WRITE_OUTPUT_BUFFER();
 	}
 }
 
 /*----------------------------------------------*/
 
-static void bzip2_flush(void *sp)
+static void bzip2_flush(void *_zp)
 {
-bzip2_end(sp);
-bzip2_start(sp);
+bzip2_stop(_zp);
+bzip2_start(_zp);
 }
 
 /*----------------------------------------------*/
