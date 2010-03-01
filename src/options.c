@@ -15,6 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include "../config.h"
+
 #include <apr.h>
 #include <apr_getopt.h>
 
@@ -137,6 +139,7 @@ apr_status_t status;
 LOGMANAGER_OPTIONS **opp, *op;
 int optch;
 const char *opt_arg;
+char *clevel;
 DECLARE_TPOOL;
 
 opp=(LOGMANAGER_OPTIONS **)0;
@@ -153,6 +156,7 @@ while (1)
 	opp[(*countp)-1]=op;
 
 	(void)apr_getopt_init(&opt_s,CHECK_TPOOL(),argc,(char const * const *)argv);
+
 	while (YES)
 		{
 		status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
@@ -161,6 +165,7 @@ while (1)
 		switch ((char)optch)
 			{
 			case 'h':
+				FREE_TPOOL();
 				usage(0);
 				break;
 
@@ -173,7 +178,13 @@ while (1)
 				break;
 
 			case 'c':
-				op->compress_string=duplicate(opt_arg);
+				DUP_P(op->compress.type,opt_arg);
+				clevel=strchr(op->compress.type,':');
+				if (clevel)
+					{
+					*(clevel++)='\0';
+					DUP_P(op->compress.level,clevel);
+					}
 				break;
 
 			case 's':
@@ -237,7 +248,7 @@ while (1)
 				break;
 
 			case 'C':
-				op->rotate_cmd=duplicate(opt_arg);
+				DUP_P(op->rotate_cmd,opt_arg);
 				break;
 
 			case 'r':
@@ -249,13 +260,13 @@ while (1)
 				break;
 
 			case 'i':
-				input_path=duplicate(opt_arg);
+				DUP_P(input_path,opt_arg);
 				break;
 			}
 		}
 
 	if (!(argv[opt_s->ind])) usage(1);
-	op->base_path=duplicate(argv[opt_s->ind]);
+	DUP_P(op->base_path,argv[opt_s->ind]);
 	if (! op->base_path[0]) usage(1);
 
 	argc -= opt_s->ind;
@@ -332,7 +343,8 @@ for (i=0;i<count;i++)
 	FREE_P(opp[i]->base_path);
 	FREE_P(opp[i]->debug_file);
 	FREE_P(opp[i]->rotate_cmd);
-	FREE_P(opp[i]->compress_string);
+	FREE_P(opp[i]->compress.type);
+	FREE_P(opp[i]->compress.level);
 	FREE_P(opp[i]);
 	}
 
