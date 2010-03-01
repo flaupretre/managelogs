@@ -143,6 +143,7 @@ AC_CONFIG_FILES([Makefile
 				build/managelogs.dsc
 				lib/Makefile
 				src/Makefile
-				doc/Makefile])
+				doc/Makefile
+				check/Makefile])
 
 AC_OUTPUT
