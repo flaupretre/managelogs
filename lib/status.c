@@ -18,13 +18,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 /* Return absolute path of status file */
 
-LIB_INTERNAL char *status_path(LOGMANAGER *mp)
+LIB_INTERNAL char *status_path(const char *base_path)
 {
 char *p;
 int len;
 
-p=allocate(NULL,len=(strlen(mp->base_path)+8));
-(void)apr_snprintf(p,len,"%s.status",mp->base_path);
+p=allocate(NULL,len=(strlen(base_path)+8));
+(void)apr_snprintf(p,len,"%s.status",base_path);
 
 return p;
 }
@@ -105,6 +105,12 @@ status file (%s) and restart the program.",mp->status_path);
 				if (!lp) break;	/* Security against invalid file */
 				lp->osize=strval_to_apr_off_t(val);
 				break;
+
+			case 'u':
+				if (!lp) break;	/* Security against invalid file */
+				lp->sum=hexval_to_ulong(val);
+				break;
+
 			/* Ignore other values */
 			}
 		p=p2+1;
@@ -115,8 +121,8 @@ status file (%s) and restart the program.",mp->status_path);
 }
 
 /*----------------------------------------------*/
-/* Dump info about active and backup log files to a status file.
-* File size is dumped as it allows to check for file corruption */
+/* Dump info about active and backup log files to a status file */
+/* Letters used : LseioAVCabu */
 
 #define DUMP_FILE(_lp,_type)	{ \
 	if (_lp) \
@@ -139,6 +145,9 @@ status file (%s) and restart the program.",mp->status_path);
 		file_write_string_nl(fp,buf,YES); \
 		file_write_string(fp,"o ",YES);			/* Uncompressed size */ \
 		(void)apr_snprintf(buf,sizeof(buf),"%" APR_OFF_T_FMT,(_lp)->osize); \
+		file_write_string_nl(fp,buf,YES); \
+		file_write_string(fp,"u ",YES);			/* Checksum */ \
+		(void)apr_snprintf(buf,sizeof(buf),"%08X",(_lp)->sum); \
 		file_write_string_nl(fp,buf,YES); \
 		} \
 	}
