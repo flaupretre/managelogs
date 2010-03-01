@@ -15,17 +15,22 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include "apr_thread_proc.h"
+
 /*----------------------------------------------*/
 /* Run a command in background */
+/* path and t may be null on entry */
 
-LIB_INTERNAL void run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t)
+LIB_INTERNAL void run_bg_cmd(LOGMANAGER *mp, const char *cmd
+	, const char *path, TIMESTAMP t)
 {
 char buf[32];
 DECLARE_TPOOL;
+NORMALIZE_TIMESTAMP(t);
 
 if (!cmd) return; /* Should not happen, but... */
 
-DEBUG1(mp,1,"Running rotate command : %s",cmd);
+DEBUG1(mp,1,"Running background command : %s",cmd);
 
 if (fork())		/* Parent returns */
 	{
@@ -33,9 +38,13 @@ if (fork())		/* Parent returns */
 	return;
 	}
 
+/* Detach process without fork()ing again */
+
+(void)apr_proc_detach(APR_PROC_DETACH_FOREGROUND);	
+
 /* Set environment variables */
 
-(void)apr_env_set("LOGMANAGER_FILE_PATH",file->path,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_FILE_PATH",(path ? path : ""),CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_BASE_PATH",mp->base_path,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_ROOT_DIR",mp->root_dir,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_COMPRESSION"
