@@ -107,7 +107,7 @@ fprintf(fd,"\n\
 if (clist[0]) /* If at least one compression scheme is supported */
 	{
 	fprintf(fd,"\
- -c|--compress <cp>[:lvl]  Activate compression (cp is one of :%s\n",clist);
+ -c|--compress <cp>[:lvl]  Activate compression, <cp> is one of : %s\n",clist);
 	}
 
 fprintf(fd,"\

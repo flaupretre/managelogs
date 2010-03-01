@@ -55,7 +55,7 @@ for (result=NULL,size=0,chpp=compress_handlers;*chpp;chpp++)
 	if (! (*chpp)->suffix[0]) continue;	/* Plain handler */
 	size += strlen(name)+1;
 	ALLOC_P(result,size+1);
-	strcat(result," ");
+	if (result[0]) strcat(result,",");
 	strcat(result,name);
 	}
 return result;
