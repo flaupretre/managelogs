@@ -21,13 +21,13 @@ noinst_HEADERS = include/config.h \
 	include/status.h        status.c \
 	include/write.h         write.c \
 	include/debug.h         debug.c \
+	include/checksum.h      checksum.c \
 	include/plain_handler.h plain_handler.c \
+	include/file.h          file.c \
 	include/array.h \
 	logmanager.c \
 	$(top_srcdir)/common/time.c \
 	$(top_srcdir)/common/time.h \
-	$(top_srcdir)/common/file.c \
-	$(top_srcdir)/common/file.h \
 	$(top_srcdir)/common/global.h \
 	$(top_srcdir)/common/alloc.c \
 	$(top_srcdir)/common/alloc.h \

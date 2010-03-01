@@ -38,6 +38,18 @@ return l;
 
 /*----------------------------------------------*/
 
+LIB_INTERNAL unsigned long hexval_to_ulong(const char *val)
+{
+unsigned long l;
+
+if (sscanf(val,"%X",&l)!=1)
+	FATAL_ERROR1("Cannot read hexadecimal value (%s)",val);
+
+return l;
+}
+
+/*----------------------------------------------*/
+
 LIB_INTERNAL apr_off_t strval_to_apr_off_t(const char *val)
 {
 apr_off_t l;
