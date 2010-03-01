@@ -15,6 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include "../config.h"
+
 #include <apr.h>
 #include <apr_signal.h>
 
@@ -114,24 +116,7 @@ switch(sig)
 		break;
 #endif
 
-#ifdef SIGTERM
-		case SIGTERM:
-#endif
-#ifdef SIGINT
-		case SIGINT:
-#endif
-#ifdef SIGQUIT
-		case SIGQUIT:
-#endif
-#ifdef SIGTRAP
-		case SIGTRAP:
-#endif
-#ifdef SIGABRT
-		case SIGABRT:
-#endif
-#ifdef SIGURG
-		case SIGURG:
-#endif
+	default:
 		set_pending_action(TERMINATE_ACTION);
 		check_and_run_pending_action();
 		break;
@@ -144,6 +129,10 @@ void signal_init()
 {
 #ifdef SIGCHLD
 (void)apr_signal(SIGCHLD,SIG_IGN);
+#endif
+
+#ifdef SIGHUP
+(void)apr_signal(SIGHUP,SIG_IGN);
 #endif
 
 #ifdef SIGUSR1
