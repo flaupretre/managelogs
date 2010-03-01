@@ -20,7 +20,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LIB_INTERNAL void run_bg_cmd(LOGMANAGER *mp,char *cmd, LOGFILE *file,TIMESTAMP t);
+LIB_INTERNAL void run_bg_cmd(LOGMANAGER *mp,const char *cmd
+	, const char *path,TIMESTAMP t);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_CMD_H */
