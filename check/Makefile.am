@@ -9,7 +9,7 @@ AM_LDFLAGS = $(APR_LDFLAGS)
 
 genlog_LDADD = $(APR_LIBS)
 
-EXTRA_DIST = check.sh
+EXTRA_DIST = check.sh rcmd.sh
 
 DISTCLEANFILES = check.log
 

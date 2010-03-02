@@ -1,8 +1,25 @@
+#
+# managelogs self tests
+#
+# Run via 'make check' in the top directory
+#
+#===========================================================================
 
 CHECK_DIR=$PWD
+LOG=$CHECK_DIR/check.log
+
+exec 3>&1
+exec >$LOG 2>&1
+set -x
+
 RUN_DIR=$CHECK_DIR/tmp
 
-LOG=$CHECK_DIR/check.log
+SRC_DIR=`dirname $0` # Needed to support build in a separate dir (distcheck)
+d=`pwd`
+cd $SRC_DIR
+SRC_DIR=`pwd`	# Make it absolute as we will cd to tmp
+cd $d
+
 RESFILE=$CHECK_DIR/check.res
 PIDFILE=$CHECK_DIR/pidfile
 BASE_PATH=$RUN_DIR/mylog
@@ -10,11 +27,16 @@ M_PIDFILE=$BASE_PATH.pid
 PIPE=$CHECK_DIR/pipe
 M_STATUSFILE=$BASE_PATH.status
 TMPFILE=$RUN_DIR/tmp1
-
+RCMD=$SRC_DIR/rcmd.sh
+SZ_LIMIT=10000
+KEEP_COUNT=5
+GEN_SIZE=105000
 M=$CHECK_DIR/../src/managelogs
 G=$CHECK_DIR/genlog
+RCMD_LOG=$RUN_DIR/rcmd.log
 
-export LOG RESFILE PIDFILE BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE CHECK_DIR RUN_DIR M G
+export LOG RESFILE PIDFILE BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
+	RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR
 #-------------------------------
 
 msg()
@@ -78,7 +100,7 @@ msg "OK"
 
 test_ko()
 {
-msg "****KO****"
+msg "*** KO ***"
 echo 1 >$RESFILE
 }
 
@@ -112,6 +134,11 @@ kill_m()
 info Stopping process
 kill `pid`
 sleep 1
+check_process stop
+
+checking PID file deletion
+test ! -f $M_PIDFILE
+test_rc $?
 }
 
 #------------
@@ -122,6 +149,8 @@ info Starting process
 $M -i $PIPE $* $BASE_PATH &
 echo $! >$PIDFILE
 sleep 1
+check_process run
+check_pid_file
 }
 
 #------------
@@ -175,6 +204,11 @@ check_pid_file()
 {
 checking PID file
 pid=`pid`
+if [ ! -f "$M_PIDFILE" ] ; then
+	test_ko
+	return
+fi
+
 pid_from_file=`cat $M_PIDFILE`
 
 test "X$pid" = "X$pid_from_file"
@@ -192,9 +226,37 @@ test_rc $?
 
 #------------
 
+log_files()
+{
+ls -1 $BASE_PATH._*
+}
+
+#------------
+
 nb_log_files()
 {
-echo `ls -1 $BASE_PATH._* | wc -l`
+log_files | wc -l
+}
+
+#------------
+
+backup_links()
+{
+ls -1 $BASE_PATH.B.*
+}
+
+#------------
+
+nb_backup_links()
+{
+backup_links | wc -l
+}
+
+#------------
+
+fsize()
+{
+wc -c <$1
 }
 
 #------------
@@ -204,11 +266,16 @@ global_log_size()
 cat $BASE_PATH._* | wc -c
 }
 
-#-------------------------------
+#------------
 
-exec 3>&1
-exec >$LOG 2>&1
-set -x
+option_check()
+{
+checking $1 option
+$M $1 </dev/null $BASE_PATH
+test_rc $?
+}
+
+#============================= main ===================================
 
 full_cleanup
 /bin/rm -rf $RUN_DIR
@@ -218,12 +285,47 @@ mk_fifo
 
 #-------------------------------
 
+new_test Options
+
+for opt in -h --help -V --version -R --refresh-only -v --verbose
+do
+	option_check $opt
+done
+
+checking -i option
+$M -i /dev/null $BASE_PATH
+test_rc $?
+
+checking '-d option (return code)'
+/bin/rm -rf $TMPFILE
+$M -v -d $TMPFILE </dev/null $BASE_PATH
+test_rc $?
+checking '-d option (debug data)'
+cat $TMPFILE	# log
+c=`cat $TMPFILE | wc -c`
+test "$c" -gt 0
+test_rc $?
+
+checking '-I option (return code)'
+$M -I </dev/null $BASE_PATH 2>&1 | tee $TMPFILE
+test_rc $?
+checking '-I option (statistics)'
+grep statistics $TMPFILE
+test_rc $?
+
+checking 'wrong option (short)'
+$M -W
+test_rc `inv_rc $?`
+
+checking 'wrong option (long)'
+$M --wrong
+test_rc `inv_rc $?`
+
+#-------------------------------
+
 new_test Basic run
 
 bg_run
-
-check_process run
-check_pid_file
 
 checking if log file exists
 test `nb_log_files` -gt 0
@@ -237,7 +339,6 @@ cat $TMPFILE >$PIPE
 kill_m
 
 check_status_file
-check_process stop
 
 checking log size
 test `global_log_size` = $count
@@ -245,32 +346,83 @@ test_rc $?
 
 #-------------------------------
 
-new_test Options
+new_test 'Rotation / Purge'
 
-checking -h option
-$M -h
+bg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $RCMD -I -d $TMPFILE
+$G $GEN_SIZE >$PIPE
+
+check_status_file
+
+checking log file count
+test `nb_log_files` = $KEEP_COUNT
 test_rc $?
 
-checking -V option
-$M -V
+checking log "file size ($KEEP_COUNT files)"
+for f in `log_files` ''
+	do
+	if [ -z "$f" ] ; then
+		test_ok
+		break
+	fi
+	if [ `fsize $f` -gt $SZ_LIMIT ] ; then
+		test_ko
+		break
+	fi
+done
+
+kill_m
+
+checking rotate command variables
+grep ROT_VAR_OK $RCMD_LOG
 test_rc $?
 
-checking '-I option (return code)'
-$M -I </dev/null $BASE_PATH 2>&1 | tee $TMPFILE
+checking rotate command count
+n=`grep ROT_VAR_OK $RCMD_LOG | wc -l`
+rcount=`grep 'rotate count' $TMPFILE | sed 's/^.*://'`
+test $n = $rcount
 test_rc $?
-checking '-I option (statistics)'
-grep statistics $TMPFILE
+
+checking purge count
+pcount=`grep 'remove_oldest count' $TMPFILE | sed 's/^.*://'`
+test $pcount = `expr $rcount + 1 - $KEEP_COUNT`
 test_rc $?
 
+#-------------------------------
 
+new_test Links
 
-checking wrong short option
-$M -W
-test_rc `inv_rc $?`
+bg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD
+$G $GEN_SIZE >$PIPE
 
-checking wrong long option
-$M --wrong
-test_rc `inv_rc $?`
+check_status_file
+
+checking active link
+test -f $BASE_PATH
+test_rc $?
+
+c=`expr $KEEP_COUNT - 1`
+checking backup link count
+test `nb_backup_links` = $c
+test_rc $?
+
+checking "backup link existence ($c links)"
+for f in `backup_links` ''
+	do
+	if [ -z "$f" ] ; then
+		test_ok
+		break
+	fi
+	if [ ! -f $f ] ; then
+		test_ko
+		break
+	fi
+done
+
+kill_m
+
+#-------------------------------
+
+#new_test Compression
 
 #-------------------------------
 # End
@@ -280,5 +432,16 @@ rc=0
 
 cd $CHECK_DIR
 full_cleanup
+
+msg
+if [ $rc != 0 ] ; then
+	msg "************************** ERROR **********************************"
+	msg "* One or more tests failed                                        *"
+	msg "* Look in the check.log file for more information                 *"
+	msg "*******************************************************************"
+else
+	msg "============================ TESTS OK ============================"
+fi
+msg
 
 exit $rc
