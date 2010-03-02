@@ -20,5 +20,6 @@ fi
 	build/ltmain.sh \
 	build/missing \
 	*.tar.gz \
-	*.rpm
+	*.rpm \
+	managelogs-?.?.?
 
