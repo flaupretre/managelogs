@@ -26,3 +26,5 @@ depcomp
 install-sh
 ltmain.sh
 missing
+check/genlog
+check/check.log
