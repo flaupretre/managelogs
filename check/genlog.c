@@ -21,6 +21,16 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 #include <apr_general.h>
+#include <apr_time.h>
+
+#if APR_HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
+#include "../common/global.h"
+#include "../common/convert.h"
+
+#include "../common/convert.c"
 
 /*---------*/
 
@@ -48,6 +58,31 @@ char *agent_strings[]=
 STRING_TAB agents={
 	4,
 	agent_strings
+	};
+
+char *path_strings[]=
+		{
+		"root",
+		"wiki",
+		"run",
+		"software",
+		"web",
+		"pilot",
+		"wtf",
+		"demo",
+		"product",
+		"analyze",
+		"static",
+		"dynamic",
+		"php",
+		"anything",
+		"noideaanymore",
+		"reallyboring"
+		};
+
+STRING_TAB paths={
+	16,
+	path_strings
 	};
 
 /*---------*/
@@ -82,15 +117,94 @@ return n;
 
 /*---------*/
 
+char *ip_address()
+{
+static char buf[16];
+
+sprintf(buf,"%d.%d.%d.%d",rnum(1,253),rnum(1,253),rnum(1,253),rnum(1,253));
+return buf;
+}
+
+/*---------*/
+
+char *agent_string()
+{
+return rstring_tab(&agents);
+}
+
+/*---------*/
+
+char *path()
+{
+static char buf[256];
+
+sprintf(buf,"/%s/%s/%s/%s_%c.htm"
+	,rstring_tab(&paths)
+	,rstring_tab(&paths)
+	,rstring_tab(&paths)
+	,rstring_tab(&paths)
+	,rnum('a','z')
+	);
+
+return buf;
+}
+
+/*---------*/
+/* Adapted from apache / mod_log_config.c */
+
+char *date_string()
+{
+static apr_time_t request_time=0;
+static char buf[32];
+apr_time_exp_t xt;
+char sign;
+int timz;
+
+request_time=(request_time ? (request_time+APR_USEC_PER_SEC) : apr_time_now());
+apr_time_exp_lt(&xt,request_time);
+timz = xt.tm_gmtoff;
+if (timz < 0)
+	{
+	timz = -timz;
+	sign = '-';
+	}
+else sign = '+';
+
+apr_snprintf(buf, sizeof(buf),
+			 "[%02d/%s/%d:%02d:%02d:%02d %c%.2d%.2d]",
+			 xt.tm_mday, apr_month_snames[xt.tm_mon],
+			 xt.tm_year+1900, xt.tm_hour, xt.tm_min, xt.tm_sec,
+			 sign, timz / (60*60), (timz % (60*60)) / 60);
+
+return buf;
+}
+
+/*---------*/
+
 int main (int argc, char * argv[])
 {
 int i;
+unsigned long size_limit,size;
+char buf[1024],*p;
+
+sscanf(argv[1],"%lu",&size_limit);
 
 apr_app_initialize(&argc, (char const * const **)(&argv), NULL);
 
-for (i=0;i<20;i++)
+size=0;
+while(1)
 	{
-	printf("%s\n",rstring_tab(&agents));
+	p=path();
+	sprintf(buf,"%s - - [%s] \"GET  %s HTTP/1.1\" 200 %d \"http://www.fake.com%s\" \"%s\"\n"
+		,ip_address()
+		,date_string()
+		,p
+		,rnum(40,60000)
+		,p
+		,agent_string());
+	printf("%s",buf);
+	size += strlen(buf);
+	if (size >= size_limit) break;
 	}
 
 apr_terminate();
