@@ -14,4 +14,4 @@ EXTRA_DIST = check.sh rcmd.sh
 DISTCLEANFILES = check.log
 
 check: all
-	$(srcdir)/check.sh
+	@$(srcdir)/check.sh
