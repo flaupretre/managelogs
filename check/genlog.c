@@ -22,6 +22,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr.h>
 #include <apr_general.h>
 #include <apr_time.h>
+#include <apr_strings.h>
 
 #if APR_HAVE_STDIO_H
 #include <stdio.h>
@@ -121,7 +122,7 @@ char *ip_address()
 {
 static char buf[16];
 
-sprintf(buf,"%d.%d.%d.%d",rnum(1,253),rnum(1,253),rnum(1,253),rnum(1,253));
+sprintf(buf,"%lu.%lu.%lu.%lu",rnum(1,253),rnum(1,253),rnum(1,253),rnum(1,253));
 return buf;
 }
 
@@ -143,7 +144,7 @@ sprintf(buf,"/%s/%s/%s/%s_%c.htm"
 	,rstring_tab(&paths)
 	,rstring_tab(&paths)
 	,rstring_tab(&paths)
-	,rnum('a','z')
+	,(int)rnum('a','z')
 	);
 
 return buf;
@@ -183,7 +184,6 @@ return buf;
 
 int main (int argc, char * argv[])
 {
-int i;
 unsigned long size_limit,size;
 char buf[1024],*p;
 
@@ -195,7 +195,7 @@ size=0;
 while(1)
 	{
 	p=path();
-	sprintf(buf,"%s - - [%s] \"GET  %s HTTP/1.1\" 200 %d \"http://www.fake.com%s\" \"%s\"\n"
+	sprintf(buf,"%s - - [%s] \"GET  %s HTTP/1.1\" 200 %lu \"http://www.fake.com%s\" \"%s\"\n"
 		,ip_address()
 		,date_string()
 		,p
