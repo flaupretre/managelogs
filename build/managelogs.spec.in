@@ -45,6 +45,9 @@ limits and includes a lot of useful features.
 %configure %{?_without_zlib} %{?_without_bz2}
 make %{?_smp_mflags}
 
+%check
+make check
+
 %install
 rm -rf $RPM_BUILD_ROOT
 %makeinstall
