@@ -38,9 +38,20 @@ if (fork())		/* Parent returns */
 	return;
 	}
 
-/* Detach process without fork()ing again */
+/* Detach process */
+/* Don't use apr_proc_detach() as it chdir() to /, which is incompatible */
+/* with the relative paths we can transmit to the child process */
+/* Code extracted from apr_proc_detach() */
 
-(void)apr_proc_detach(APR_PROC_DETACH_FOREGROUND);	
+#ifdef HAVE_SETSID
+if (setsid() == -1) exit(1);
+#elif defined(NEXT) || defined(NEWSOS)
+if (setpgrp(0, getpid()) == -1) exit(1);
+#elif defined(OS2) || defined(TPF) || defined(MPE)
+    /* do nothing */
+#else
+if (setpgid(0, 0) == -1) exit(1);
+#endif
 
 /* Set environment variables */
 

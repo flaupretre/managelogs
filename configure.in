@@ -136,7 +136,7 @@ AC_FUNC_FORK
 # Don't use AC_FUNC_MALLOC nor AC_FUNC_REALLOC because we don't care about
 # so-called 'GNU compatibility' of these functions
 
-AC_CHECK_FUNCS([malloc realloc strchr system memset free symlink memcpy strlen getppid getpid strcpy strcat fork sscanf link strcmp])
+AC_CHECK_FUNCS([malloc realloc strchr system memset free symlink memcpy strlen getppid getpid strcpy strcat fork sscanf link strcmp setsid])
 
 AC_CONFIG_FILES([Makefile
 				build/managelogs.spec
