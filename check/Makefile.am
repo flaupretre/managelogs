@@ -1,5 +1,5 @@
 
-noinst_PROGRAMS = genlog
+check_PROGRAMS = genlog
 
 genlog_SOURCES = genlog.c
 
@@ -11,5 +11,7 @@ genlog_LDADD = $(APR_LIBS)
 
 EXTRA_DIST = check.sh
 
+DISTCLEANFILES = check.log
+
 check: all
-	./check.sh
+	$(srcdir)/check.sh
