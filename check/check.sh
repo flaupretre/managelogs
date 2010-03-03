@@ -143,6 +143,15 @@ test_rc $?
 
 #------------
 
+fg_run()
+{
+info Running process
+$G $GEN_SIZE | $M $* $BASE_PATH
+/bin/rm $PIDFILE
+}
+
+#------------
+
 bg_run()
 {
 info Starting process
@@ -348,8 +357,7 @@ test_rc $?
 
 new_test 'Rotation / Purge'
 
-bg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $RCMD -I -d $TMPFILE
-$G $GEN_SIZE >$PIPE
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $RCMD -I -d $TMPFILE
 
 check_status_file
 
@@ -370,8 +378,6 @@ for f in `log_files` ''
 	fi
 done
 
-kill_m
-
 checking rotate command variables
 grep ROT_VAR_OK $RCMD_LOG
 test_rc $?
@@ -391,12 +397,12 @@ test_rc $?
 
 new_test Links
 
-bg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD
-$G $GEN_SIZE >$PIPE
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD
 
 check_status_file
 
 checking active link
+ls -l $RUN_DIR
 test -f $BASE_PATH
 test_rc $?
 
@@ -418,10 +424,7 @@ for f in `backup_links` ''
 	fi
 done
 
-kill_m
-
 #-------------------------------
-
 #new_test Compression
 
 #-------------------------------
