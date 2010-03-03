@@ -1,0 +1,25 @@
+#
+# Fix file permissions wrongly set by samba transfers
+#
+#====================================================================
+
+chmod -x \
+	.hgignore \
+	.hgtags \
+	`find .hg -type f` \
+	`find . -name '*.c'` \
+	`find . -name '*.h'` \
+	`find . -name '*.m4'` \
+	`find . -name '*.in'` \
+	`find . -name 'Makefile.am'` \
+	ACKNOWLEDGEMENTS \
+	AUTHORS \
+	COPYING \
+	ChangeLog \
+	INSTALL \
+	NEWS \
+	NOTICE \
+	README \
+	TODO \
+	doc/*.8 \
+	doc/*.htm

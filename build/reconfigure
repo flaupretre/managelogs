@@ -1,7 +1,8 @@
 
 build/cleanup
+build/fix_perms
 
-./autogen.sh --verbose
+build/autogen.sh --verbose
 
 ./configure $*
 
