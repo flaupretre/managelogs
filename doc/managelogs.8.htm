@@ -339,7 +339,7 @@ compression type to the file name.
 If the '--link' option is set for this log manager, it maintains a link
 from &lt;base-path&gt; to the active log file. By default, it is a symbolic link,
 but the '--hardlink' option allows to use hard links instead.
-<DT>&lt;base-path&gt;.{B.001[.gz|.bz2],B.002[.gz|.bz2],...}<DD>
+<DT>&lt;base-path&gt;.B.{001[.gz|.bz2],002[.gz|.bz2],...}<DD>
 These are also links, but to the backup log files. They are created and
 maintained only if the '--backup-links' option was set. The files are numbered
 in reverse chronological order : &lt;base-path&gt;.B.001[.gz|.bz2] is the most recent backup,
@@ -365,17 +365,27 @@ cannot be read before such a flush operation is executed. This is due to the
 fact that a compressed file must contain a trailer block to be valid. As long
 as the compression engine processes the data, this trailer block is not
 written and, if you try to read the compressed data from the file, it is
-considered as invalid. When you send a SIGUSR2 to the process, the compression
+considered as invalid. When you send a SIGUSR2 signal to the process, the compression
 engine flushes the data it currently has in memory, writes the corresponding
 trailer data to the file, and starts a new block. Then, you can uncompress
 the data from the compressed file. Note that this flush operation adds about
 16 bytes to the log file, so it shouldn't be done too often.
+<DT><B>SIGTERM</B>
+
+<DD>
+Causes the managelogs process to exit cleanly (flush data to disk, update status
+file, and exit). You will need this signal when reading from a named
+pipe as, in this case, this is the only way to stop the managelogs process.
 </DL>
+<P>
+
+SIGKILL should never be sent as it cannot be trapped
+and will create inconsistencies in the status file.
 <A NAME="lbAH">&nbsp;</A>
 <H2>ROTATE COMMAND</H2>
 
 Every time managelogs decides to switch to a new log file, whatever reason it
-may have for this, an external command can be executed. This is what we call
+may have for this, an external command can be executed. This is what we call the
 <I>rotate command.</I>
 
 This command is set via the --rotate-cmd option on the managelogs command line.
@@ -473,13 +483,13 @@ disconnect from the pipe without disturbing the managelogs process.
 <P>
 
 The only way to stop a managelogs process connected to a named pipe is to kill it
-with a signal (SIGTERM is the standard for this).
+with a SIGTERM signal.
 <A NAME="lbAJ">&nbsp;</A>
 <H2>EXAMPLES</H2>
 
 <P>
 
-Say we want to keep the last 3 Mbytes of access_log data in &lt;apache-dir&gt;/logs,
+Say we want to keep the last 3 Mbytes of access_log data in /var/log/httpd,
 each log file will take at most 1 Mbyte, and we want to maintain symbolic
 links to the active and backup log files.
 <P>
@@ -487,10 +497,10 @@ links to the active and backup log files.
 The corresponding configuration line looks like :
 <P>
 
-CustomLog &quot;| /usr/bin/managelogs --size 1M --global-size 3M --link --backup-links &lt;apache_dir&gt;/logs/access_log&quot; combined
+CustomLog &quot;| /usr/bin/managelogs --size 1M --global-size 3M --link --backup-links /var/log/httpd/access_log&quot; combined
 <P>
 
-Here is a typical list of files present in the &lt;apache-dir&gt;/logs directory with
+Here is a typical list of files present in the /var/log/httpd directory with
 such a configuration :
 <PRE>
 # ls -l $apache_dir/logs/access_log*
@@ -537,10 +547,10 @@ as it allows to save a lot of space (about 95 %).
 The corresponding directive looks like :
 <P>
 
-CustomLog &quot;| /usr/bin/managelogs --size 1M --global-size 3M --link --backup-links &lt;apache_dir&gt;/logs/access_log --size 100M --global-size 1G --compression bz2:best /archives/logs/access_log&quot; combined
+CustomLog &quot;| /usr/bin/managelogs --size 1M --global-size 3M --link --backup-links /var/log/httpd/access_log --size 100M --global-size 1G --compression bz2:best /archives/logs/access_log&quot; combined
 <P>
 
-With such a configuration, the files in the &lt;apache-dir&gt;/logs directory will
+With such a configuration, the files in the /var/log/httpd directory will
 be the same as in the previous example, but managelogs will also maintain the
 most recent 1 Gbytes of compressed access log data in /archives/logs (in
 chunks of 100 Mbytes). This way, we have two levels of access to the log
@@ -552,7 +562,7 @@ Now, if we want to force an immediate rotation of these log files, whatever
 reason we may have for this, the command to use is :
 <P>
 
-kill -USR1 `cat &lt;apache-dir&gt;/logs/access_log.pid`
+kill -USR1 `cat /var/log/httpd/access_log.pid`
 <P>
 
 Note that we could also have used '/archives/logs/access_log.pid', as both pid
@@ -564,7 +574,7 @@ the log data to be integrated into an AWStats database each time a rotation
 occurs. We also ensure that a rotation happens at least every day :
 <P>
 
-CustomLog &quot;| /usr/bin/managelogs --size 100k --global-size 1M --rotate-delay 1d --rotate-cmd 'perl &lt;awstat-dir&gt;/awstats.pl -config=&lt;mysite&gt; -update -LogFile=$LOGMANAGER_FILE_PATH' &lt;apache_dir&gt;/logs/access_log&quot; combined
+CustomLog &quot;| /usr/bin/managelogs --size 100k --global-size 1M --rotate-delay 1d --rotate-cmd 'perl &lt;awstat-dir&gt;/awstats.pl -config=&lt;mysite&gt; -update -LogFile=$LOGMANAGER_FILE_PATH' /var/log/httpd/access_log&quot; combined
 <P>
 
 In order to ensure that statistics are integrated at least once per day, we
@@ -572,7 +582,7 @@ could have replaced the '--rotate-delay' option with the following cron job,
 executed every night :
 <P>
 
-0 0 * * * kill -USR1 `cat &lt;apache_dir&gt;/logs/access_log.pid`
+0 0 * * * kill -USR1 `cat /var/log/httpd/access_log.pid`
 <A NAME="lbAK">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
