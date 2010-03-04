@@ -30,6 +30,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include "../common/global.h"
 #include "../common/alloc.h"
+#include "../common/time.h"
 #include "options.h"
 #include "managelogs.h"
 #include "id.h"
@@ -138,6 +139,7 @@ LOGMANAGER_OPTIONS **get_options(int argc, char **argv, int *countp)
 apr_status_t status;
 LOGMANAGER_OPTIONS **opp, *op;
 int optch;
+unsigned int mode;
 const char *opt_arg;
 char *clevel;
 DECLARE_TPOOL;
@@ -204,11 +206,12 @@ while (1)
 				exit_proc(0);
 
 			case 'm':
-				if (sscanf(opt_arg,"%x",&(op->create_mode))!=1)
+				if (sscanf(opt_arg,"%x",&mode)!=1)
 					{
 					usage(-1);
 					FATAL_ERROR1("Invalid mode : %s",opt_arg);
 					}
+				op->create_mode=(apr_fileperms_t)mode;
 				break;
 
 			case 'u':
@@ -236,7 +239,7 @@ while (1)
 				break;
 
 			case 't':
-				sscanf(opt_arg,"%lX",&timestamp);
+				sscanf(opt_arg,"%" TIMESTAMP_FMT,&timestamp);
 				break;
 
 			case 'I':

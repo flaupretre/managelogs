@@ -41,6 +41,7 @@ void change_id(const char *string)
 char buf[64],*group;
 apr_uid_t uid;
 apr_gid_t gid;
+int read_uid,read_gid; /* For better portability */
 BOOL gid_set;
 DECLARE_TPOOL;
 
@@ -53,7 +54,8 @@ if ((group=strchr(buf,':'))!=NULL) *(group++)='\0';
 
 if (apr_isdigit(*buf))
 	{
-	if (sscanf(buf,"%d",&uid)!=1) FATAL_ERROR1("Invalid uid (%s)",buf);
+	if (sscanf(buf,"%d",&read_uid)!=1) FATAL_ERROR1("Invalid uid (%s)",buf);
+	uid=(apr_uid_t)read_uid;
 	}
 else
 	{
@@ -66,7 +68,8 @@ if (group)
 	{
 	if (apr_isdigit(*group))
 		{
-		if (sscanf(group,"%d",&gid)!=1)	FATAL_ERROR1("Invalid gid (%s)",group);
+		if (sscanf(group,"%d",&read_gid)!=1)	FATAL_ERROR1("Invalid gid (%s)",group);
+		gid=(apr_gid_t)read_gid;
 		}
 	else
 		{
