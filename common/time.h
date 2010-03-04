@@ -18,9 +18,13 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __LMGR_TIME_H
 #define __LMGR_TIME_H
 
+/* Don't conflict with declaration in logmanager.h */
+
+#ifndef NOW
 typedef apr_time_t TIMESTAMP;
 
 #define NOW	(TIMESTAMP)0
+#endif
 
 #define TIMESTAMP_FMT APR_TIME_T_FMT
 

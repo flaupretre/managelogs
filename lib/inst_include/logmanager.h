@@ -23,6 +23,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 #include <apr_file_io.h>
+#include <apr_time.h>
 
 /*----------------------------------------------*/
 
@@ -34,7 +35,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 
 #ifndef NOW
-typedef unsigned long TIMESTAMP;
+typedef apr_time_t TIMESTAMP;
 
 #define NOW	(TIMESTAMP)0
 #endif

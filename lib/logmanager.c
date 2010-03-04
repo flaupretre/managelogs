@@ -483,7 +483,7 @@ len =64; /* should be enough for any suffix  (compression + number) */
 
 len += strlen(mp->base_path)+11;
 path=allocate(NULL,len);
-(void)apr_snprintf(path,len,"%s._%08lX",mp->base_path,t);
+(void)apr_snprintf(path,len,"%s._%08lX",mp->base_path,(unsigned long)t);
 
 for (i=0,ep=path+strlen(path);;i++)
 	{
