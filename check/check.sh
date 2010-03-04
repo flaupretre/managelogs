@@ -14,8 +14,8 @@ set -x
 
 RUN_DIR=$CHECK_DIR/tmp
 
-SRC_DIR=`dirname $0` # Needed to support build in a separate dir (distcheck)
 d=`pwd`
+SRC_DIR=`dirname $0` # Needed to support build in a separate dir (distcheck)
 cd $SRC_DIR
 SRC_DIR=`pwd`	# Make it absolute as we will cd to tmp
 cd $d
@@ -27,16 +27,21 @@ M_PIDFILE=$BASE_PATH.pid
 PIPE=$CHECK_DIR/pipe
 M_STATUSFILE=$BASE_PATH.status
 TMPFILE=$RUN_DIR/tmp1
-RCMD=$SRC_DIR/rcmd.sh
+RCMD=$CHECK_DIR/rcmd.sh
 SZ_LIMIT=10000
 KEEP_COUNT=5
 GEN_SIZE=105000
 M=$CHECK_DIR/../src/managelogs
 G=$CHECK_DIR/genlog
 RCMD_LOG=$RUN_DIR/rcmd.log
+DBGFILE=$RUN_DIR/check.dbg
+DBG_GLOBAL=$CHECK_DIR/check.dbg
+DATAFILE=$RUN_DIR/data
 
 export LOG RESFILE PIDFILE BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
-	RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR
+	RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
+	DBGFILE DBG_GLOBAL
+
 #-------------------------------
 
 msg()
@@ -131,7 +136,6 @@ mkfifo $PIPE
 
 kill_m()
 {
-info Stopping process
 kill `pid`
 sleep 1
 check_process stop
@@ -139,23 +143,43 @@ check_process stop
 checking PID file deletion
 test ! -f $M_PIDFILE
 test_rc $?
+
+/bin/rm -f $PIDFILE
+
+cat $DBGFILE >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
+echo "===================== Stop process ===================" >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
 }
 
 #------------
 
 fg_run()
 {
-info Running process
-$G $GEN_SIZE | $M $* $BASE_PATH
-/bin/rm $PIDFILE
+echo >>$DBG_GLOBAL
+echo "====== RUN: $G $GEN_SIZE | $M $* $BASE_PATH$" >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
+
+/bin/rm -f $DBGFILE
+$G $GEN_SIZE >$DATAFILE
+cat $DATAFILE | $M $* -v -d $DBGFILE $BASE_PATH
+
+cat $DBGFILE >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
+echo "====== END RUN =========" >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
 }
 
 #------------
 
 bg_run()
 {
-info Starting process
-$M -i $PIPE $* $BASE_PATH &
+echo >>$DBG_GLOBAL
+echo "====== Starting bg process: $M -i $PIPE $* $BASE_PATH" >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
+
+/bin/rm -f $DBGFILE
+$M -i $PIPE $* -v -d $DBGFILE $BASE_PATH &
 echo $! >$PIDFILE
 sleep 1
 check_process run
@@ -287,7 +311,7 @@ test_rc $?
 #============================= main ===================================
 
 full_cleanup
-/bin/rm -rf $RUN_DIR
+/bin/rm -rf $RUN_DIR $DBG_GLOBAL
 mkdir -p $RUN_DIR
 cd $RUN_DIR
 mk_fifo
@@ -318,15 +342,15 @@ test_rc $?
 checking '-I option (return code)'
 $M -I </dev/null $BASE_PATH 2>&1 | tee $TMPFILE
 test_rc $?
-checking '-I option (statistics)'
+checking '-I option (data)'
 grep statistics $TMPFILE
 test_rc $?
 
-checking 'wrong option (short)'
+checking 'invalid option (short)'
 $M -W
 test_rc `inv_rc $?`
 
-checking 'wrong option (long)'
+checking 'invalid option (long)'
 $M --wrong
 test_rc `inv_rc $?`
 
@@ -340,16 +364,18 @@ checking if log file exists
 test `nb_log_files` -gt 0
 test_rc $?
 
-
-$G 1000 >$TMPFILE
-count=`cat $TMPFILE | wc -c`
-cat $TMPFILE >$PIPE
-
 kill_m
 
 check_status_file
 
+#-------------------------------
+
+new_test 'Basic run (2)'
+
+fg_run
+
 checking log size
+count=`cat $DATAFILE | wc -c`
 test `global_log_size` = $count
 test_rc $?
 
@@ -357,7 +383,12 @@ test_rc $?
 
 new_test 'Rotation / Purge'
 
-fg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $RCMD -I -d $TMPFILE
+# The shell script created by configure is not executable. So, we need to
+# make the file executable before using it as a command.
+
+chmod +x $RCMD
+
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $RCMD -I
 
 check_status_file
 
@@ -384,12 +415,12 @@ test_rc $?
 
 checking rotate command count
 n=`grep ROT_VAR_OK $RCMD_LOG | wc -l`
-rcount=`grep 'rotate count' $TMPFILE | sed 's/^.*://'`
+rcount=`grep 'rotate count' $DBGFILE | sed 's/^.*://'`
 test $n = $rcount
 test_rc $?
 
 checking purge count
-pcount=`grep 'remove_oldest count' $TMPFILE | sed 's/^.*://'`
+pcount=`grep 'remove_oldest count' $DBGFILE | sed 's/^.*://'`
 test $pcount = `expr $rcount + 1 - $KEEP_COUNT`
 test_rc $?
 
@@ -427,6 +458,8 @@ done
 #-------------------------------
 #new_test Compression
 
+# TODO
+
 #-------------------------------
 # End
 
@@ -440,7 +473,7 @@ msg
 if [ $rc != 0 ] ; then
 	msg "************************** ERROR **********************************"
 	msg "* One or more tests failed                                        *"
-	msg "* Look in the check.log file for more information                 *"
+	msg "* Look in the check.log and check.dbg files for more information  *"
 	msg "*******************************************************************"
 else
 	msg "============================ TESTS OK ============================"

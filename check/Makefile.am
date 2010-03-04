@@ -9,9 +9,9 @@ AM_LDFLAGS = $(APR_LDFLAGS)
 
 genlog_LDADD = $(APR_LIBS)
 
-EXTRA_DIST = check.sh rcmd.sh
+EXTRA_DIST = check.sh
 
-DISTCLEANFILES = check.log
+DISTCLEANFILES = check.log check.dbg
 
 check: all
-	@$(srcdir)/check.sh
+	@$(SHELL) $(srcdir)/check.sh

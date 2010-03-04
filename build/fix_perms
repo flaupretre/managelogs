@@ -22,4 +22,5 @@ chmod -x \
 	README \
 	TODO \
 	doc/*.8 \
-	doc/*.htm
+	doc/*.htm \
+	check/check.sh
