@@ -33,7 +33,12 @@ return (TIMESTAMP)apr_time_sec(apr_time_now());
 
 LIB_INTERNAL TIMESTAMP strval_to_time(const char *val)
 {
-return (TIMESTAMP)strval_to_ulong(val);
+TIMESTAMP t;
+
+if (sscanf(val,"%" TIMESTAMP_FMT,&t)!=1)
+	FATAL_ERROR1("Cannot read time value (%s)",val);
+
+return t;
 }
 
 /*----------------------------------------------*/

@@ -18,11 +18,11 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #ifndef __LMGR_TIME_H
 #define __LMGR_TIME_H
 
-#ifndef NOW
-typedef unsigned long TIMESTAMP;
+typedef apr_time_t TIMESTAMP;
 
 #define NOW	(TIMESTAMP)0
-#endif
+
+#define TIMESTAMP_FMT APR_TIME_T_FMT
 
 #define NORMALIZE_TIMESTAMP(_t)	{ if ((_t)==NOW) (_t)=time_now(); }
 

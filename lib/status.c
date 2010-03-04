@@ -108,7 +108,7 @@ status file (%s) and restart the program.",mp->status_path);
 
 			case 'u':
 				if (!lp) break;	/* Security against invalid file */
-				lp->sum=hexval_to_ulong(val);
+				lp->sum=strval_to_ulong(val);
 				break;
 
 			/* Ignore other values */
@@ -135,10 +135,10 @@ status file (%s) and restart the program.",mp->status_path);
 			file_write_string_nl(fp,ut_basename((_lp)->link),YES); \
 			} \
 		file_write_string(fp,"s ",YES);			/* Start */ \
-		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->start); \
+		(void)apr_snprintf(buf,sizeof(buf),"%" TIMESTAMP_FMT,(_lp)->start); \
 		file_write_string_nl(fp,buf,YES); \
 		file_write_string(fp,"e ",YES);			/* End */ \
-		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->end); \
+		(void)apr_snprintf(buf,sizeof(buf),"%" TIMESTAMP_FMT,(_lp)->end); \
 		file_write_string_nl(fp,buf,YES); \
 		file_write_string(fp,"i ",YES);			/* Compressed size */ \
 		(void)apr_snprintf(buf,sizeof(buf),"%" APR_OFF_T_FMT,(_lp)->size); \
@@ -147,7 +147,7 @@ status file (%s) and restart the program.",mp->status_path);
 		(void)apr_snprintf(buf,sizeof(buf),"%" APR_OFF_T_FMT,(_lp)->osize); \
 		file_write_string_nl(fp,buf,YES); \
 		file_write_string(fp,"u ",YES);			/* Checksum */ \
-		(void)apr_snprintf(buf,sizeof(buf),"%08X",(_lp)->sum); \
+		(void)apr_snprintf(buf,sizeof(buf),"%lu",(_lp)->sum); \
 		file_write_string_nl(fp,buf,YES); \
 		} \
 	}

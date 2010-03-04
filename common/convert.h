@@ -23,7 +23,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 /*----------------------------------------------*/
 
 LIB_INTERNAL unsigned long strval_to_ulong(const char *val);
-LIB_INTERNAL unsigned long hexval_to_ulong(const char *val);
 LIB_INTERNAL apr_off_t strval_to_apr_off_t(const char *val);
 
 /*----------------------------------------------*/
