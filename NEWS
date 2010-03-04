@@ -1,4 +1,15 @@
 -------------------------------------------------------------------------------
+2.1.0 :
+
+* Add self-tests
+
+* Lots of changes to improve portability
+
+* Better RPM build (from sources)
+
+* Support reading from a named pipe
+
+-------------------------------------------------------------------------------
 2.0.0 :
 
 * Switch build system to GNU autotools
