@@ -1,4 +1,6 @@
 
+build/fix_perms
+
 set -x
 
 if [ -f Makefile ] ; then

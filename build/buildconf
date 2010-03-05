@@ -1,0 +1,5 @@
+
+build/cleanup
+
+build/autogen.sh
+#build/autogen.sh --verbose
