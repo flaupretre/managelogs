@@ -28,3 +28,5 @@ ltmain.sh
 missing
 check/genlog
 check/check.log
+check/check.dbg
+check/rcmd.sh
