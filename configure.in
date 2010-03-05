@@ -38,12 +38,15 @@ dnl Make sure we have an ANSI compiler
 AM_C_PROTOTYPES
 test "x$U" != "x" && AC_MSG_ERROR(Compiler not ANSI compliant)
 
-AC_LIBTOOL_WIN32_DLL
+dnl Disable C++ and Fortran checks in configure
+
+m4_defun([_LT_AC_LANG_CXX_CONFIG], [:])
+m4_defun([_LT_AC_LANG_F77_CONFIG], [:])
+
+#AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
-#AC_PROG_CC
 AC_PROG_INSTALL
-#AC_PROG_LIBTOOL
 
 # Checks for header files.
 
@@ -131,12 +134,10 @@ sinclude(build/find_bz2.m4)
 #----------------------------------------------------------------------
 # Checks for library functions.
 
-AC_FUNC_FORK
-
 # Don't use AC_FUNC_MALLOC nor AC_FUNC_REALLOC because we don't care about
 # so-called 'GNU compatibility' of these functions
 
-AC_CHECK_FUNCS([malloc realloc strchr system memset free symlink memcpy strlen getppid getpid strcpy strcat fork sscanf link strcmp setsid])
+AC_CHECK_FUNCS([malloc realloc strchr memset free symlink memcpy strlen getppid getpid strncpy strcat sscanf link strcmp])
 
 AC_CONFIG_FILES([Makefile
 				build/managelogs.spec
