@@ -21,6 +21,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr_user.h>
 #include <apr_lib.h>
 #include <apr_file_io.h>
+#include <apr_strings.h>
 
 #if APR_HAVE_UNISTD_H
 #include <unistd.h>
@@ -47,7 +48,7 @@ DECLARE_TPOOL;
 
 if (strlen(string) >= sizeof(buf))
 	FATAL_ERROR1("ID string too long (%s)",string);
-strcpy(buf,string);
+(void)apr_cpystrn(buf,string,sizeof(buf));
 
 gid_set=NO;
 if ((group=strchr(buf,':'))!=NULL) *(group++)='\0';

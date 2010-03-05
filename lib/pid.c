@@ -47,7 +47,9 @@ if (! mp->pid_path) return;
 
 pid=getpid();
 DEBUG2(mp,1,"Creating PID file (%s, pid=%" APR_PID_T_FMT ")",mp->pid_path,pid);
+#ifdef HAVE_GETPPID
 DEBUG1(mp,2,"PPID=%" APR_PID_T_FMT,getppid());
+#endif
 
 fp=file_create(mp->pid_path,(apr_int32_t)PIDFILE_MODE);
 

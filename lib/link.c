@@ -15,6 +15,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    limitations under the License.
 =============================================================================*/
 
+#include <apr_strings.h>
+
 /*----------------------------------------------*/
 
 LIB_INTERNAL char *link_name(LOGMANAGER *mp, int num)
@@ -23,7 +25,7 @@ int len;
 char buf[32],*p;
 
 p=allocate(NULL,len=strlen(mp->base_path)+1);
-strcpy(p,mp->base_path);
+(void)apr_cpystrn(p,mp->base_path,len);
 
 if (num)
 	{
