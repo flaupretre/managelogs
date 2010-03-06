@@ -73,6 +73,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 							FATAL_ERROR_STEP2 \
 							}
 
+#define FATAL_ERROR3(_msg,_arg1,_arg2,_arg3)	{ \
+							FATAL_ERROR_STEP1 \
+							(void)apr_file_printf(__fd,_msg,_arg1,_arg2,_arg3); \
+							FATAL_ERROR_STEP2 \
+							}
+
 /*-------------*/
 
 #define POOL	apr_pool_t *
