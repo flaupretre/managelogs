@@ -25,6 +25,11 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr_errno.h>
 #include <apr_strings.h>
 
+#define APR_WANT_STRFUNC
+#define APR_WANT_STDIO
+
+#include "apr_want.h"
+
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -39,18 +44,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #if APR_HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#if APR_HAVE_STRING_H
-#include <string.h>
-#endif
-
-#if APR_HAVE_STRINGS_H
-#include <strings.h>
-#endif
-
-#if APR_HAVE_STDIO_H
-#include <stdio.h>
 #endif
 
 #include "../config.h"
@@ -235,10 +228,11 @@ C_VOID_HANDLER(mp,flush);
 
 LIB_INTERNAL void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts)
 {
-DUP_P(mp->base_path,opts->base_path);
-mp->root_dir=ut_dirname(mp->base_path);
-mp->status_path=status_path(opts->base_path);
-if (opts->flags & LMGR_PID_FILE) mp->pid_path=pid_path(mp);
+mp->base_path=mk_abs_path(NULL,opts->base_path);
+mp->base_dir=ut_dirname(mp->base_path);
+mp->status_path=combine_strings(mp->base_path,".status");
+if (opts->flags & LMGR_PID_FILE)
+	mp->pid_path=combine_strings(mp->base_path,".pid");;
 }
 
 /*----------------------------------------------*/
@@ -312,12 +306,12 @@ if (!mp->create_mode) mp->create_mode=0x644;
 
 /*-- Debug info */
 
-DUP_P(mp->debug.path,opts->debug_file);
+mp->debug.path=mk_abs_path(NULL,opts->debug_file);
 mp->debug.level=opts->debug_level;
 
 /* Rotate command */
 
-DUP_P(mp->rotate_cmd,opts->rotate_cmd);
+mp->rotate_cmd=mk_abs_path(NULL,opts->rotate_cmd);
 
 /* V 2+ specific options */
 
@@ -388,7 +382,7 @@ FREE_P(mp->compress.private);
 /* Free strings */
 
 FREE_P(mp->base_path);
-FREE_P(mp->root_dir);
+FREE_P(mp->base_dir);
 FREE_P(mp->status_path);
 FREE_P(mp->pid_path);
 FREE_P(mp->debug.path);
