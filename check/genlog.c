@@ -195,7 +195,7 @@ size=0;
 while(1)
 	{
 	p=path();
-	sprintf(buf,"%s - - [%s] \"GET  %s HTTP/1.1\" 200 %lu \"http://www.fake.com%s\" \"%s\"\n"
+	sprintf(buf,"%s - - %s \"GET  %s HTTP/1.1\" 200 %lu \"http://www.fake.com%s\" \"%s\"\n"
 		,ip_address()
 		,date_string()
 		,p
