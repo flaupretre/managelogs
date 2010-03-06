@@ -17,6 +17,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 #include <apr_file_io.h>
+#include <apr_strings.h>
 
 #if APR_HAVE_STRING_H
 #include <string.h>
@@ -86,6 +87,23 @@ if ((!source)||(!size)) return NULL;
 
 p=allocate(NULL,size);
 memcpy(p,source,size);
+return p;
+}
+
+/*----------------------------------------------*/
+
+LIB_INTERNAL void *combine_strings(const char *str1,const char *str2)
+{
+size_t size;
+char *p;
+
+if (!str1) str1="";
+if (!str2) str2="";
+size=strlen(str1) + strlen(str2) +1;
+
+p=allocate(NULL,size);
+apr_snprintf(p,size,"%s%s",str1,str2);
+
 return p;
 }
 

@@ -44,6 +44,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 LIB_INTERNAL void *allocate(/*@null@*/ const void *p, apr_size_t size);
 LIB_INTERNAL void *duplicate(const char *string);
 LIB_INTERNAL void *duplicate_mem(const void *,apr_size_t size);
+LIB_INTERNAL void *combine_strings(const char *str1,const char *str2);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_ALLOC_H */
