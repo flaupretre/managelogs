@@ -22,12 +22,14 @@ cd $d
 
 RESFILE=$CHECK_DIR/check.res
 PIDFILE=$CHECK_DIR/pidfile
-BASE_PATH=$RUN_DIR/mylog
+REL_BASE_PATH=mylog
+BASE_PATH=$RUN_DIR/$REL_BASE_PATH
 M_PIDFILE=$BASE_PATH.pid
 PIPE=$CHECK_DIR/pipe
 M_STATUSFILE=$BASE_PATH.status
 TMPFILE=$RUN_DIR/tmp1
-RCMD=$CHECK_DIR/rcmd.sh
+REL_CMD=.././rcmd.sh	# Test relative path in command
+RCMD=$RUN_DIR/$REL_CMD
 SZ_LIMIT=10000
 KEEP_COUNT=5
 GEN_SIZE=105000
@@ -38,8 +40,8 @@ DBGFILE=$RUN_DIR/check.dbg
 DBG_GLOBAL=$CHECK_DIR/check.dbg
 DATAFILE=$RUN_DIR/data
 
-export LOG RESFILE PIDFILE BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
-	RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
+export LOG RESFILE PIDFILE BASE_PATH REL_BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
+	REL_CMD RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
 	DBGFILE DBG_GLOBAL
 
 #-------------------------------
@@ -148,6 +150,8 @@ test_rc $?
 
 cat $DBGFILE >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
+cat $M_STATUSFILE >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
 echo "===================== Stop process ===================" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 }
@@ -156,15 +160,20 @@ echo >>$DBG_GLOBAL
 
 fg_run()
 {
+bp=$1
+shift
+
 echo >>$DBG_GLOBAL
-echo "====== RUN: $G $GEN_SIZE | $M $* $BASE_PATH$" >>$DBG_GLOBAL
+echo "====== RUN: $G $GEN_SIZE | $M $* $bp" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 
 /bin/rm -f $DBGFILE
 $G $GEN_SIZE >$DATAFILE
-cat $DATAFILE | $M $* -v -d $DBGFILE $BASE_PATH
+cat $DATAFILE | $M $* -v -d $DBGFILE $bp
 
 cat $DBGFILE >>$DBG_GLOBAL
+echo >>$DBG_GLOBAL
+cat $M_STATUSFILE >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 echo "====== END RUN =========" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
@@ -174,12 +183,15 @@ echo >>$DBG_GLOBAL
 
 bg_run()
 {
+bp=$1
+shift
+
 echo >>$DBG_GLOBAL
-echo "====== Starting bg process: $M -i $PIPE $* $BASE_PATH" >>$DBG_GLOBAL
+echo "====== Starting bg process: $M -i $PIPE $* $bp" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 
 /bin/rm -f $DBGFILE
-$M -i $PIPE $* -v -d $DBGFILE $BASE_PATH &
+$M -i $PIPE $* -v -d $DBGFILE $bp &
 echo $! >$PIDFILE
 sleep 1
 check_process run
@@ -356,9 +368,9 @@ test_rc `inv_rc $?`
 
 #-------------------------------
 
-new_test Basic run
+new_test 'Basic run (background)'
 
-bg_run
+bg_run $BASE_PATH
 
 checking if log file exists
 test `nb_log_files` -gt 0
@@ -370,9 +382,9 @@ check_status_file
 
 #-------------------------------
 
-new_test 'Basic run (2)'
+new_test 'Basic run (foreground)'
 
-fg_run
+fg_run $BASE_PATH
 
 checking log size
 count=`cat $DATAFILE | wc -c`
@@ -381,14 +393,66 @@ test_rc $?
 
 #-------------------------------
 
-new_test 'Rotation / Purge'
+new_test 'Relative path support'
+
+fg_run $REL_BASE_PATH
+
+checking file path
+count=`cat $DATAFILE | wc -c`
+test `global_log_size` = $count
+test_rc $?
+cleanup
+
+#---
+
+fg_run ./$REL_BASE_PATH
+
+checking "'./' relative path"
+count=`cat $DATAFILE | wc -c`
+test `global_log_size` = $count
+test_rc $?
+cleanup
+
+#---
+
+mkdir toto
+cd toto
+fg_run ../$REL_BASE_PATH
+
+checking "'../' relative path"
+count=`cat $DATAFILE | wc -c`
+test `global_log_size` = $count
+test_rc $?
+cd ..
+cleanup
+
+#---
+
+mkdir -p t1/t2/t3
+cd t1/t2/t3
+fg_run ../t3/../../t2/../../t1/../$REL_BASE_PATH
+
+checking "complex back path"
+count=`cat $DATAFILE | wc -c`
+test `global_log_size` = $count
+test_rc $?
+cd ../../..
+cleanup
+
+#---
+
+#-------------------------------
+
+new_test 'Rotation / Purge / Status file'
 
 # The shell script created by configure is not executable. So, we need to
 # make the file executable before using it as a command.
 
+# Running the command with a relative path tests more
+
 chmod +x $RCMD
 
-fg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $RCMD -I
+fg_run $BASE_PATH -s $SZ_LIMIT -k $KEEP_COUNT -C $REL_CMD -I
 
 check_status_file
 
@@ -424,11 +488,19 @@ pcount=`grep 'remove_oldest count' $DBGFILE | sed 's/^.*://'`
 test $pcount = `expr $rcount + 1 - $KEEP_COUNT`
 test_rc $?
 
+# Run again to check that the status file is read correctly
+
+fg_run $BASE_PATH -s $SZ_LIMIT -k $KEEP_COUNT
+
+checking log file count after restart
+test `nb_log_files` = $KEEP_COUNT
+test_rc $?
+
 #-------------------------------
 
 new_test Links
 
-fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD
+fg_run $BASE_PATH -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD
 
 check_status_file
 
