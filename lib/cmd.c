@@ -79,7 +79,7 @@ DEBUG1(mp,1,"Running background command : %s",cmd);
 (void)apr_env_set("LOGMANAGER_FILE_PATH",(file_path ? file_path : "")
 	,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_BASE_PATH",mp->base_path,CHECK_TPOOL());
-(void)apr_env_set("LOGMANAGER_ROOT_DIR",mp->root_dir,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_BASE_DIR",mp->base_dir,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_COMPRESSION"
 	,mp->compress.handler->suffix,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_VERSION",PACKAGE_VERSION,CHECK_TPOOL());
@@ -101,7 +101,7 @@ DEBUG1(mp,1,"Running background command : %s",cmd);
 
 /*(void)apr_procattr_io_set(attr,LMGR_IO_ATTR,LMGR_IO_ATTR,LMGR_IO_ATTR);*/
 (void)apr_procattr_cmdtype_set(attr,APR_PROGRAM_ENV);
-/*(void)apr_procattr_detach_set(attr,1);*/
+(void)apr_procattr_detach_set(attr,1);
 (void)apr_procattr_error_check_set(attr,1);
 (void)apr_procattr_child_errfn_set(attr,_proc_create_error_callback);
 

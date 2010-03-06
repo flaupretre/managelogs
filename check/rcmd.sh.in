@@ -16,8 +16,8 @@ set -x
 
 [ -z "$LOGMANAGER_BASE_PATH" ] && return 1
 
-[ -z "$LOGMANAGER_ROOT_DIR" ] && return 1
-[ -d "$LOGMANAGER_ROOT_DIR" ] || return 1
+[ -z "$LOGMANAGER_BASE_DIR" ] && return 1
+[ -d "$LOGMANAGER_BASE_DIR" ] || return 1
 
 [ -z "$LOGMANAGER_VERSION" ] && return 1
 

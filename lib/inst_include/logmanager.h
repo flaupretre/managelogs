@@ -104,7 +104,7 @@ typedef struct
 
 typedef struct
 	{
-	char *root_dir;
+	char *base_dir;
 	char *base_path;
 	char *status_path;
 	char *pid_path;
