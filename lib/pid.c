@@ -22,20 +22,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #endif
 
 /*----------------------------------------------*/
-/* Return absolute path of PID file */
-
-LIB_INTERNAL char *pid_path(LOGMANAGER *mp)
-{
-char *p;
-int len;
-
-p=allocate(NULL,len=(strlen(mp->base_path)+5));
-(void)apr_snprintf(p,len,"%s.pid",mp->base_path);
-
-return p;
-}
-
-/*----------------------------------------------*/
 
 LIB_INTERNAL void create_pid_file(LOGMANAGER *mp)
 {
