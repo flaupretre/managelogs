@@ -17,6 +17,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include <apr.h>
 #include <apr_file_io.h>
+#include <apr_file_info.h>
 #include <apr_strings.h>
 
 #if APR_HAVE_STRING_H
@@ -29,8 +30,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 /* Return a pointer to the char after the last separator. If a separator
-is not found, return a pointer to the full string.
-Warning : the output is not duplicated : it is a pointer inside the input */
+ * is not found, return a pointer to the full string.
+ * Warning : the output is not duplicated : it is a pointer inside the input
+ */
 
 LIB_INTERNAL const char *ut_basename(const char *path)
 {
@@ -49,19 +51,19 @@ return path;
 }
 
 /*----------------------------------------------*/
-/* Return a duplicate of the dirname of a path (with the trailing separator) */
-/* An empty string and a string without separator return a null pointer */
+/* Return a duplicate of the dirname of a path (with the trailing separator).
+ * An empty string and a string without separator return "./"
+ */
 
 LIB_INTERNAL char *ut_dirname(const char *path)
 {
-const char *p;
 char *p2,c;
 int i;
 
 for (i=strlen(path)-1;;i--)
 	{
-	if (i < 0) return NULL;
-	c=(*(p=&(path[i])));
+	if (i < 0) return duplicate("./");
+	c=path[i];
 	if ((c=='/')||(c=='\\'))
 		{
 		p2=duplicate_mem(path,i+2);
@@ -72,17 +74,44 @@ for (i=strlen(path)-1;;i--)
 }
 
 /*----------------------------------------------*/
+/*
+ * If path is an absolute path, return a copy of path
+ * If path is relative return the corresponding absolute path, computed
+ * from base_dir or from the current dir if base_dir is null.
+ * On entry :
+ *   - base_dir is an absolute path or null
+ *   - path is a relative or absolute path (or null)
+ * Return : a newly-allocated string containing an absolute path
+ * The return string is newly-allocated, even if <path> is absolute.
+ * If <path> is null, return null.
+ */
 
-LIB_INTERNAL char *ut_absolute_path(const char *root_dir, const char *str)
+LIB_INTERNAL char *mk_abs_path(const char *base_dir, const char *path)
 {
-char *p;
-int len;
+char *ap,*ap2;
+const char *p,*p2;
+apr_status_t status;
+char errbuf[1024];
+DECLARE_TPOOL;
 
-if (!root_dir) return duplicate(str);
+if (!path) return NULL;
 
-p=allocate(NULL,len=strlen(root_dir)+strlen(str)+2);
-(void)apr_snprintf(p,len,"%s%s",root_dir,str);
-return p;
+p=NULL;
+p2=path;
+status=apr_filepath_root(&p,&p2,0,CHECK_TPOOL());
+if (status==APR_SUCCESS) return duplicate(path); /* Absolute path */
+
+status=apr_filepath_merge(&ap,base_dir,path,APR_FILEPATH_NOTRELATIVE
+	,CHECK_TPOOL());
+if (status != APR_SUCCESS)
+	FATAL_ERROR3("Cannot compute absolute path - %s (base=%s, path=%s)"
+		,apr_strerror(status,errbuf,sizeof(errbuf))
+		,(base_dir ? base_dir : "<NULL>")
+		,path);
+
+ap2=duplicate(ap); /* Duplicate mem before freeing it */
+FREE_TPOOL();
+return ap2;
 }
 
 /*----------------------------------------------*/
