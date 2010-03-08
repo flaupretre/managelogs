@@ -14,4 +14,4 @@ EXTRA_DIST = check.sh
 DISTCLEANFILES = check.log check.dbg
 
 check: all
-	@$(SHELL) $(srcdir)/check.sh
+	@BZIP2_CMD="@BZIP2_CMD@" GZIP_CMD="@GZIP_CMD@" $(SHELL) $(srcdir)/check.sh

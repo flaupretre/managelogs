@@ -40,9 +40,11 @@ DBGFILE=$RUN_DIR/check.dbg
 DBG_GLOBAL=$CHECK_DIR/check.dbg
 DATAFILE=$RUN_DIR/data
 
+check_cnt=0
+
 export LOG RESFILE PIDFILE BASE_PATH REL_BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
 	REL_CMD RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
-	DBGFILE DBG_GLOBAL
+	DBGFILE DBG_GLOBAL check_cnt
 
 #-------------------------------
 
@@ -92,8 +94,10 @@ cleanup
 
 checking()
 {
-printf "%-60s" "> Checking $* "
-printf "%-60s" "> Checking $* " >&3
+check_cnt=`expr $check_cnt + 1`
+
+printf "%-60s" "$check_cnt> Checking $* "
+printf "%-60s" "$check_cnt> Checking $* " >&3
 }
 
 #------------
@@ -101,6 +105,13 @@ printf "%-60s" "> Checking $* " >&3
 test_ok()
 {
 msg "OK"
+}
+
+#------------
+
+test_skip()
+{
+msg "OK (skipped)"
 }
 
 #------------
@@ -160,16 +171,13 @@ echo >>$DBG_GLOBAL
 
 fg_run()
 {
-bp=$1
-shift
-
 echo >>$DBG_GLOBAL
-echo "====== RUN: $G $GEN_SIZE | $M $* $bp" >>$DBG_GLOBAL
+echo "====== RUN: $G $GEN_SIZE | $M $*" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 
 /bin/rm -f $DBGFILE
 $G $GEN_SIZE >$DATAFILE
-cat $DATAFILE | $M $* -v -d $DBGFILE $bp
+cat $DATAFILE | $M -v -d $DBGFILE $*
 
 cat $DBGFILE >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
@@ -183,15 +191,12 @@ echo >>$DBG_GLOBAL
 
 bg_run()
 {
-bp=$1
-shift
-
 echo >>$DBG_GLOBAL
-echo "====== Starting bg process: $M -i $PIPE $* $bp" >>$DBG_GLOBAL
+echo "====== Starting bg process: $M -i $PIPE $*" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 
 /bin/rm -f $DBGFILE
-$M -i $PIPE $* -v -d $DBGFILE $bp &
+$M -i $PIPE -v -d $DBGFILE $* &
 echo $! >$PIDFILE
 sleep 1
 check_process run
@@ -262,10 +267,29 @@ test_rc $?
 
 #------------
 
+base_path()
+{
+d=$1
+[ -z "$d" ] && d=$BASE_PATH
+echo "$d/$REL_BASE_PATH"
+}
+
+#------------
+# Return status file path for a given dir
+
+status_file()
+{
+echo "`base_path $1`.status"
+}
+
+#------------
+# Check the status in a given dir
+
 check_status_file()
 {
-checking status file
-test -f $M_STATUSFILE
+checking $2 status file
+sfile=`status_file $1`
+test -f $status_file
 test_rc $?
 }
 
@@ -452,7 +476,7 @@ new_test 'Rotation / Purge / Status file'
 
 chmod +x $RCMD
 
-fg_run $BASE_PATH -s $SZ_LIMIT -k $KEEP_COUNT -C $REL_CMD -I
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -C $REL_CMD -I $BASE_PATH
 
 check_status_file
 
@@ -488,9 +512,9 @@ pcount=`grep 'remove_oldest count' $DBGFILE | sed 's/^.*://'`
 test $pcount = `expr $rcount + 1 - $KEEP_COUNT`
 test_rc $?
 
-# Run again to check that the status file is read correctly
+# Run again to check that the status file is retrieved correctly from disk
 
-fg_run $BASE_PATH -s $SZ_LIMIT -k $KEEP_COUNT
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT $BASE_PATH
 
 checking log file count after restart
 test `nb_log_files` = $KEEP_COUNT
@@ -498,9 +522,66 @@ test_rc $?
 
 #-------------------------------
 
+test_compression()
+{
+# $1 = name (suffix)
+# $2 = CMD
+
+name=$1
+CMD=$2
+
+if [ -n "$CMD" ] ; then
+
+new_test "Compression ($name)"
+
+# Run several times because we must have at least one rotation
+
+count=0
+for i in 1 2 3 4 5
+	do
+	fg_run -c $name -s $SZ_LIMIT -k $KEEP_COUNT -C $REL_CMD -I $BASE_PATH
+	c=`cat $DATAFILE | wc -c`
+	count=`expr $count + $c`
+done
+
+check_status_file
+
+sz=0;
+checking log file format
+for f in `log_files` ''
+	do
+	if [ -z "$f" ] ; then
+		test_ok
+		break
+	fi
+	$CMD -t $f
+	fsize=`$CMD -d <$f | wc -c`
+	sz=`expr $sz + $fsize`
+	if [ $? != 0 ] ; then
+		test_ko
+		break
+	fi
+done
+
+checking uncompressed data
+test $sz = $count
+test_rc $?
+
+checking rotate command variable
+grep LOGMANAGER_COMPRESSION_is_$name $RCMD_LOG
+test_rc $?
+
+fi
+}
+
+test_compression gz "$GZIP_CMD"
+test_compression bz2 "$BZIP2_CMD"
+
+#-------------------------------
+
 new_test Links
 
-fg_run $BASE_PATH -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD $BASE_PATH
 
 check_status_file
 

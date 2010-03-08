@@ -19,6 +19,8 @@ set -x
 [ -z "$LOGMANAGER_BASE_DIR" ] && return 1
 [ -d "$LOGMANAGER_BASE_DIR" ] || return 1
 
+echo "LOGMANAGER_COMPRESSION_is_$LOGMANAGER_COMPRESSION"
+
 [ -z "$LOGMANAGER_VERSION" ] && return 1
 
 [ -z "$LOGMANAGER_TIME" ] && return 1
