@@ -152,6 +152,7 @@ return buf;
 
 /*---------*/
 /* Adapted from apache / mod_log_config.c */
+/* Advance time by 1 sec every 10 calls */
 
 char *date_string()
 {
@@ -161,7 +162,8 @@ apr_time_exp_t xt;
 char sign;
 int timz;
 
-request_time=(request_time ? (request_time+APR_USEC_PER_SEC) : apr_time_now());
+request_time=(request_time ? (request_time+(APR_USEC_PER_SEC/10))
+	: apr_time_now());
 apr_time_exp_lt(&xt,request_time);
 timz = xt.tm_gmtoff;
 if (timz < 0)
