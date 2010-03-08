@@ -159,7 +159,7 @@ for (;;)
 		/* Another solution would be to manage input without APR but it would */
 		/* be less portable. */
 
-		if (input_path)
+		if (input_path && strcmp(input_path,"stdin"))
 			{
 			flags=APR_READ;
 			if (apr_stat(&finfo,input_path,APR_FINFO_TYPE,CHECK_POOL(main_pool))
