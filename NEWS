@@ -1,13 +1,20 @@
 -------------------------------------------------------------------------------
 2.1.0 :
 
-* Add self-tests
+* Self-tests
 
 * Lots of changes to improve portability
 
 * Better RPM build (from sources)
 
-* Support reading from a named pipe
+* Supports reading from a named pipe
+
+* Background command is now the path of a file to execute (does not
+  support args nor inline variable expansion anymore). Shell command was nice,
+  but too Posix-specific.
+
+* Suppressed '--enospc-abort' option. Default behavior is now to abort on
+  ENOSPC. New '--ignore-enospc' option allows to ignore this error.
 
 -------------------------------------------------------------------------------
 2.0.0 :
