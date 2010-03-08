@@ -206,18 +206,18 @@ By default, managelogs ensures that log file rotation occurs on line boundaries,
 so that every log files contain entire lines. This option disables this
 buffering mechanism.
 .TP
-.BR -C | --rotate-cmd " " \fI<cmd>\fR
-Run this command in background each time a rotation occurs.
+.BR -C | --rotate-cmd " " \fI<path>\fR
+Execute \fI<path>\fR in background each time a rotation occurs.
 .br
 See 'ROTATE COMMAND' below for more info on this option
 .TP
-.BR -x | --enospc-abort
-Abort on 'file system full' errors.
+.BR -x | --ignore-enospc
+Ignore 'file system full' errors. This option causes managelogs to silently
+discard data when there is not enough free space to write it on disk.
 .br
-The default is to ignore such errors when trying to write data to a log file,so
-that the underlying service (typically Apache) is kept running as long as
-possible. The drawback is that, when it happens, data that cannot be written is
-silently discarded.
+Warning :  This behavior should be activated only if you really understand the
+consequences, especially concerning possible log data corruption. If you are not
+sure, avoid this option.
 .SH "FILES"
 Each log manager maintains its own set of files. The files are named after the
 log manager's base path. They all reside in the same directory (the directory
@@ -294,30 +294,26 @@ Every time managelogs decides to switch to a new log file, whatever reason it
 may have for this, an external command can be executed. This is what we call the
 .I rotate command.
 This command is set via the --rotate-cmd option on the managelogs command line.
-It is a shell command line, which
-can contain arguments, separated by spaces or tabs. If the command contains
-arguments, it must be enclosed between quotes, so that it is seen as a single
-managelogs argument.
+The option value is the path of an executable file (binary or script).
 .PP
-managelogs runs the command in background, ignoring its return code. Once
-launched, the subprocess is totally forgotten by the managelogs process. So,
+This executable file is run in background and its return code is ignored.
+Actually, once launched, the subprocess is totally forgotten by the managelogs
+process. So,
 there is no limit to the time it may take, as it does not suspend managelogs
 execution.
 .PP
-Before launching the rotate command, managelogs sets several environment
-variables that can be used, either in the command string (prefixed with a $
-sign), or from within the script or program run by the command:
+The subprocess receives several environment variables from managelogs :
 .TP
 .B LOGMANAGER_FILE_PATH
 The path to the log file managelogs just closed. In a statistics gathering
-scenario, the data to integrate will be read from this file.
+scenario, the data to integrate is read from this file.
 .TP
 .B LOGMANAGER_BASE_PATH
 This is the
 .I base path
 associated with this log manager.
 .TP
-.B LOGMANAGER_ROOT_DIR
+.B LOGMANAGER_BASE_DIR
 This is the directory part of the
 .I base path
 .TP
@@ -332,36 +328,56 @@ The version of the log manager library.
 The current time in Unix numeric format (number of seconds since 01/Jan/1970).
 .PP
 Note : During its execution, the rotate command is allowed to delete the
-file pointed by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
+file pointed to by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
 want some statistics without keeping the detailed logs, or if you use the rotate
 command to transfer the log file to another location/server.
+.PP
+Also note that you shouldn't assume anything about the default directory the
+command is executed in. Either you explicitely set a default directory at
+the beginning of your script ('cd $LOGMANAGER_BASE_DIR' for instance), or you
+must use absolute paths only. Relative
+paths are supported on the managelogs command line only because they are
+internally converted to absolute paths before being used.
 .SH "READING FROM A NAMED PIPE"
 .PP
 Although managelogs was primarily intended to be used with Apache, it can be
-used as a general purpose log managing program with a lot of other software.
-As most software don't support a piped logfile feature similar to Apache, the
-usual solution to connect them with managelogs involves a named pipe (aka fifo).
+used as a general purpose log managing program for a lot of other software.
+As these software generally don't support a piped logfile feature similar to
+Apache, an alternative is to connect them with managelogs through a named pipe
+(aka fifo).
 .PP
-In order to use a named pipe :
+In order to connect to managelogs through a named pipe :
 .IP
-- The pipe file must exist before both processes are started,
+- The pipe file must exist before both processes are started (\fImkfifo\fR),
 .br
-- The '--input' option must be provided on the managelogs command line, followed
-with the path of the named pipe (don't redirect managelogs' standard input from
-the named pipe).
+- If the writer process is started before managelogs, its write operations to
+the pipe can block after a given amount of data. This is why it is generally
+recommended to start the reader process (managelogs) before the writer.
+Actually, it is more natural, as, in such an architecture, the writer process
+can stop and restart, and the reader process is supposed to remain untouched.
+The same when stopping the process: the correct procedure is to stop the writer
+process before the reader, to make sure that any remaining buffered data won't
+be lost.
 .br
-- managelogs automatically detects that it is reading from a named pipe and
-adapts its behavior (see below).
+- The '-i|--input' option must be used on the managelogs command line, followed
+with the path of the named pipe (redirecting managelogs' standard input from
+the named pipe doesn't work).
+.br
+- managelogs automatically detects that the file it is reading from is a named
+pipe and adapts its behavior (see below).
 .PP
 Note that managelogs explicitely checks the input file type. So, using
 the '--input' option does not automatically imply the 'named pipe behavior'.
 If the option is followed with the path of a regular file, managelogs will
 behave as if this file had been redirected to its standard input.
 .PP
-When managelogs is reading from a named pipe, it remains connected , even after
-the process writing to the pipe exits. This way,
+When managelogs is reading from a named pipe, it remains connected indefinitely,
+even after the process writing to the pipe exits. This way,
 both processes are independant : the writer process can connect to and
 disconnect from the pipe without disturbing the managelogs process.
+Although technically possible, you should generally avoid having several
+processes write to the same pipe in parallel, as the data coming
+from the different processes will be mixed in a way you cannot control.
 .PP
 The only way to stop a managelogs process connected to a named pipe is to kill it
 with a SIGTERM signal.
@@ -405,10 +421,10 @@ In this list you can see (in alphabetical order) :
 .PP
 Now, something more complex : we want to keep 3 Mbytes of uncompressed log
 data
-to be used by the 1st-level support team, as in the previous example, and we
+to be used by our 1st-level support team, as in the previous example, and we
 also need to archive a bigger amount of data for 2nd-level analysis,
 security, compliance, or any other need. This archived data will be compressed,
-as it allows to save a lot of space (about 95 %).
+as it allows to save a lot of space (usually more than 95 %).
 .PP
 The corresponding directive looks like :
 .PP
@@ -427,17 +443,29 @@ reason we may have for this, the command to use is :
 kill -USR1 `cat /var/log/httpd/access_log.pid`
 .PP
 Note that we could also have used '/archives/logs/access_log.pid', as both pid
-files contain the same. This signal will trigger a rotation in both directories.
+files contain the same. The signal triggers a rotation in both directories.
 .PP
-Here is a typical example of using a rotate command : the options below cause
-the log data to be integrated into an AWStats database each time a rotation
-occurs. We also ensure that a rotation happens at least every day :
+Here is a typical example of using a rotate command :
 .PP
-CustomLog "| /usr/bin/managelogs --size 100k --global-size 1M --rotate-delay 1d --rotate-cmd 'perl <awstat-dir>/awstats.pl -config=<mysite> -update -LogFile=$LOGMANAGER_FILE_PATH' /var/log/httpd/access_log" combined
+First, we create an executable text file with the following content :
+.nf
+!/bin/sh
+perl <awstat-dir>/awstats.pl -config=<mysite> -update -LogFile=$LOGMANAGER_FILE_PATH
+.fi
 .PP
-In order to ensure that statistics are integrated at least once per day, we
-could have replaced the '--rotate-delay' option with the following cron job,
-executed every night :
+This script integrates the rotated log file ($LOGMANAGER_FILE_PATH) in an
+AWStats database. To have managelogs execute it each time a rotation
+occurs, we add the '-C /path/to/the/script' option on the managelogs command line
+(remember to use only absolute paths with managelogs).
+.PP
+Note : This option applies only to a single log manager. If you are using
+several log managers (as in the example above), you can define different
+rotate commands for the different log managers.
+.PP
+As a complement, if we want the statistics to be integrated at least once
+per day, we can add '--rotate-delay 1d' on the managelogs command line.
+.PP
+Another way would be to create a cron job, executed every night :
 .PP
 0 0 * * * kill -USR1 `cat /var/log/httpd/access_log.pid`
 .SH "SEE ALSO"
