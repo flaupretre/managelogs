@@ -206,6 +206,7 @@ LIB_INTERNAL void file_write(OFILE *fp, const char *buf, apr_off_t size
 	,BOOL no_space_fatal)
 {
 apr_status_t status;
+char errbuf[1024];
 
 if (size==0) return;
 
@@ -214,8 +215,8 @@ if ((status=apr_file_write_full(fp->fd, buf, size, NULL))!=APR_SUCCESS)
 	size=0;	/* Written size */
 	if (no_space_fatal || (! APR_STATUS_IS_ENOSPC(status)))
 		{
-		FATAL_ERROR2("Cannot write to file %s (errno=%d)",fp->path
-			,apr_get_os_error());
+		FATAL_ERROR2("Cannot write to file %s - %s",fp->path
+			,apr_strerror(status,errbuf,sizeof(errbuf)));
 		}
 	}
 

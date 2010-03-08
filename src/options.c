@@ -66,7 +66,7 @@ static apr_getopt_option_t long_options[]=
 	{"rotate-cmd",'C',1 },
 	{"rotate-delay",'r',1 },
 	{"purge-delay",'p',1 },
-	{"enospc-abort",'x',0 },
+	{"ignore-enospc",'x',0 },
 	{"input",'i',1 },
 	{"",'\0', 0 }
 	};
@@ -123,7 +123,7 @@ fprintf(fd,"\
  -H|--hardlink             Create hard links instead of symbolic links\n\
  -e|--ignore-eol           Disables the eol buffering mechanism\n\
  -C|--rotate-cmd <cmd>     Execute <cmd> on every rotation\n\
- -x|--enospc-abort         Abort on 'no more space' write error\n\
+ -x|--ignore-enospc        Ignore 'no more space' write errors\n\
 \n");
 
 FREE_P(clist);
@@ -235,7 +235,7 @@ while (1)
 				break;
 
 			case 'x':
-				op->flags |= LMGR_FAIL_ENOSPC;
+				op->flags |= LMGR_IGNORE_ENOSPC;
 				break;
 
 			case 't':

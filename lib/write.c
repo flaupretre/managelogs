@@ -152,7 +152,7 @@ LOGMANAGER *mp=(LOGMANAGER *)_mp;
 INCR_STAT_COUNT(mp,write3);
 
 mp->active.file->sum=update_checksum(mp->active.file->sum,buf,size);
-file_write(mp->active.fp,buf,size,mp->flags & LMGR_FAIL_ENOSPC);
+file_write(mp->active.fp,buf,size,!(mp->flags & LMGR_IGNORE_ENOSPC));
 mp->active.file->size=mp->active.fp->size;
 }
 
