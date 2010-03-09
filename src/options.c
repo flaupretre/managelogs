@@ -317,9 +317,10 @@ return delay;
 
 static apr_off_t convert_size_string(const char *str)
 {
-char c;
+char c,*input_str;
 apr_off_t result;
 
+input_str=str;
 result=(apr_off_t)0;
 
 if (!strcmp(str,"min")) return (apr_off_t)1; /* Special value: lower limit */
@@ -329,7 +330,7 @@ while ((c=(*(str++)))!='\0')
 	if ((c=='k')||(c=='K')) return (result*KILO);
 	if ((c=='m')||(c=='M')) return (result*MEGA);
 	if ((c=='g')||(c=='G')) return (result*GIGA);
-	if ((c<'0')||(c>'9')) return (apr_off_t)0;
+	if ((c<'0')||(c>'9')) FATAL_ERROR1("Invalid size string: %s",input_str);
 	result = (result*10)+(apr_off_t)(c-'0');
 	}
 return result;
