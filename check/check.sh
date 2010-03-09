@@ -32,6 +32,7 @@ REL_CMD=.././rcmd.sh	# Test relative path in command
 RCMD=$RUN_DIR/$REL_CMD
 SZ_LIMIT=10000
 KEEP_COUNT=5
+GLOBAL_SIZE=55000
 GEN_SIZE=105000
 M=$CHECK_DIR/../src/managelogs
 G=$CHECK_DIR/genlog
@@ -43,7 +44,7 @@ DATAFILE=$RUN_DIR/data
 check_cnt=0
 
 export LOG RESFILE PIDFILE BASE_PATH REL_BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
-	REL_CMD RCMD SZ_LIMIT KEEP_COUNT GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
+	REL_CMD RCMD SZ_LIMIT KEEP_COUNT GLOBAL_SIZE GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
 	DBGFILE DBG_GLOBAL check_cnt
 
 #-------------------------------
@@ -179,9 +180,9 @@ echo >>$DBG_GLOBAL
 $G $GEN_SIZE >$DATAFILE
 cat $DATAFILE | $M -v -d $DBGFILE $*
 
-cat $DBGFILE >>$DBG_GLOBAL
+[ -f $DBGFILE ] && cat $DBGFILE >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
-cat $M_STATUSFILE >>$DBG_GLOBAL
+[ -f $M_STATUSFILE ] && cat $M_STATUSFILE >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
 echo "====== END RUN =========" >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
@@ -344,6 +345,13 @@ $M $1 </dev/null $BASE_PATH
 test_rc $?
 }
 
+#------------
+
+get_stat()
+{
+grep "^$1 count : " $DBGFILE | sed -e 's/^.*: //'
+}
+
 #============================= main ===================================
 
 full_cleanup
@@ -397,7 +405,12 @@ new_test 'Basic run (background)'
 bg_run $BASE_PATH
 
 checking if log file exists
-test `nb_log_files` -gt 0
+test `nb_log_files` = 1
+test_rc $?
+
+checking rotation on signal
+kill -USR1 `pid`
+test `nb_log_files` = 2
 test_rc $?
 
 kill_m
@@ -503,13 +516,13 @@ test_rc $?
 
 checking rotate command count
 n=`grep ROT_VAR_OK $RCMD_LOG | wc -l`
-rcount=`grep 'rotate count' $DBGFILE | sed 's/^.*://'`
-test $n = $rcount
+rcount=`get_stat rotate`
+test "X$n" = "X$rcount"
 test_rc $?
 
 checking purge count
-pcount=`grep 'remove_oldest count' $DBGFILE | sed 's/^.*://'`
-test $pcount = `expr $rcount + 1 - $KEEP_COUNT`
+pcount=`get_stat remove_oldest`
+test "X$pcount" = "X`expr $rcount + 1 - $KEEP_COUNT`"
 test_rc $?
 
 # Run again to check that the status file is retrieved correctly from disk
@@ -517,7 +530,17 @@ test_rc $?
 fg_run -s $SZ_LIMIT -k $KEEP_COUNT $BASE_PATH
 
 checking log file count after restart
-test `nb_log_files` = $KEEP_COUNT
+test "X`nb_log_files`" = "X$KEEP_COUNT"
+test_rc $?
+
+#-------------------------------
+
+new_test Purge on global size
+
+fg_run -s $SZ_LIMIT -S $GLOBAL_SIZE -I $BASE_PATH
+
+checking global log size
+test `global_log_size` -le `expr $GLOBAL_SIZE + $SZ_LIMIT`
 test_rc $?
 
 #-------------------------------
@@ -577,6 +600,13 @@ fi
 test_compression gz "$GZIP_CMD"
 test_compression bz2 "$BZIP2_CMD"
 
+# Here, we have bz2-compressed data in the directory, starting
+# managelogs in gz-compressed mode must fail.
+
+checking restart on different compression format
+$M -i /dev/null -c gz $BASE_PATH
+test_rc `inv_rc $?`
+
 #-------------------------------
 
 new_test Links
@@ -607,11 +637,6 @@ for f in `backup_links` ''
 		break
 	fi
 done
-
-#-------------------------------
-#new_test Compression
-
-# TODO
 
 #-------------------------------
 # End
