@@ -19,3 +19,7 @@ rpm: dist
 	f=$(RPM_BASE)/SRPMS/@PACKAGE_NAME@-@PACKAGE_VERSION@-@RELEASE_NUMBER@.src.rpm; \
 	if [ -f $$f ] ; then cp $$f . ; /bin/rm -f $$f ; fi
 
+# Valgrind check
+
+vgcheck: install
+	cd check && $(MAKE) $@

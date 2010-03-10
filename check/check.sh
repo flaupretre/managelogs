@@ -20,6 +20,15 @@ cd $SRC_DIR
 SRC_DIR=`pwd`	# Make it absolute as we will cd to tmp
 cd $d
 
+if [ -z "$VALGRIND" ] ; then
+# Use the shell wrapper. No need to install
+M="$CHECK_DIR/../src/managelogs"
+else
+# The shell wrapper generates a lot of leaks. Use the installed binary
+# Need to (re)install first.
+M="$VALGRIND $bindir/managelogs"
+fi
+
 RESFILE=$CHECK_DIR/check.res
 PIDFILE=$CHECK_DIR/pidfile
 REL_BASE_PATH=mylog
@@ -34,7 +43,6 @@ SZ_LIMIT=10000
 KEEP_COUNT=5
 GLOBAL_SIZE=55000
 GEN_SIZE=105000
-M=$CHECK_DIR/../src/managelogs
 G=$CHECK_DIR/genlog
 RCMD_LOG=$RUN_DIR/rcmd.log
 DBGFILE=$RUN_DIR/check.dbg
@@ -409,9 +417,13 @@ test `nb_log_files` = 1
 test_rc $?
 
 checking rotation on signal
-kill -USR1 `pid`
-test `nb_log_files` = 2
-test_rc $?
+if [ -n "$VALGRIND" ] ; then
+	test_skip
+else
+	kill -USR1 `pid`
+	test `nb_log_files` = 2
+	test_rc $?
+fi
 
 kill_m
 

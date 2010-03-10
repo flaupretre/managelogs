@@ -15,3 +15,10 @@ DISTCLEANFILES = check.log check.dbg
 
 check: all
 	@BZIP2_CMD="@BZIP2_CMD@" GZIP_CMD="@GZIP_CMD@" $(SHELL) $(srcdir)/check.sh
+
+# Valgrind check
+
+VALGRIND = valgrind --leak-check=full --show-reachable=yes --trace-children=no
+
+vgcheck: all
+	VALGRIND="$(VALGRIND)" bindir="@bindir@" $(MAKE) check

@@ -163,10 +163,16 @@ while (1)
 		{
 		status=apr_getopt_long(opt_s,long_options,&optch,&opt_arg);
 		if (status==APR_EOF) break;
-		if (status != APR_SUCCESS) usage(1);
+		if (status != APR_SUCCESS)
+			{
+			free_options(opp,*countp);
+			FREE_TPOOL();
+			usage(1);
+			}
 		switch ((char)optch)
 			{
 			case 'h':
+				free_options(opp,*countp);
 				FREE_TPOOL();
 				usage(0);
 				break;
@@ -203,6 +209,8 @@ while (1)
 
 			case 'V':
 				printf(MANAGELOGS_BANNER);
+				free_options(opp,*countp);
+				FREE_TPOOL();
 				exit_proc(0);
 
 			case 'm':
@@ -317,7 +325,8 @@ return delay;
 
 static apr_off_t convert_size_string(const char *str)
 {
-char c,*input_str;
+char c;
+const char *input_str;
 apr_off_t result;
 
 input_str=str;
