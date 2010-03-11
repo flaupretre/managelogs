@@ -116,7 +116,7 @@ fprintf(fd,"\
  -s|--size <size>          Set the file size limit\n\
  -r|--rotate-delay <delay> Set the rotation delay\n\
  -p|--purge-delay <delay>  Set the purge delay\n\
- -P|--log-path <path>      Path of new log files \
+ -P|--log-path <path>      Base path of new log files \n\
  -S|--global-size <size>   Set the global size limit\n\
  -m|--mode <mode>          Permissions to set when creating a log file\n\
  -k|--keep <n>             Only keep <n> log files\n\
