@@ -68,6 +68,7 @@ static apr_getopt_option_t long_options[]=
 	{"purge-delay",'p',1 },
 	{"ignore-enospc",'x',0 },
 	{"input",'i',1 },
+	{"log-path",'P',1 },
 	{"",'\0', 0 }
 	};
 
@@ -115,6 +116,7 @@ fprintf(fd,"\
  -s|--size <size>          Set the file size limit\n\
  -r|--rotate-delay <delay> Set the rotation delay\n\
  -p|--purge-delay <delay>  Set the purge delay\n\
+ -P|--log-path <path>      Path of new log files \
  -S|--global-size <size>   Set the global size limit\n\
  -m|--mode <mode>          Permissions to set when creating a log file\n\
  -k|--keep <n>             Only keep <n> log files\n\
@@ -152,6 +154,7 @@ while (1)
 	if (argc < 2) break;
 
 	op=NEW_STRUCT(LOGMANAGER_OPTIONS);
+	op->api_version=LOGMANAGER_API_VERSION;
 	op->create_mode=LOGFILE_MODE;
 	op->flags=LMGR_PID_FILE;	/* maintain a pid file */
 	ALLOC_P(opp,(++(*countp))*sizeof(*opp));
@@ -272,6 +275,10 @@ while (1)
 
 			case 'i':
 				DUP_P(input_path,opt_arg);
+				break;
+
+			case 'P':
+				DUP_P(op->log_path,opt_arg);
 				break;
 			}
 		}
