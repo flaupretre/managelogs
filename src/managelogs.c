@@ -56,7 +56,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #include "../common/alloc.c"
 #include "../common/convert.c"
-#include "../common/path.c"
 
 /*----------------------------------------------*/
 

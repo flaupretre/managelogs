@@ -24,9 +24,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <string.h>
 #endif
 
-#include "global.h"
-#include "path.h"
-#include "alloc.h"
+/*----------------------------------------------*/
+
+#define _IS_SEPARATOR(_c) ((_c=='/')||(_c=='\\'))
 
 /*----------------------------------------------*/
 /* Return a pointer to the char after the last separator. If a separator
@@ -45,7 +45,7 @@ for (i=strlen(path);;i--)
 	if (!i) break;
 	c=(*(p=path+i));
 	if (!c) continue; /* First char of non-empty string */
-	if ((c=='/')||(c=='\\')) return (p+1);
+	if (_IS_SEPARATOR(c)) return (p+1);
 	}
 return path;
 }
@@ -64,7 +64,7 @@ for (i=strlen(path)-1;;i--)
 	{
 	if (i < 0) return duplicate("./");
 	c=path[i];
-	if ((c=='/')||(c=='\\'))
+	if (_IS_SEPARATOR(c))
 		{
 		p2=duplicate_mem(path,i+2);
 		p2[i+1]='\0';
@@ -112,6 +112,35 @@ if (status != APR_SUCCESS)
 ap2=duplicate(ap); /* Duplicate mem before freeing it */
 FREE_TPOOL();
 return ap2;
+}
+
+/*----------------------------------------------*/
+/* Returns a relative path computed from the base_dir if possible.
+ * If computing a relative path is not possible, return the
+ * received path.
+ * The returned string is NOT allocated. It is a pointer into the
+ * input string.
+ */
+
+LIB_INTERNAL const char *get_rel_path(const char *base_dir, size_t base_dir_len, const char *path)
+{
+size_t plen;
+const char *p;
+char c;
+
+plen=strlen(path);
+
+if ((!base_dir_len) || (plen <= base_dir_len)) return path;	/* Too short */
+if (strncmp(base_dir,path,base_dir_len)) return path; /* Prefix does not match */
+
+for (p=path+base_dir_len;;p++)
+	{
+	c=(*p);
+	if (! _IS_SEPARATOR(c)) return p;
+	if (!c) break;
+	}
+
+return path;
 }
 
 /*----------------------------------------------*/

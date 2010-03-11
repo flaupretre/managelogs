@@ -26,6 +26,8 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 LIB_INTERNAL char *ut_dirname(const char *path);
 LIB_INTERNAL const char *ut_basename(const char *path);
 LIB_INTERNAL char *mk_abs_path(const char *base_dir, const char *path);
+LIB_INTERNAL const char *get_rel_path(const char *base_dir, size_t base_dir_len
+	, const char *path);
 
 /*----------------------------------------------*/
 #endif	/* __LMGR_PATH_H */

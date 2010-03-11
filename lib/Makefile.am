@@ -24,6 +24,7 @@ noinst_HEADERS = include/config.h \
 	include/checksum.h      checksum.c \
 	include/plain_handler.h plain_handler.c \
 	include/file.h          file.c \
+	include/path.h          path.c \
 	include/array.h \
 	logmanager.c \
 	$(top_srcdir)/common/time.c \
@@ -32,9 +33,7 @@ noinst_HEADERS = include/config.h \
 	$(top_srcdir)/common/alloc.c \
 	$(top_srcdir)/common/alloc.h \
 	$(top_srcdir)/common/convert.c \
-	$(top_srcdir)/common/convert.h \
-	$(top_srcdir)/common/path.c \
-	$(top_srcdir)/common/path.h
+	$(top_srcdir)/common/convert.h
 
 liblogmanager_la_LIBADD = $(APR_LIBS) $(Z_LIBS) $(BZ2_LIBS)
 liblogmanager_la_LDFLAGS = -version-info $(LIB_LT_VERSION):$(LIB_LT_REVISION):$(LIB_LT_AGE)
