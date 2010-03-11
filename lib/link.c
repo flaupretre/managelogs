@@ -80,7 +80,8 @@ if (((num==0) && (mp->flags & LMGR_ACTIVE_LINK))
 		{
 		file_delete(lname,NO);
 #if HAVE_SYMLINK
-		(void)symlink(ut_basename(lp->path),lp->link=lname);
+		(void)symlink(get_rel_path(mp->base_dir,mp->base_dir_len,lp->path)
+			,lp->link=lname);
 #endif
 		}
 	}
