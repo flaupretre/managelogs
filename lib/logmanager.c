@@ -238,6 +238,15 @@ mp->status_path=combine_strings(mp->base_path,".status");
 
 if (opts->flags & LMGR_PID_FILE)
 	mp->pid_path=combine_strings(mp->base_path,".pid");;
+
+/* V 3+ specific options */
+
+if ((opts->api_version >= 3) && (opts->log_path))
+	{
+	mp->log_path=mk_abs_path(mp->base_dir,opts->log_path);
+	}
+else mp->log_path=duplicate(mp->base_path);
+mp->log_path_len=strlen(mp->log_path);
 }
 
 /*----------------------------------------------*/
@@ -327,6 +336,8 @@ if (opts->api_version >= 2)
 	}
 
 /*--*/
+DEBUG1(mp,1,"Base path : %s",mp->base_path);
+DEBUG1(mp,1,"Log path : %s",mp->log_path);
 
 return mp;
 }
@@ -388,6 +399,7 @@ FREE_P(mp->compress.private);
 
 FREE_P(mp->base_path);
 FREE_P(mp->base_dir);
+FREE_P(mp->log_path);
 FREE_P(mp->status_path);
 FREE_P(mp->pid_path);
 FREE_P(mp->debug.path);
@@ -480,9 +492,9 @@ lp=mp->active.file=NEW_LOGFILE();
 
 len =64; /* should be enough for any suffix  (compression + number) */
 
-len += mp->base_path_len+11;
+len += mp->log_path_len+11;
 path=allocate(NULL,len);
-(void)apr_snprintf(path,len,"%s._%08lX",mp->base_path,(unsigned long)t);
+(void)apr_snprintf(path,len,"%s._%08lX",mp->log_path,(unsigned long)t);
 
 for (i=0,ep=path+strlen(path);;i++)
 	{

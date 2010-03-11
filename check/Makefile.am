@@ -18,7 +18,7 @@ check: all
 
 # Valgrind check
 
-VALGRIND = valgrind --leak-check=full --show-reachable=yes --trace-children=no
+VALGRIND = valgrind
 
 vgcheck: all
 	VALGRIND="$(VALGRIND)" bindir="@bindir@" $(MAKE) check

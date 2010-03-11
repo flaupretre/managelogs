@@ -60,7 +60,7 @@ typedef apr_time_t TIMESTAMP;
 
 /*----------------------------------------------*/
 
-#define LOGMANAGER_API_VERSION	2
+#define LOGMANAGER_API_VERSION	3
 
 /*----------------------------------------------*/
 
@@ -84,6 +84,9 @@ typedef struct
 	/* API version 1 stops here */
 	TIMESTAMP rotate_delay;
 	TIMESTAMP purge_delay;
+	/* API version 2 stops here */
+	char *log_path;
+	/* API version 3 stops here */
 	} LOGMANAGER_OPTIONS;
 
 /*----------------------------------------------*/
@@ -112,6 +115,8 @@ typedef struct
 	size_t base_dir_len; /* strlen(base_dir) */
 	char *base_path;
 	size_t base_path_len; /* strlen(base_path) */
+	char *log_path;
+	size_t log_path_len; /* strlen(log_path) */
 	char *status_path;
 	char *pid_path;
 	unsigned int flags;

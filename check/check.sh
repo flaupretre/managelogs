@@ -12,7 +12,7 @@ exec 3>&1
 exec >$LOG 2>&1
 set -x
 
-RUN_DIR=$CHECK_DIR/tmp
+BASE_DIR=$CHECK_DIR/tmp
 
 d=`pwd`
 SRC_DIR=`dirname $0` # Needed to support build in a separate dir (distcheck)
@@ -26,33 +26,34 @@ M="$CHECK_DIR/../src/managelogs"
 else
 # The shell wrapper generates a lot of leaks. Use the installed binary
 # Need to (re)install first.
-M="$VALGRIND $bindir/managelogs"
+[ -z "$VG_OPTS" ] && VG_OPTS='--tool=memcheck --leak-check=full --show-reachable=yes --trace-children=no'
+M="$VALGRIND $VG_OPTS $bindir/managelogs"
 fi
 
 RESFILE=$CHECK_DIR/check.res
 PIDFILE=$CHECK_DIR/pidfile
 REL_BASE_PATH=mylog
-BASE_PATH=$RUN_DIR/$REL_BASE_PATH
+BASE_PATH=$BASE_DIR/$REL_BASE_PATH
 M_PIDFILE=$BASE_PATH.pid
 PIPE=$CHECK_DIR/pipe
 M_STATUSFILE=$BASE_PATH.status
-TMPFILE=$RUN_DIR/tmp1
+TMPFILE=$BASE_DIR/tmp1
 REL_CMD=.././rcmd.sh	# Test relative path in command
-RCMD=$RUN_DIR/$REL_CMD
+RCMD=$BASE_DIR/$REL_CMD
 SZ_LIMIT=10000
 KEEP_COUNT=5
 GLOBAL_SIZE=55000
 GEN_SIZE=105000
 G=$CHECK_DIR/genlog
-RCMD_LOG=$RUN_DIR/rcmd.log
-DBGFILE=$RUN_DIR/check.dbg
+RCMD_LOG=$BASE_DIR/rcmd.log
+DBGFILE=$BASE_DIR/check.dbg
 DBG_GLOBAL=$CHECK_DIR/check.dbg
-DATAFILE=$RUN_DIR/data
+DATAFILE=$BASE_DIR/data
 
 check_cnt=0
 
 export LOG RESFILE PIDFILE BASE_PATH REL_BASE_PATH M_PIDFILE PIPE M_STATUSFILE TMPFILE \
-	REL_CMD RCMD SZ_LIMIT KEEP_COUNT GLOBAL_SIZE GEN_SIZE CHECK_DIR RUN_DIR M G RCMD_LOG SRC_DIR \
+	REL_CMD RCMD SZ_LIMIT KEEP_COUNT GLOBAL_SIZE GEN_SIZE CHECK_DIR BASE_DIR M G RCMD_LOG SRC_DIR \
 	DBGFILE DBG_GLOBAL check_cnt
 
 #-------------------------------
@@ -135,7 +136,7 @@ echo 1 >$RESFILE
 
 cleanup()
 {
-/bin/rm -rf $RUN_DIR/*
+/bin/rm -rf $BASE_DIR/*
 }
 
 #------------
@@ -143,7 +144,7 @@ cleanup()
 full_cleanup()
 {
 cd $CHECK_DIR
-/bin/rm -rf $RUN_DIR $PIPE $PIDFILE $RESFILE
+/bin/rm -rf $BASE_DIR $PIPE $PIDFILE $RESFILE
 }
 
 #------------
@@ -187,6 +188,9 @@ echo >>$DBG_GLOBAL
 /bin/rm -f $DBGFILE
 $G $GEN_SIZE >$DATAFILE
 cat $DATAFILE | $M -v -d $DBGFILE $*
+status=$?
+checking return code
+test_rc $?
 
 [ -f $DBGFILE ] && cat $DBGFILE >>$DBG_GLOBAL
 echo >>$DBG_GLOBAL
@@ -276,11 +280,18 @@ test_rc $?
 
 #------------
 
-base_path()
+get_dir()
 {
 d=$1
-[ -z "$d" ] && d=$BASE_PATH
-echo "$d/$REL_BASE_PATH"
+[ -z "$d" ] && d=$BASE_DIR
+echo $d
+}
+
+#------------
+
+base_path()
+{
+echo "`get_dir $1`/$REL_BASE_PATH"
 }
 
 #------------
@@ -298,22 +309,63 @@ check_status_file()
 {
 checking $2 status file
 sfile=`status_file $1`
-test -f $status_file
+test -f "$sfile"
 test_rc $?
+}
+
+#------------
+
+check_active_link()
+{
+checking active link
+ls -l $BASE_DIR
+test -f $BASE_PATH
+test_rc $?
+}
+
+#------------
+
+check_backup_links()
+{
+c=`expr $KEEP_COUNT - 1`
+checking backup link count
+test `nb_backup_links` = $c
+test_rc $?
+
+checking "backup link existence ($c links)"
+for f in `backup_links` ''
+	do
+	if [ -z "$f" ] ; then
+		test_ok
+		break
+	fi
+	if [ ! -f $f ] ; then
+		test_ko
+		break
+	fi
+done
+}
+
+#------------
+
+check_links()
+{
+check_active_link
+check_backup_links
 }
 
 #------------
 
 log_files()
 {
-ls -1 $BASE_PATH._*
+ls -1 `get_dir $1`/$REL_BASE_PATH._*
 }
 
 #------------
 
 nb_log_files()
 {
-log_files | wc -l
+log_files $1 | wc -l
 }
 
 #------------
@@ -338,10 +390,11 @@ wc -c <$1
 }
 
 #------------
+# /dev/null just in case there's no file in dir (cat could block)
 
 global_log_size()
 {
-cat $BASE_PATH._* | wc -c
+cat `log_files $1` </dev/null | wc -c
 }
 
 #------------
@@ -363,9 +416,9 @@ grep "^$1 count : " $DBGFILE | sed -e 's/^.*: //'
 #============================= main ===================================
 
 full_cleanup
-/bin/rm -rf $RUN_DIR $DBG_GLOBAL
-mkdir -p $RUN_DIR
-cd $RUN_DIR
+/bin/rm -rf $BASE_DIR $DBG_GLOBAL
+mkdir -p $BASE_DIR
+cd $BASE_DIR
 mk_fifo
 
 #-------------------------------
@@ -421,6 +474,7 @@ if [ -n "$VALGRIND" ] ; then
 	test_skip
 else
 	kill -USR1 `pid`
+	sleep 1
 	test `nb_log_files` = 2
 	test_rc $?
 fi
@@ -628,27 +682,101 @@ fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD $BASE_PATH
 check_status_file
 
 checking active link
-ls -l $RUN_DIR
+ls -l $BASE_DIR
 test -f $BASE_PATH
 test_rc $?
 
-c=`expr $KEEP_COUNT - 1`
-checking backup link count
-test `nb_backup_links` = $c
+check_backup_links
+
+#-------------------------------
+
+test_log_path()
+{
+# $1 = name ('relative' / 'absolute')
+# $2 = log path
+
+name="$1"
+logpath="$2"
+
+new_test "Log path ($name)"
+
+mkdir $logpath
+
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -C $RCMD -P $logpath/$REL_BASE_PATH -I $BASE_PATH
+
+check_status_file
+
+checking log file count
+test `nb_log_files $logpath` = $KEEP_COUNT
 test_rc $?
 
-checking "backup link existence ($c links)"
-for f in `backup_links` ''
+checking "log file size ($KEEP_COUNT files)"
+for f in `log_files $logpath` ''
 	do
 	if [ -z "$f" ] ; then
 		test_ok
 		break
 	fi
-	if [ ! -f $f ] ; then
+	if [ `fsize $f` -gt $SZ_LIMIT ] ; then
 		test_ko
 		break
 	fi
 done
+
+checking rotate command variables
+grep ROT_VAR_OK $RCMD_LOG
+test_rc $?
+
+checking rotate command count
+n=`grep ROT_VAR_OK $RCMD_LOG | wc -l`
+rcount=`get_stat rotate`
+test "X$n" = "X$rcount"
+test_rc $?
+
+checking purge count
+pcount=`get_stat remove_oldest`
+test "X$pcount" = "X`expr $rcount + 1 - $KEEP_COUNT`"
+test_rc $?
+
+check_links
+
+# Run again to check that the status file is retrieved correctly from disk
+
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L -P $logpath/$REL_BASE_PATH $BASE_PATH
+
+check_status_file
+
+checking "log file count after restart (with log path)"
+test "X`nb_log_files $logpath`" = "X$KEEP_COUNT"
+test_rc $?
+
+check_links
+
+# Run again without the log path. Files must be created in base path.
+# And log path must become empty
+
+fg_run -s $SZ_LIMIT -k $KEEP_COUNT -l -L $BASE_PATH
+
+check_status_file
+
+checking "log file count after restart (no log path)"
+test "X`nb_log_files`" = "X$KEEP_COUNT"
+test_rc $?
+
+check_links
+
+checking if log path is empty
+n=`ls -1 $logpath | wc -l`
+test $n = 0
+test_rc $?
+}
+
+test_log_path relative logfiles
+
+lp=$CHECK_DIR/tmp2
+mkdir $lp
+test_log_path absolute $lp
+/bin/rm -rf $lp
 
 #-------------------------------
 # End
