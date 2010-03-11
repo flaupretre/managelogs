@@ -50,20 +50,20 @@ status file (%s) and restart the program.",mp->status_path);
 
 			case 'a':
 				lp=NEW_LOGFILE();
-				lp->path=combine_strings(mp->base_dir,val);
+				lp->path=mk_abs_path(mp->base_dir,val);
 				mp->active.file=lp;
 				break;
 
 			case 'b':
 				lp=NEW_LOGFILE();
-				lp->path=combine_strings(mp->base_dir,val);
+				lp->path=mk_abs_path(mp->base_dir,val);
 				ARRAY_INCR_COUNT(mp->backup.files);
 				OLDEST_BACKUP_FILE(mp)=lp;
 				break;
 
 			case 'L':
 				if (!lp) break;	/* Security against invalid file */
-				lp->link=combine_strings(mp->base_dir,val);
+				lp->link=mk_abs_path(mp->base_dir,val);
 				break;
 
 			case 'C':
