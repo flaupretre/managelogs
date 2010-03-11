@@ -51,7 +51,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include "../common/global.h"
 #include "../common/alloc.h"
 #include "../common/convert.h"
-#include "../common/path.h"
+#include "include/path.h"
 #include "inst_include/logmanager.h"
 #include "include/config.h"
 #include "../common/time.h"
@@ -129,7 +129,7 @@ static void free_logmanager_struct(LOGMANAGER *mp);
 
 #include "../common/alloc.c"
 #include "../common/convert.c"
-#include "../common/path.c"
+#include "path.c"
 #include "../common/time.c"
 #include "file.c"
 #include "gzip_handler.c"
@@ -229,8 +229,13 @@ C_VOID_HANDLER(mp,flush);
 LIB_INTERNAL void init_logmanager_paths(LOGMANAGER *mp,LOGMANAGER_OPTIONS *opts)
 {
 mp->base_path=mk_abs_path(NULL,opts->base_path);
+mp->base_path_len=strlen(mp->base_path);
+
 mp->base_dir=ut_dirname(mp->base_path);
+mp->base_dir_len=strlen(mp->base_dir);
+
 mp->status_path=combine_strings(mp->base_path,".status");
+
 if (opts->flags & LMGR_PID_FILE)
 	mp->pid_path=combine_strings(mp->base_path,".pid");;
 }
@@ -475,7 +480,7 @@ lp=mp->active.file=NEW_LOGFILE();
 
 len =64; /* should be enough for any suffix  (compression + number) */
 
-len += strlen(mp->base_path)+11;
+len += mp->base_path_len+11;
 path=allocate(NULL,len);
 (void)apr_snprintf(path,len,"%s._%08lX",mp->base_path,(unsigned long)t);
 

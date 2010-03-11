@@ -24,7 +24,7 @@ LIB_INTERNAL char *link_name(LOGMANAGER *mp, int num)
 int len;
 char buf[32],*p;
 
-p=allocate(NULL,len=strlen(mp->base_path)+1);
+p=allocate(NULL,len=mp->base_path_len+1);
 (void)apr_cpystrn(p,mp->base_path,len);
 
 if (num)

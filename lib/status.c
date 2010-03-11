@@ -110,17 +110,17 @@ status file (%s) and restart the program.",mp->status_path);
 /* Dump info about active and backup log files to a status file */
 /* Letters used : LseioAVCabu */
 
-#define BASE_DIR_SUFFIX(_path)	(_path + base_dir_len)
-
 #define DUMP_FILE(_lp,_type)	{ \
 	if (_lp) \
 		{ \
 		file_write_string(fp,_type " ",YES);	/* Path */ \
-		file_write_string_nl(fp,BASE_DIR_SUFFIX((_lp)->path),YES); \
+		file_write_string_nl(fp,get_rel_path(mp->base_dir,mp->base_dir_len \
+			,(_lp)->path),YES); \
 		if ((_lp)->link) \
 			{ \
 			file_write_string(fp,"L ",YES);	/* Link */ \
-			file_write_string_nl(fp,BASE_DIR_SUFFIX((_lp)->link),YES); \
+			file_write_string_nl(fp,get_rel_path(mp->base_dir,mp->base_dir_len \
+				,(_lp)->link),YES); \
 			} \
 		file_write_string(fp,"s ",YES);			/* Start */ \
 		(void)apr_snprintf(buf,sizeof(buf),"%" TIMESTAMP_FMT,(_lp)->start); \
@@ -145,12 +145,9 @@ LIB_INTERNAL void dump_status_to_file(LOGMANAGER *mp)
 OFILE *fp;
 char buf[32];
 unsigned int i;
-size_t base_dir_len;
 
 DEBUG1(mp,1,"Writing status to file (%s)",mp->status_path);
 INCR_STAT_COUNT(mp,dump);
-
-base_dir_len=strlen(mp->base_dir);
 
 fp=file_create(mp->status_path,(apr_int32_t)STATUSFILE_MODE);
 

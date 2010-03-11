@@ -25,6 +25,10 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 #include <apr_file_io.h>
 #include <apr_time.h>
 
+#if APR_HAVE_STRING_H
+#include <string.h>
+#endif
+
 /*----------------------------------------------*/
 
 #ifndef _WIN32
@@ -105,7 +109,9 @@ typedef struct
 typedef struct
 	{
 	char *base_dir;
+	size_t base_dir_len; /* strlen(base_dir) */
 	char *base_path;
+	size_t base_path_len; /* strlen(base_path) */
 	char *status_path;
 	char *pid_path;
 	unsigned int flags;
