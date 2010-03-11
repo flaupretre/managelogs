@@ -5,7 +5,7 @@ AC_PREREQ(2.59)
 
 #--- Versions are set here
 
-AC_INIT(managelogs, 2.1.0, managelogs-bugs@tekwire.net)
+AC_INIT(managelogs, 2.2.0, managelogs-bugs@tekwire.net)
 
 LIB_LT_VERSION="2"
 AC_SUBST(LIB_LT_VERSION)
