@@ -117,6 +117,7 @@ typedef struct
 	size_t base_path_len; /* strlen(base_path) */
 	char *log_path;
 	size_t log_path_len; /* strlen(log_path) */
+	char *log_dir;
 	char *status_path;
 	char *pid_path;
 	unsigned int flags;

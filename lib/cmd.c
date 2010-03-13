@@ -80,6 +80,8 @@ DEBUG1(mp,1,"Running background command : %s",cmd);
 	,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_BASE_PATH",mp->base_path,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_BASE_DIR",mp->base_dir,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_LOG_PATH",mp->log_path,CHECK_TPOOL());
+(void)apr_env_set("LOGMANAGER_LOG_DIR",mp->log_dir,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_COMPRESSION"
 	,mp->compress.handler->suffix,CHECK_TPOOL());
 (void)apr_env_set("LOGMANAGER_VERSION",PACKAGE_VERSION,CHECK_TPOOL());

@@ -247,6 +247,7 @@ if ((opts->api_version >= 3) && (opts->log_path))
 	}
 else mp->log_path=duplicate(mp->base_path);
 mp->log_path_len=strlen(mp->log_path);
+mp->log_dir=ut_dirname(mp->log_path);
 }
 
 /*----------------------------------------------*/
@@ -400,6 +401,7 @@ FREE_P(mp->compress.private);
 FREE_P(mp->base_path);
 FREE_P(mp->base_dir);
 FREE_P(mp->log_path);
+FREE_P(mp->log_dir);
 FREE_P(mp->status_path);
 FREE_P(mp->pid_path);
 FREE_P(mp->debug.path);
