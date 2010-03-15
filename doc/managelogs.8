@@ -11,7 +11,7 @@ conjunction with Apache's
 piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 .PP
-Other features include :
+Features include :
 .IP
 - Rotation on a file size limit or time delay
 .br
@@ -41,9 +41,13 @@ A log manager should be considered as an output channel. Each log
 manager is defined
 on the command line by a set of options followed by a path named
 .I base path
-, as this path is used as the base every subsequent file names are computed
+, as this path is used as the base other file names are computed
 from. Each set of '[ \fIoptions\fR ] \fI<base-path>\fR' arguments defines a
-log manager.
+log manager. The direcotry part of the
+.I base path
+is the
+.I base directory
+.
 .PP
 There is no limit to the number of log managers a
 managelogs process can handle. They all receive the same data and each of them
@@ -61,7 +65,10 @@ log file (the file it is currently writing into) and a set of
 log files.
 .I Backup
 log files are previous active log files which have been closed during a
-.I rotation.
+.I rotation. The default behavior is to create the active and backup log files
+in the base directory, but an option allows log files to reside in another
+location.
+.PP
 Every time the global limits
 are exceeded, a
 .I purge
@@ -191,6 +198,11 @@ option is an alternative to the '--global-size' option, but can also be
 used in conjunction, especially if you send signals to trigger rotations
 before the size limit is reached. 
 .TP
+.BR -P | --log-path " " \fI<path>\fR
+Use \fI<path>\fR instead of the base path when creating a new log
+file. \fI<path>\fR can be a relative or absolute path. If it is a relative
+path, it is relative to the base directory.
+.TP
 .BR -l | --link
 Maintain a link file (named \fI<base-path>\fR) to the active log file.
 .TP
@@ -200,6 +212,9 @@ Also maintain links to the backup log files (backup link are named
 .TP
 .BR -H | --hardlink
 Create hard links instead of symbolic links.
+.br
+Note: when using hard links with a separate log path, the base and log paths
+must reside in the same file system.
 .TP
 .BR -e | --ignore-eol
 By default, managelogs ensures that log file rotation occurs on line boundaries,
@@ -220,9 +235,9 @@ consequences, especially concerning possible log data corruption. If you are not
 sure, avoid this option.
 .SH "FILES"
 Each log manager maintains its own set of files. The files are named after the
-log manager's base path. They all reside in the same directory (the directory
-part of the base path). This directory must exist before managelogs is started.
-It must also be writable by the user managelogs is running as.
+log manager's base and log paths. The directory part of these paths must exist
+before managelogs is started. They must also be writable by the user managelogs
+is running as. By default, the log path is the same as the base path.
 .PP
 Here are the files that a log manager creates and maintains :
 .TP
@@ -237,7 +252,7 @@ The status file. As described above, this file allows a log manager to recover
 its previous state at start time. This way, the memory of active and backup
 files is kept.
 .TP
-<base-path>._\fI<xxxxxxxx>\fR[.gz|.bz2]
+<log-path>._\fI<xxxxxxxx>\fR[.gz|.bz2]
 A log file. The \fI<xxxxxxxx>\fR part of the name is a unique identifier
 computed
 by the log manager when the file is created. When several log files are present,
@@ -252,7 +267,7 @@ When compression is turned on, the log manager automatically appends the
 compression type to the file name.
 .TP
 <base-path>
-If the '--link' option is set for this log manager, it maintains a link
+If the '--link' option is set, the log manager maintains a link
 from <base-path> to the active log file. By default, it is a symbolic link,
 but the '--hardlink' option allows to use hard links instead.
 .TP
@@ -306,7 +321,7 @@ The subprocess receives several environment variables from managelogs :
 .TP
 .B LOGMANAGER_FILE_PATH
 The path to the log file managelogs just closed. In a statistics gathering
-scenario, the data to integrate is read from this file.
+scenario, for instance, the data to integrate will be read from this file.
 .TP
 .B LOGMANAGER_BASE_PATH
 This is the
@@ -316,6 +331,16 @@ associated with this log manager.
 .B LOGMANAGER_BASE_DIR
 This is the directory part of the
 .I base path
+.TP
+.B LOGMANAGER_LOG_PATH
+This is the
+.I log path
+. This is the path used to create log files. By default, this path is the same
+as the base path.
+.TP
+.B LOGMANAGER_LOG_DIR
+This is the directory part of the
+.I log path
 .TP
 .B LOGMANAGER_COMPRESSION
 This is the compression type used to write to the log file. If compression
@@ -327,6 +352,9 @@ The version of the log manager library.
 .B LOGMANAGER_TIME
 The current time in Unix numeric format (number of seconds since 01/Jan/1970).
 .PP
+All the paths transmitted in these variables are absolute paths, even if
+relative paths were provided on the command line.
+.PP
 Note : During its execution, the rotate command is allowed to delete the
 file pointed to by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
 want some statistics without keeping the detailed logs, or if you use the rotate
@@ -336,7 +364,7 @@ Also note that you shouldn't assume anything about the default directory the
 command is executed in. Either you explicitely set a default directory at
 the beginning of your script ('cd $LOGMANAGER_BASE_DIR' for instance), or you
 must use absolute paths only. Relative
-paths are supported on the managelogs command line only because they are
+paths are supported on the managelogs command line because they are
 internally converted to absolute paths before being used.
 .SH "READING FROM A NAMED PIPE"
 .PP
@@ -354,28 +382,28 @@ In order to connect to managelogs through a named pipe :
 the pipe can block after a given amount of data. This is why it is generally
 recommended to start the reader process (managelogs) before the writer.
 Actually, it is more natural, as, in such an architecture, the writer process
-can stop and restart, and the reader process is supposed to remain untouched.
+can stop and restart while the reader process is supposed to remain untouched.
 The same when stopping the process: the correct procedure is to stop the writer
 process before the reader, to make sure that any remaining buffered data won't
 be lost.
 .br
 - The '-i|--input' option must be used on the managelogs command line, followed
-with the path of the named pipe (redirecting managelogs' standard input from
-the named pipe doesn't work).
+with the path of the named pipe (if you redirect the standard input from
+the named pipe, managelogs cannot detect that its input is coming from a pipe).
 .br
-- managelogs automatically detects that the file it is reading from is a named
-pipe and adapts its behavior (see below).
+- managelogs then automatically detects that the file it is reading from is a named
+pipe, and adapts its behavior (see below).
 .PP
-Note that managelogs explicitely checks the input file type. So, using
-the '--input' option does not automatically imply the 'named pipe behavior'.
+Note that managelogs explicitely checks the input file type. In other words,
+using the '--input' option does not automatically imply the 'named pipe behavior'.
 If the option is followed with the path of a regular file, managelogs will
 behave as if this file had been redirected to its standard input.
 .PP
 When managelogs is reading from a named pipe, it remains connected indefinitely,
 even after the process writing to the pipe exits. This way,
-both processes are independant : the writer process can connect to and
-disconnect from the pipe without disturbing the managelogs process.
-Although technically possible, you should generally avoid having several
+both processes are independant : one or several writer processes can connect to and
+disconnect from the pipe (in turn) without disturbing the managelogs process.
+Although technically possible, you should probably avoid having several
 processes write to the same pipe in parallel, as the data coming
 from the different processes will be mixed in a way you cannot control.
 .PP
@@ -468,6 +496,7 @@ per day, we can add '--rotate-delay 1d' on the managelogs command line.
 Another way would be to create a cron job, executed every night :
 .PP
 0 0 * * * kill -USR1 `cat /var/log/httpd/access_log.pid`
+Last, an example with a separate log path
 .SH "SEE ALSO"
 .PP
 The managelogs web site : http://managelogs.tekwire.net
