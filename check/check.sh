@@ -611,6 +611,27 @@ test_rc $?
 
 #-------------------------------
 
+new_test Rotate and purge on delay
+
+t1=1200000000
+t2=`expr $t1 + 660`
+t3=`expr $t1 + 1260`
+
+fg_run -t $t1 $BASE_PATH
+fg_run -t $t2 -r 10m $BASE_PATH
+
+checking rotation on delay
+test "X`nb_log_files`" = "X2"
+test_rc $?
+
+fg_run -t $t3 -p 20m $BASE_PATH
+
+checking rotation on delay
+test "X`nb_log_files`" = "X1"
+test_rc $?
+
+#-------------------------------
+
 test_compression()
 {
 # $1 = name (suffix)
