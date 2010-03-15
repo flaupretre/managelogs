@@ -19,7 +19,7 @@ piped logfile feature. It automatically rotates and purges log files based
 on a set of user-defined options.
 <P>
 
-Other features include :
+Features include :
 <DL COMPACT>
 <DT><DD>
 - Rotation on a file size limit or time delay
@@ -63,9 +63,14 @@ manager is defined
 on the command line by a set of options followed by a path named
 <I>base path</I>
 
-, as this path is used as the base every subsequent file names are computed
+, as this path is used as the base other file names are computed
 from. Each set of '[ <I>options</I> ] <I>&lt;base-path&gt;</I>' arguments defines a
-log manager.
+log manager. The direcotry part of the
+<I>base path</I>
+
+is the
+<I>base directory</I>
+
 <P>
 
 There is no limit to the number of log managers a
@@ -89,7 +94,11 @@ log files.
 <I>Backup</I>
 
 log files are previous active log files which have been closed during a
-<I>rotation.</I>
+<I>rotation. The default behavior is to create the active and backup log files</I>
+
+in the base directory, but an option allows log files to reside in another
+location.
+<P>
 
 Every time the global limits
 are exceeded, a
@@ -220,8 +229,8 @@ Sets the maximum delay between the creation of a new log file and the next
 rotation.
 <BR>
 
-<I>&lt;delay&gt;</I> is a suite of patterns in the form '[0-9]+[dhm]' (d=days, h=hours,
-m=minutes)
+<I>&lt;delay&gt;</I> is a suite of patterns in the form '[0-9]+[dhms]' (d=days, h=hours,
+m=minutes, s=seconds)
 <BR>
 
 Example : 1d12h = 1 day and 12 hours (same as '36h')
@@ -264,6 +273,12 @@ Keep only <I>&lt;n&gt;</I> log files (the active one + <I>&lt;n-1&gt;</I> backup
 option is an alternative to the '--global-size' option, but can also be
 used in conjunction, especially if you send signals to trigger rotations
 before the size limit is reached. 
+<DT><B>-P</B>|<B>--log-path</B> <B></B><I>&lt;path&gt;</I>
+
+<DD>
+Use <I>&lt;path&gt;</I> instead of the base path when creating a new log
+file. <I>&lt;path&gt;</I> can be a relative or absolute path. If it is a relative
+path, it is relative to the base directory.
 <DT><B>-l</B>|<B>--link</B>
 
 <DD>
@@ -277,6 +292,10 @@ Also maintain links to the backup log files (backup link are named
 
 <DD>
 Create hard links instead of symbolic links.
+<BR>
+
+Note: when using hard links with a separate log path, the base and log paths
+must reside in the same file system.
 <DT><B>-e</B>|<B>--ignore-eol</B>
 
 <DD>
@@ -305,9 +324,9 @@ sure, avoid this option.
 <H2>FILES</H2>
 
 Each log manager maintains its own set of files. The files are named after the
-log manager's base path. They all reside in the same directory (the directory
-part of the base path). This directory must exist before managelogs is started.
-It must also be writable by the user managelogs is running as.
+log manager's base and log paths. The directory part of these paths must exist
+before managelogs is started. They must also be writable by the user managelogs
+is running as. By default, the log path is the same as the base path.
 <P>
 
 Here are the files that a log manager creates and maintains :
@@ -321,7 +340,7 @@ signals to. When the process exits, the pid file is removed.
 The status file. As described above, this file allows a log manager to recover
 its previous state at start time. This way, the memory of active and backup
 files is kept.
-<DT>&lt;base-path&gt;._<I>&lt;xxxxxxxx&gt;</I>[.gz|.bz2]<DD>
+<DT>&lt;log-path&gt;._<I>&lt;xxxxxxxx&gt;</I>[.gz|.bz2]<DD>
 A log file. The <I>&lt;xxxxxxxx&gt;</I> part of the name is a unique identifier
 computed
 by the log manager when the file is created. When several log files are present,
@@ -336,7 +355,7 @@ whole log data in chronological order.
 When compression is turned on, the log manager automatically appends the
 compression type to the file name.
 <DT>&lt;base-path&gt;<DD>
-If the '--link' option is set for this log manager, it maintains a link
+If the '--link' option is set, the log manager maintains a link
 from &lt;base-path&gt; to the active log file. By default, it is a symbolic link,
 but the '--hardlink' option allows to use hard links instead.
 <DT>&lt;base-path&gt;.B.{001[.gz|.bz2],002[.gz|.bz2],...}<DD>
@@ -405,7 +424,7 @@ The subprocess receives several environment variables from managelogs :
 
 <DD>
 The path to the log file managelogs just closed. In a statistics gathering
-scenario, the data to integrate is read from this file.
+scenario, for instance, the data to integrate will be read from this file.
 <DT><B>LOGMANAGER_BASE_PATH</B>
 
 <DD>
@@ -418,6 +437,20 @@ associated with this log manager.
 <DD>
 This is the directory part of the
 <I>base path</I>
+
+<DT><B>LOGMANAGER_LOG_PATH</B>
+
+<DD>
+This is the
+<I>log path</I>
+
+
+as the base path.
+<DT><B>LOGMANAGER_LOG_DIR</B>
+
+<DD>
+This is the directory part of the
+<I>log path</I>
 
 <DT><B>LOGMANAGER_COMPRESSION</B>
 
@@ -435,6 +468,10 @@ The current time in Unix numeric format (number of seconds since 01/Jan/1970).
 </DL>
 <P>
 
+All the paths transmitted in these variables are absolute paths, even if
+relative paths were provided on the command line.
+<P>
+
 Note : During its execution, the rotate command is allowed to delete the
 file pointed to by $LOGMANAGER_FILE_PATH. You may do it, for instance, if you just
 want some statistics without keeping the detailed logs, or if you use the rotate
@@ -445,7 +482,7 @@ Also note that you shouldn't assume anything about the default directory the
 command is executed in. Either you explicitely set a default directory at
 the beginning of your script ('cd $LOGMANAGER_BASE_DIR' for instance), or you
 must use absolute paths only. Relative
-paths are supported on the managelogs command line only because they are
+paths are supported on the managelogs command line because they are
 internally converted to absolute paths before being used.
 <A NAME="lbAI">&nbsp;</A>
 <H2>READING FROM A NAMED PIPE</H2>
@@ -469,33 +506,33 @@ In order to connect to managelogs through a named pipe :
 the pipe can block after a given amount of data. This is why it is generally
 recommended to start the reader process (managelogs) before the writer.
 Actually, it is more natural, as, in such an architecture, the writer process
-can stop and restart, and the reader process is supposed to remain untouched.
+can stop and restart while the reader process is supposed to remain untouched.
 The same when stopping the process: the correct procedure is to stop the writer
 process before the reader, to make sure that any remaining buffered data won't
 be lost.
 <BR>
 
 - The '-i|--input' option must be used on the managelogs command line, followed
-with the path of the named pipe (redirecting managelogs' standard input from
-the named pipe doesn't work).
+with the path of the named pipe (if you redirect the standard input from
+the named pipe, managelogs cannot detect that its input is coming from a pipe).
 <BR>
 
-- managelogs automatically detects that the file it is reading from is a named
-pipe and adapts its behavior (see below).
+- managelogs then automatically detects that the file it is reading from is a named
+pipe, and adapts its behavior (see below).
 </DL>
 <P>
 
-Note that managelogs explicitely checks the input file type. So, using
-the '--input' option does not automatically imply the 'named pipe behavior'.
+Note that managelogs explicitely checks the input file type. In other words,
+using the '--input' option does not automatically imply the 'named pipe behavior'.
 If the option is followed with the path of a regular file, managelogs will
 behave as if this file had been redirected to its standard input.
 <P>
 
 When managelogs is reading from a named pipe, it remains connected indefinitely,
 even after the process writing to the pipe exits. This way,
-both processes are independant : the writer process can connect to and
-disconnect from the pipe without disturbing the managelogs process.
-Although technically possible, you should generally avoid having several
+both processes are independant : one or several writer processes can connect to and
+disconnect from the pipe (in turn) without disturbing the managelogs process.
+Although technically possible, you should probably avoid having several
 processes write to the same pipe in parallel, as the data coming
 from the different processes will be mixed in a way you cannot control.
 <P>
@@ -617,6 +654,7 @@ Another way would be to create a cron job, executed every night :
 <P>
 
 0 0 * * * kill -USR1 `cat /var/log/httpd/access_log.pid`
+Last, an example with a separate log path
 <A NAME="lbAK">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
