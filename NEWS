@@ -1,4 +1,13 @@
 -------------------------------------------------------------------------------
+2.2.0 :
+
+* Add log path option
+
+* Bugfix: Rotate delay and purge delay options were ignored by the log manager
+
+* Add self-tests : rotate/purge delays, compression...
+
+-------------------------------------------------------------------------------
 2.1.0 :
 
 * Self-tests
