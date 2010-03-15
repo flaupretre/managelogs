@@ -301,8 +301,10 @@ return opp;
 static TIMESTAMP convert_delay(const char *str)
 {
 char c;
+const char *input_str;
 TIMESTAMP delay,tdelay;
 
+input_str=str;
 delay=tdelay=0;
 
 while ((c=(*(str++)))!='\0')
@@ -317,10 +319,15 @@ while ((c=(*(str++)))!='\0')
 			tdelay *= 60; /* No break here */
 		case 'm':
 		case 'M':
-			delay += (tdelay * 60);
+			tdelay *= 60; /* No break here */
+		case 's':
+		case 'S':
+			delay += tdelay;
 			tdelay=0;
 			break;
 		default:
+			if ((c<'0')||(c>'9'))
+				FATAL_ERROR1("Invalid delay: %s",input_str);
 			tdelay = (tdelay*10)+(TIMESTAMP)(c-'0');
 		}
 	}
