@@ -1,0 +1,10 @@
+# Needed for OBS as this file allows to ignore errors causing OBS to fail
+# on Suse.
+
+addFilter("W: source-or-patch-not-compressed .*");
+addFilter("E: shlib-policy-name-error .*");
+addFilter("W: shared-lib-calls-exit .*");
+addFilter("W: no-version-in-last-changelog .*");
+addFilter("W: hardcoded-packager-tag .*");
+addFilter("W: explicit-lib-dependency .*");
+addFilter("E: devel-file-in-non-devel-package .*");

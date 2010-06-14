@@ -2,46 +2,66 @@
 # This file allows to build source and binary RPM packages
 #
 # How to build :
-# 	- Run './configure' (without options)
-#	- Then, run 'make rpm'
-#
-# This will build two packages (source and binary) in /usr/src/redhat/[S]RPMS
-#
-# WARNING: Tested on Linux RHEL 5 only.
+#   - Run './configure' (without options)
+#   - Then, run 'make rpm'
 #
 # Note: To generate debuginfo packages, you need to install the
 # redhat-rpm-config package first.
+#
 #==============================================================================
 #
 # @configure_input@
 #
 Name: @PACKAGE_NAME@
-Summary: managelogs log management software
-Group: Applications/Internet
+Summary: Log management software
 Version: @PACKAGE_VERSION@
 Release: @RELEASE_NUMBER@
-ExclusiveOs: @PACKAGING_OS@
-License: Apache license 2.0
+License: Apache Software License 2.0 (ASL 2.0)
 Source: @PACKAGE_NAME@-%{version}.tar.gz
 URL: http://@PACKAGE_NAME@.tekwire.net/
-Source: %{name}-%{version}.tar.gz
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildPrereq: @RPM_BUILD_DEPS@
 Packager: Francois Laupretre <francois@tekwire.net>
 AutoReqProv: no
+
+%if 0%{?suse_version}
+# ps needed for check (explicit dependency required on OBS for Suse flavors)
+BuildRequires: libapr1-devel zlib-devel libbz2-devel ps gcc make glibc-devel autoconf automake libtool
+Requires: libapr1 zlib bzip2
+Group: Productivity/Networking/Web/Utilities
+# OBS needs rpmlintrc to ignore errors
+Source99: managelogs-rpmlintrc  
+%else
+BuildRequires: @RPM_BUILD_DEPS@
 Requires: @RPM_RUNTIME_DEPS@
-provides: @PACKAGE_NAME@
+Provides: @PACKAGE_NAME@
+Group: Applications/Internet
+%endif
 
 %description
-managelogs is a log management program for Apache.
-It rotates and purges the Apache log files based on different size
+A log management program for Apache.
+managelogs rotates and purges the Apache log files based on different size
 limits and includes a lot of useful features.
+
+# Fake changelog info
+%changelog
+* Mon Jan 01 2010 Francois Laupretre <francois@tekwire.net>
+For changelog information, please consult http://managelogs.hg.sourceforge.net/hgweb/managelogs/managelogs/log
 
 %prep
 %setup -q
+# %__chmod 0644 ACKNOWLEDGEMENTS AUTHORS ChangeLog COPYING NEWS NOTICE README TODO  
 
 %build
+# On OBS, run autotools because installed versions can be
+# incompatible with the version we ran to generate the distrib.
+# Unfortunately, OBS uses two different strings for the 'vendor' macro
+in_obs=''
+echo '%vendor' | grep '^obs://build.opensuse.org/' && in_obs=y
+[ '%vendor' = 'openSUSE Build Service' ] && in_obs=y
+if [ -n "$in_obs" ] ; then
+	build/buildconf --verbose
+fi
 %configure %{?_without_zlib} %{?_without_bz2}
 make %{?_smp_mflags}
 
@@ -49,11 +69,12 @@ make %{?_smp_mflags}
 make check
 
 %install
-rm -rf $RPM_BUILD_ROOT
+rm -rf "%{buildroot}"
+mkdir "%{buildroot}"
 %makeinstall
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf "%{buildroot}"
 
 %post -p /sbin/ldconfig
 
@@ -61,8 +82,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc AUTHORS COPYING NEWS README doc/managelogs.8.htm
+%doc ACKNOWLEDGEMENTS AUTHORS ChangeLog COPYING NEWS NOTICE README TODO doc/managelogs.8.htm
 %{_bindir}/managelogs
 %{_libdir}/liblogmanager.*
 %{_includedir}/logmanager.h
-%{_mandir}/man8/managelogs.8.gz
+%{_mandir}/man8/managelogs.*
