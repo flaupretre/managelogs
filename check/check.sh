@@ -255,7 +255,7 @@ else
 fi
 
 checking if process $str
-ps -ef | awk '{ print $2 }' | grep "^`pid`\$" >/dev/null
+ps -e | awk '{ print $1 }' | grep "^`pid`\$" >/dev/null
 rc=$?
 [ $inv = 1 ] && rc=`inv_rc $rc`
 test_rc $rc
