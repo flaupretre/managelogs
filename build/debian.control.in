@@ -1,0 +1,17 @@
+#
+# Warning: Debian build fails - help needed !
+#
+Source: @PACKAGE_NAME@
+Section: web
+Priority: optional
+Maintainer: Francois Laupretre <francois@tekwire.net>
+Build-Depends: debhelper (>= 4.1.16)
+#, @DEB_BUILD_DEPS@
+
+Package: @PACKAGE_NAME@
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Log management software
+ A log management program for Apache.
+ managelogs rotates and purges the Apache log files based on different size
+ limits and includes a lot of useful features.

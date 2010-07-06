@@ -1,0 +1,6 @@
+@PACKAGE_NAME@ (@PACKAGE_VERSION@-@RELEASE_NUMBER@) stable; urgency=low
+
+  * For changelog information, please consult http://managelogs.hg.sourceforge.net/hgweb/managelogs/managelogs/log
+
+ -- Francois Laupretre <francois@tekwire.net>  Mon, 01 Jan 2010 00:00:00 +0100
+ 

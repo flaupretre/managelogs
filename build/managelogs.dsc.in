@@ -1,33 +1,23 @@
 #-------------------------------------------------------------------
-#                 INVALID - WORK IN PROGRESS
+#
+# Warning: Debian build fails - help needed !
+#
+# DSC file for OpenSuse Build Service
 #-------------------------------------------------------------------
-#
-# This file allows to build source and binary deb packages
-#
-# How to build :
-# 	- Run './configure' (without options)
-#	- Then, run 'make deb'
-#
-# This will build two packages (source and binary) in /usr/src/redhat/[S]RPMS
-#
-# WARNING: Tested on Linux RHEL 5 only.
-#
-#==============================================================================
 #
 # @configure_input@
 #
-Package: @PACKAGE_NAME@
+Format: 1.0
+Source: @PACKAGE_NAME@-@PACKAGE_VERSION@
 Version: @PACKAGE_VERSION@-@RELEASE_NUMBER@
+Binary: @PACKAGE_NAME@
+Maintainer: Francois Laupretre <francois@tekwire.net>
+Architecture: any
+Depends: @DEB_RUNTIME_DEPS@
+Build-Depends: debhelper (>= 4.1.16)
+# @DEB_BUILD_DEPS@
 Section: web
 Priority: optional
-Architecture: any
 Essential: no
-Maintainer: Francois Laupretre <francois@tekwire.net>
-Depends: @DEB_RUNTIME_DEPS@
-Build-Depends: @DEB_BUILD_DEPS@
-Standards-Version: 3.8.4.0
-Provides: @PACKAGE_NAME@
-Description: managelogs log management software
-managelogs is a log management program for Apache.
-It rotates and purges the Apache log files based on different size
-limits and includes a lot of useful features.
+Files: 
+ d57283ebb8157ae919762c58419353c8 133282 @PACKAGE_NAME@-@PACKAGE_VERSION@.tar.gz
