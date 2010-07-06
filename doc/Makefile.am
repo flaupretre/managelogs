@@ -7,7 +7,10 @@ HTML_MANS = managelogs.8.htm
 
 html_mans: $(HTML_MANS)
 
-EXTRA_DIST = $(HTML_MANS)
+EXTRA_DIST = $(HTML_MANS) api Doxyfile
 
 managelogs.8.htm: managelogs.8
 	$(top_srcdir)/build/mk_html_doc.sh <$< >$@
+
+dox: Doxyfile
+	/bin/rm -rf $(top_srcdir)/doc/api/* && cd $(top_srcdir)/lib/inst_include && doxygen ../../doc/Doxyfile

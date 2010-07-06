@@ -17,6 +17,8 @@ config.status
 libtool
 managelogs.spec
 managelogs.dsc
+debian.changelog
+debian.control
 stamp-h1
 src/managelogs
 *.tar.gz
@@ -30,3 +32,4 @@ check/genlog
 check/check.log
 check/check.dbg
 check/rcmd.sh
+doc/api

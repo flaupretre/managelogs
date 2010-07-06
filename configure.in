@@ -142,6 +142,8 @@ AC_CHECK_FUNCS([malloc realloc strchr memset free symlink memcpy strlen getppid 
 AC_CONFIG_FILES([Makefile
 				build/managelogs.spec
 				build/managelogs.dsc
+				build/debian.changelog
+				build/debian.control
 				lib/Makefile
 				src/Makefile
 				doc/Makefile

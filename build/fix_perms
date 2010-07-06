@@ -12,6 +12,7 @@ chmod -x \
 	`find . -name '*.m4'` \
 	`find . -name '*.in'` \
 	`find . -name 'Makefile.am'` \
+	`find . -name '*.htm*'` \
 	ACKNOWLEDGEMENTS \
 	AUTHORS \
 	COPYING \
@@ -23,4 +24,7 @@ chmod -x \
 	TODO \
 	doc/*.8 \
 	doc/*.htm \
-	check/check.sh
+	doc/Doxyfile \
+	check/check.sh \
+	build/debian.* \
+	build/managelogs-rpmlintrc
