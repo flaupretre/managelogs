@@ -20,10 +20,6 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-#ifndef _WIN32
-#define SYMLINK_SUPPORT
-#endif
-
 #define BUFSIZE 65536
 
 /* Size limits. We refuse sizes lower than these ones.
