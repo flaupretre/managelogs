@@ -25,6 +25,7 @@ noinst_HEADERS = include/config.h \
 	include/plain_handler.h plain_handler.c \
 	include/file.h          file.c \
 	include/path.h          path.c \
+	include/logmanager_int.h \
 	include/array.h \
 	logmanager.c \
 	$(top_srcdir)/common/time.c \
