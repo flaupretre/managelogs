@@ -34,6 +34,19 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 #define EOL_BUF_IS_EMPTY()	(mp->eol_buffer.buf == NULL)
 
+/*-- logmanager_write() flags */
+
+/** write_level2() flag - Disable rotation for this write operation
+*
+* When this flag is set, the write operation must not trigger a rotation,
+* even if the rotate constraints (size, time, etc) are exceeded.
+*
+* Use with care as it causes the logmanager to ignore the rotation
+* constraints set at creation time.
+*/
+
+#define LMGRW_CANNOT_ROTATE	0x1
+
 /*----------------------------------------------*/
 /* Called when the manager is closed. Even if we don't have an EOL, we
 * must write the buffer */
@@ -47,7 +60,7 @@ WRITE_EOL_BUF(0,mp->last_timestamp);
 /* Buffer output so that the files are cut on line boundaries ('\n' char) */
 
 void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
-	,unsigned int flags, TIMESTAMP t)
+	, TIMESTAMP t)
 {
 int i;
 
@@ -61,7 +74,7 @@ if ((!buf) || (!size)) return;
 
 if (mp->flags & LMGR_IGNORE_EOL)
 	{
-	write_level2(mp,buf,size,flags,t);
+	write_level2(mp,buf,size,0,t);
 	return;
 	}
 
@@ -81,7 +94,7 @@ if (! EOL_BUF_IS_EMPTY())
 			APPEND_TO_EOL_BUF(buf,(apr_off_t)(i+1));
 			buf += (i+1);
 			size -= (i+1);
-			WRITE_EOL_BUF(flags,t);
+			WRITE_EOL_BUF(0,t);
 			break;
 			}
 		}
@@ -117,7 +130,7 @@ for (i=size-1;;i--)
 
 /* 2.If something remains, write it */
 
-if (size) write_level2(mp,buf,size,flags,t);
+if (size) write_level2(mp,buf,size,0,t);
 }
 
 /*----------------------------------------------*/

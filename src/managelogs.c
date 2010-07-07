@@ -187,7 +187,7 @@ for (;;)
 
 	NOINTR_START();
 	for (i=0;i<mgr_count;i++)
-		logmanager_write(mpp[i],input_buf,nread,0,timestamp);
+		logmanager_write(mpp[i],input_buf,nread,timestamp);
 	NOINTR_END();
 	check_and_run_pending_action();
 	}
