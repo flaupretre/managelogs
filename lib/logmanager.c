@@ -470,6 +470,7 @@ mp->active.fp=file_close(mp->active.fp);
 void logmanager_close(LOGMANAGER *mp)
 {
 CHECK_MP(mp);
+if (!IS_OPEN(mp)) return;
 
 DEBUG(mp,1,"Closing logmanager");
 
@@ -520,10 +521,12 @@ void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t)
 CHECK_MP(mp);
 CHECK_TIMESTAMP(mp,t);
 
+if (!IS_OPEN(mp)) logmanager_open(mp,t);
+
 DEBUG1(mp,1,"Starting rotation (%s)",mp->base_path);
 INCR_STAT_COUNT(mp,rotate);
 
-if (IS_OPEN(mp)) _close_active_file(mp);
+_close_active_file(mp);
 
 /* Insert new backup first */
 

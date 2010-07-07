@@ -67,6 +67,8 @@ int i;
 CHECK_MP(mp);
 CHECK_TIMESTAMP(mp,t);
 
+if (!IS_OPEN(mp)) logmanager_open(mp,t);
+
 DEBUG1(mp,2,"Starting logmanager_write (size=%" APR_OFF_T_FMT ")",size);
 INCR_STAT_COUNT(mp,write);
 
