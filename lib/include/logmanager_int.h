@@ -85,7 +85,7 @@ typedef struct
 		char *buf;
 		apr_off_t len;
 		} eol_buffer;
-	TIMESTAMP last_write_time;
+	TIMESTAMP last_timestamp;
 	struct
 		{
 		char *path;

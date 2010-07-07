@@ -30,6 +30,14 @@ typedef apr_time_t TIMESTAMP;
 
 #define NORMALIZE_TIMESTAMP(_t)	{ if ((_t)==NOW) (_t)=time_now(); }
 
+#define SET_LAST_TIMESTAMP(_mp,_t)	{ (_mp)->last_timestamp=(_t); }
+
+#define CHECK_TIMESTAMP(_mp,_t)	{ \
+	NORMALIZE_TIMESTAMP(_t); \
+	if ((_t) < (_mp)->last_timestamp) (_t)=(_mp)->last_timestamp; \
+	SET_LAST_TIMESTAMP((_mp),(_t)); \
+	}
+
 /*----------------------------------------------*/
 
 LIB_INTERNAL TIMESTAMP time_now(void);

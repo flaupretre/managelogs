@@ -40,7 +40,7 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 LIB_INTERNAL void write_end(LOGMANAGER *mp)
 {
-WRITE_EOL_BUF(0,mp->last_write_time);
+WRITE_EOL_BUF(0,mp->last_timestamp);
 }
 
 /*----------------------------------------------*/
@@ -52,12 +52,10 @@ void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 int i;
 
 CHECK_MP(mp);
-NORMALIZE_TIMESTAMP(t);
+CHECK_TIMESTAMP(mp,t);
 
 DEBUG1(mp,2,"Starting logmanager_write (size=%" APR_OFF_T_FMT ")",size);
 INCR_STAT_COUNT(mp,write);
-
-mp->last_write_time=t;
 
 if ((!buf) || (!size)) return;
 

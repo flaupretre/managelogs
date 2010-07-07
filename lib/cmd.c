@@ -63,13 +63,13 @@ LIB_INTERNAL void run_bg_cmd(LOGMANAGER *mp, const char *cmd
 {
 char buf[32];
 DECLARE_TPOOL;
-NORMALIZE_TIMESTAMP(t);
 apr_procattr_t *attr;
 apr_proc_t proc;
 const char *args[2];
 apr_status_t status;
 char errbuf[1024];
 
+NORMALIZE_TIMESTAMP(t);
 if (!cmd) return; /* Security */
 
 DEBUG1(mp,1,"Running background command : %s",cmd);

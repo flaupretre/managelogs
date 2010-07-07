@@ -348,7 +348,7 @@ return mp;
 void logmanager_open(LOGMANAGER *mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
-NORMALIZE_TIMESTAMP(t);
+CHECK_TIMESTAMP(mp,t);
 
 if (IS_OPEN(mp)) return;
 
@@ -518,7 +518,7 @@ lp->start=lp->end=t;
 void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t)
 {
 CHECK_MP(mp);
-NORMALIZE_TIMESTAMP(t);
+CHECK_TIMESTAMP(mp,t);
 
 DEBUG1(mp,1,"Starting rotation (%s)",mp->base_path);
 INCR_STAT_COUNT(mp,rotate);
