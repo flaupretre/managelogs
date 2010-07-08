@@ -33,3 +33,4 @@ check/check.log
 check/check.dbg
 check/rcmd.sh
 doc/api
+doc/api.pdf

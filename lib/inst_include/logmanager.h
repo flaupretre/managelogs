@@ -196,6 +196,7 @@ typedef struct { int dummy; } LOGMANAGER; /* Opaque to client */
 
 extern LOGMANAGER *new_logmanager(LOGMANAGER_OPTIONS *opts);
 
+/*----------------------------------------------*/
 /** Deletes a log manager.
 *
 * Also frees the data allocated by new_logmanager()
@@ -206,6 +207,7 @@ extern LOGMANAGER *new_logmanager(LOGMANAGER_OPTIONS *opts);
 
 extern void logmanager_destroy(LOGMANAGER *mp);
 
+/*----------------------------------------------*/
 /** Opens a log manager.
 *
 * Called after new_logmanager() before writing to a log manager
@@ -217,6 +219,7 @@ extern void logmanager_destroy(LOGMANAGER *mp);
 
 extern void logmanager_open(LOGMANAGER *mp,TIMESTAMP t);
 
+/*----------------------------------------------*/
 /** Closes a log manager.
 *
 * The log manager can then be reopened via logmanager_open() or
@@ -228,6 +231,7 @@ extern void logmanager_open(LOGMANAGER *mp,TIMESTAMP t);
 
 extern void logmanager_close(LOGMANAGER *mp);
 
+/*----------------------------------------------*/
 /** Sends data to a log manager.
 *
 * @param[in] mp Pointer to a LOGMANAGER struct previously returned
@@ -240,6 +244,7 @@ extern void logmanager_close(LOGMANAGER *mp);
 extern void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 	, TIMESTAMP t);
 
+/*----------------------------------------------*/
 /** Forces a flush to the log file.
 *
 * Flushes the remaining data to the file system. Mostly interesting
@@ -254,6 +259,7 @@ extern void logmanager_write(LOGMANAGER *mp, const char *buf, apr_off_t size
 
 extern void logmanager_flush(LOGMANAGER *mp);
 
+/*----------------------------------------------*/
 /** Triggers a rotation.
 *
 * Triggers an immediate log rotation. Can also trigger a purge if the
@@ -266,6 +272,7 @@ extern void logmanager_flush(LOGMANAGER *mp);
 
 extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);
 
+/*----------------------------------------------*/
 /** Returns the list of supported compression schemes.
 *
 * @return A dynamically allocated string containing the list of supported
@@ -276,6 +283,7 @@ extern void logmanager_rotate(LOGMANAGER *mp,TIMESTAMP t);
 
 extern char *logmanager_compression_list(void);
 
+/*----------------------------------------------*/
 /** Returns the version of the library.
 *
 * @return the version of the managelogs package the library belongs to.
@@ -285,6 +293,7 @@ extern char *logmanager_compression_list(void);
 
 extern char *logmanager_version(void);
 
+/*----------------------------------------------*/
 /** Displays internal stats
 *
 * Utility function displaying some internal stats and counters. Used for
