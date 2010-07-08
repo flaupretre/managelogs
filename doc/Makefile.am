@@ -20,7 +20,7 @@ clean_dox:
 	/bin/rm -rf api/* api.pdf; \
 	)
 
-dox: Doxyfile clean_dox
+dox: clean_dox
 	( \
 	cd $(top_srcdir)/lib/inst_include; \
 	doxygen ../../build/Doxyfile; \

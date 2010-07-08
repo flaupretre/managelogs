@@ -24,7 +24,7 @@ chmod -x \
 	TODO \
 	doc/*.8 \
 	doc/*.htm \
-	doc/Doxyfile \
+	build/Doxyfile \
 	check/check.sh \
 	build/debian.* \
 	build/managelogs-rpmlintrc
