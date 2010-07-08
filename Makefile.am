@@ -1,9 +1,9 @@
 
 SUBDIRS = lib src doc check
 
-EXTRA_DIST = ACKNOWLEDGEMENTS NOTICE build/cleanup build/reconfigure \
-	build/mk_html_doc.sh build/fix_perms build/autogen.sh \
-	build/buildconf
+EXTRA_DIST = ACKNOWLEDGEMENTS NOTICE build/autogen.sh build/buildconf build/cleanup \
+	build/debian.rules  build/Doxyfile build/fix_perms build/managelogs-rpmlintrc \
+	build/mk_html_doc.sh build/reconfigure
 
 RPM_BASE = /usr/src/redhat
 
