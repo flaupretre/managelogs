@@ -89,6 +89,7 @@ if (mpp)
 	for (i=0;i<mgr_count;i++)
 		{
 		if (stats_toggle) logmanager_display_stats(mpp[i]);
+		logmanager_close(mpp[i]); /* Optional, but cleaner */
 		logmanager_destroy(mpp[i]);
 		}
 	}
