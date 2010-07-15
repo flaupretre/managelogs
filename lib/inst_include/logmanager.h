@@ -14,6 +14,9 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
    See the License for the specific language governing permissions and
    limitations under the License.
 =============================================================================*/
+/** @mainpage
+* A PDF version of this document is available at http://managelogs.tekwire.net/doc/api.pdf
+*/
 
 /* This file contains the log manager API */
 
