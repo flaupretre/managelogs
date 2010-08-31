@@ -48,9 +48,12 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*---------*/
 
+#define ALLOCATE
+
 #include <logmanager.h>
 
 #include "../common/global.h"
+#include "managelogs.h"
 #include "intr.h"
 #include "options.h"
 
@@ -63,18 +66,32 @@ Copyright 2008 Francois Laupretre (francois@tekwire.net)
 
 /*----------------------------------------------*/
 
-LOGMANAGER **mpp=(LOGMANAGER **)0;
-int mgr_count;
-char *input_path=NULL;
 static BOOL input_is_fifo=NO;
 static apr_file_t *f_input=(apr_file_t *)0;
 static char input_buf[CHUNK_MAX];
 
-TIMESTAMP timestamp=NOW;
-BOOL stats_toggle=NO;
-BOOL refresh_only=NO;
-
 DECLARE_POOL(main_pool);
+
+/*----------------------------------------------*/
+
+void destroy_log_managers()
+{
+LOGMANAGER *mp;
+int i;
+
+if (mgrs.count)
+	{
+	for (i=0;i<mgrs.count;i++)
+		{
+		mp=mgrs.items[i];
+		if (stats_toggle) logmanager_display_stats(mp);
+		logmanager_close(mp); /* Optional, but cleaner */
+		logmanager_destroy(mp);
+		}
+	FREE_P(mgrs.items);
+	mgrs.count=0;
+	}
+}
 
 /*----------------------------------------------*/
 
@@ -84,19 +101,9 @@ int i;
 
 signal_shutdown();
 
-if (mpp)
-	{
-	for (i=0;i<mgr_count;i++)
-		{
-		if (stats_toggle) logmanager_display_stats(mpp[i]);
-		logmanager_close(mpp[i]); /* Optional, but cleaner */
-		logmanager_destroy(mpp[i]);
-		}
-	}
+destroy_log_managers();
 
 if (f_input) (void)apr_file_close(f_input);
-
-FREE_P(mpp);
 FREE_P(input_path);
 
 FREE_POOL(main_pool);
@@ -112,7 +119,7 @@ int main (int argc, char * argv[])
 apr_size_t nread,chunk_size,tmp_size;
 apr_status_t status;
 LOGMANAGER_OPTIONS **opp;
-int i;
+int op_count,i;
 apr_int32_t flags;
 apr_finfo_t finfo;
 
@@ -123,24 +130,26 @@ intr_on();
 
 /*-- Get options */
 
-opp=get_options(argc,argv,&mgr_count);
+opp=get_options(argc,argv,&op_count);
 
 /* Create and open the log managers */
 /* Adapt read size if limit is small (better precision on rotation) */
 /* '10' is an arbitrary choice, it could be another value */
 /* Security : Chunk size cannot be lower than 100 bytes */
 
-ALLOC_P(mpp,mgr_count*sizeof(*mpp));
 chunk_size=CHUNK_MAX;
-for (i=0;i<mgr_count;i++)
+for (i=0;i<op_count;i++)
 	{
-	mpp[i]=new_logmanager(opp[i]);
-	logmanager_open(mpp[i],timestamp);
+	mgrs.count++;
+	ALLOC_P(mgrs.items,(mgrs.count)*sizeof(LOGMANAGER *));
+	
+	mgrs.items[i]=new_logmanager(opp[i]);
+	logmanager_open(mgrs.items[i],timestamp);
 	tmp_size=opp[i]->file_maxsize/10;
 	if (tmp_size && (tmp_size < chunk_size)) chunk_size=tmp_size;
 	}
 
-free_options(opp,mgr_count); /* We don't need the options structs anymore */
+free_options(opp,op_count); /* We don't need the options structs anymore */
 
 if (refresh_only) exit_proc(0);
 
@@ -187,8 +196,8 @@ for (;;)
 	if (status != APR_SUCCESS) exit_proc(3);
 
 	NOINTR_START();
-	for (i=0;i<mgr_count;i++)
-		logmanager_write(mpp[i],input_buf,nread,timestamp);
+	for (i=0;i<mgrs.count;i++)
+		logmanager_write(mgrs.items[i],input_buf,nread,timestamp);
 	NOINTR_END();
 	check_and_run_pending_action();
 	}

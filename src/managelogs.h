@@ -32,16 +32,53 @@ Please report bugs to " PACKAGE_BUGREPORT "\n"
 
 /*----------------------------------------------*/
 
-extern TIMESTAMP timestamp;
-extern int stats_toggle;
-extern int refresh_only;
-extern LOGMANAGER **mpp;
-extern int mgr_count;
-extern char *input_path;
+#ifdef ALLOCATE
+#define GLOBAL
+#else
+#define GLOBAL extern
+#endif
+
+typedef struct
+	{
+	int count;
+	LOGMANAGER **items;
+	} LOGMANAGER_ARRAY;
 
 /*----------------------------------------------*/
 
-void exit_proc(int status);
+GLOBAL LOGMANAGER_ARRAY mgrs
+#ifdef ALLOCATE
+={ 0, (LOGMANAGER **)0 }
+#endif
+;
+
+GLOBAL TIMESTAMP timestamp
+#ifdef ALLOCATE
+=NOW
+#endif
+;
+
+GLOBAL int stats_toggle
+#ifdef ALLOCATE
+=NO
+#endif
+;
+
+GLOBAL int refresh_only
+#ifdef ALLOCATE
+=NO
+#endif
+;
+
+GLOBAL char *input_path
+#ifdef ALLOCATE
+=NULL
+#endif
+;
+
+/*----------------------------------------------*/
+
+extern void exit_proc(int status);
 
 /*----------------------------------------------*/
 #endif	/* __MANAGELOGS_H */

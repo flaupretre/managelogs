@@ -200,11 +200,11 @@ int i;
 switch(action)
 	{
 	case FLUSH_ACTION:
-		for (i=0;i<mgr_count;i++) logmanager_flush(mpp[i]);
+		for (i=0;i<mgrs.count;i++) logmanager_flush(mgrs.items[i]);
 		break;
 
 	case ROTATE_ACTION:
-		for (i=0;i<mgr_count;i++) logmanager_rotate(mpp[i],timestamp);
+		for (i=0;i<mgrs.count;i++) logmanager_rotate(mgrs.items[i],timestamp);
 		break;
 
 	case TERMINATE_ACTION:
