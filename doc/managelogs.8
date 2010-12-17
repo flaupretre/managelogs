@@ -496,7 +496,6 @@ per day, we can add '--rotate-delay 1d' on the managelogs command line.
 Another way would be to create a cron job, executed every night :
 .PP
 0 0 * * * kill -USR1 `cat /var/log/httpd/access_log.pid`
-Last, an example with a separate log path
 .SH "SEE ALSO"
 .PP
 The managelogs web site : http://managelogs.tekwire.net
