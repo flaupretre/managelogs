@@ -31,8 +31,9 @@ return 0
 #---------------------------
 
 check_vars
+status=$?
 set +x
-if [ $? = 0 ] ; then
+if [ $status = 0 ] ; then
 	echo ROT_VAR_OK
 else
 	echo ROT_VAR_KO
